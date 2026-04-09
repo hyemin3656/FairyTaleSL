@@ -1,0 +1,58 @@
+# ── 환경변수 / 시크릿 ────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Python ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# ── DB / 로컬 데이터 ─────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── 모델 가중치 (용량 큰 바이너리) ────────────────────
+weights/
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+ai_engine/models/*/weights/
+
+# ── 로그 ─────────────────────────────────────────────
+*.log
+logs/
+
+# ── Node.js / Frontend ───────────────────────────────
+node_modules/
+dist/
+.vite/
+.parcel-cache/
+
+# ── IDE ──────────────────────────────────────────────
+.idea/
+*.swp
+*.swo
+
+# ── OS ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── 테스트 커버리지 ──────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ── HuggingFace 캐시 ─────────────────────────────────
+.cache/
+
