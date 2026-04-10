@@ -27,7 +27,12 @@ weights/
 *.ckpt
 *.bin
 *.safetensors
+*.task
 ai_engine/models/*/weights/
+ai_engine/models/mediapipe_tasks/
+
+# ── 추출된 키포인트 데이터 (대용량) ──────────────────
+ai_engine/data/
 
 # ── 로그 ─────────────────────────────────────────────
 *.log
