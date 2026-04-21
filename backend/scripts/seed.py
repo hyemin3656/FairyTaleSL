@@ -1,5 +1,5 @@
 """
-샘플 동화 3권 및 기본 데이터를 DB에 삽입합니다.
+전래동화 8권 및 기본 모션 데이터를 DB에 삽입합니다.
 실행: docker compose exec backend python scripts/seed.py
 """
 import asyncio
@@ -13,35 +13,54 @@ from core.database import AsyncSessionLocal
 from models.book import Book, BookSection
 from models.motion import GlossMotion
 
+# fairy_tales.py에서 구조화된 동화 데이터 임포트
+sys.path.insert(0, os.path.dirname(__file__))
+from fairy_tales import FAIRY_TALES_STRUCTURED
 
-BOOKS = [
-    {
-        "id": uuid.uuid4(),
-        "title": "토끼와 거북이",
-        "description": "빠른 토끼와 느리지만 꾸준한 거북이의 경주 이야기입니다.",
-        "cover_image_url": "/static/covers/rabbit_turtle.svg",
-        "target_age_min": 5,
-        "target_age_max": 8,
-        "categories": ["동물", "우정"],
-        "author": "이솝",
-        "sections": [
+
+def _build_books() -> list[dict]:
+    """FAIRY_TALES_STRUCTURED → seed용 BOOKS 리스트 변환"""
+    category_meta = {
+        "토끼와_거북이": {"cover": "/static/covers/rabbit_turtle.svg", "author": "이솝", "age": (5, 8)},
+        "흥부와_놀부":   {"cover": "/static/covers/fallback.svg",       "author": "전래동화", "age": (6, 9)},
+        "콩쥐팥쥐":     {"cover": "/static/covers/fallback.svg",       "author": "전래동화", "age": (6, 9)},
+        "금도끼_은도끼": {"cover": "/static/covers/fallback.svg",       "author": "전래동화", "age": (5, 8)},
+        "심청전":       {"cover": "/static/covers/fallback.svg",       "author": "전래동화", "age": (7, 10)},
+        "단군신화":     {"cover": "/static/covers/fallback.svg",       "author": "전래동화", "age": (8, 11)},
+        "선녀와_나무꾼": {"cover": "/static/covers/fallback.svg",       "author": "전래동화", "age": (6, 9)},
+        "해님달님":     {"cover": "/static/covers/fallback.svg",       "author": "전래동화", "age": (5, 8)},
+    }
+
+    books = []
+    for tale in FAIRY_TALES_STRUCTURED:
+        tid = tale["tale_id"]
+        meta = category_meta.get(tid, {"cover": "/static/covers/fallback.svg", "author": "전래동화", "age": (6, 9)})
+        full_text = " ".join(
+            s for seg in tale["segments"] for s in seg["sentences"]
+        )
+        sections = [
             {
-                "order": 1,
-                "title": "출발",
-                "text": "어느 날 토끼와 거북이가 경주를 하기로 했습니다. 토끼는 자신만만하게 출발했습니다.",
-            },
-            {
-                "order": 2,
-                "title": "낮잠",
-                "text": "토끼는 너무 빠르게 달린 나머지 중간에 낮잠을 자기로 했습니다. 거북이는 쉬지 않고 천천히 걸었습니다.",
-            },
-            {
-                "order": 3,
-                "title": "결승",
-                "text": "거북이가 결승선에 먼저 도착했습니다. 잠에서 깬 토끼는 깜짝 놀랐습니다. 꾸준함이 중요하다는 것을 배웠습니다.",
-            },
-        ],
-    },
+                "order": seg["segment_id"],
+                "title": f"{tale['title']} {seg['segment_id']}부",
+                "text": " ".join(seg["sentences"]),
+            }
+            for seg in tale["segments"]
+        ]
+        books.append({
+            "id": uuid.uuid4(),
+            "title": tale["title"],
+            "description": full_text[:80] + "…",
+            "cover_image_url": meta["cover"],
+            "target_age_min": meta["age"][0],
+            "target_age_max": meta["age"][1],
+            "categories": [tale["category"]],
+            "author": meta["author"],
+            "sections": sections,
+        })
+    return books
+
+
+BOOKS = _build_books() + [
     {
         "id": uuid.uuid4(),
         "title": "혹부리 영감",

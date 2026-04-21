@@ -1,8 +1,11 @@
 """
 글로스 변환 파이프라인
 텍스트 → 토큰(글로스 후보) → Motion DB 조회 → MotionClip 리스트 반환
+
+형태소 분석: kiwipiepy (Java 불필요, 순수 Python)
+KSL 어순: 시간 > 장소 > 명사 > 부사 > 부정 > 서술어
 """
-import re
+from kiwipiepy import Kiwi
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,70 +17,67 @@ FALLBACK_GLOSS = "FALLBACK"
 FALLBACK_URL = "/static/motions/fallback.glb"
 FALLBACK_DURATION = 1.0
 
-# 제거할 문장부호
-_PUNCT_RE = re.compile(r"[.,!?。、「」『』\(\)\[\]《》〈〉""''…·\-–—]+")
+_kiwi = Kiwi()
 
-# 한국어 조사/어미 (긴 것부터 순서 중요)
-_JOSA = [
-    "에서는", "에서도", "에게서", "으로서", "로부터", "에서의", "에서가",
-    "에서를", "에게는", "에게도", "이라고", "라고는", "라고도", "이라는",
-    "라는것", "에서", "에게", "에는", "에도", "에를", "으로", "로는",
-    "로도", "로를", "라는", "이라", "라고", "이고", "이며", "이나",
-    "이랑", "이든", "이서", "이야", "이요", "이여", "이지", "이다",
-    "은가", "는가", "을까", "를까", "하며", "하고", "하는", "하여",
-    "했다", "했습", "한다", "합니", "하기", "하자", "해서", "하다",
-    "에서", "부터", "까지", "만을", "만은", "만이",
-    "를", "을", "은", "는", "이", "가", "의", "에", "와", "과",
-    "도", "만", "로", "으", "야", "아", "여", "랑", "든", "서",
-]
+# kiwipiepy POS prefix → 유효 품사
+_VALID_POS = {"NNG", "NNP", "VV", "VA", "MAG"}
 
-# 어미 패턴 (동사/형용사 어간 추출) — 긴 것부터 순서 중요
-_EOMI = [
-    # 6자+
-    "하였습니다", "이었습니다", "였습니다",
-    # 5자
-    "었습니다", "았습니다", "겠습니다", "했습니다",
-    "있습니다", "없습니다", "합니다", "됩니다",
-    "하여서", "되어서",
-    "하기로",
-    # 4자
-    "한다고", "하였다", "되었다",
-    "하기", "하고", "하자", "하며", "하여",
-    "하는", "되는", "있는", "없는",
-    "해서",
-    # 3자
-    "습니다", "ㅂ니다",
-    "었습", "았습", "겠습",
-    "었다", "았다", "겠다",
-    "한다", "했다",
-    "으며", "이며",
-    "에서", "에게", "으로", "로써",
-]
+_STOPWORDS = {
+    "하다", "이다", "있다", "되다", "않다", "없다", "같다",
+    "것", "수", "때", "중", "등", "위", "곳", "데",
+    "나", "너", "우리", "그", "이", "저",
+}
 
-
-def _strip_josa(word: str) -> str:
-    """단어에서 조사/어미를 제거하여 어간 추출"""
-    for eomi in _EOMI:
-        if word.endswith(eomi) and len(word) > len(eomi) + 1:
-            return word[: -len(eomi)]
-    for josa in _JOSA:
-        if word.endswith(josa) and len(word) > len(josa):
-            return word[: -len(josa)]
-    return word
+# KSL 어순 분류용 키워드
+_TIME_KEYWORDS = {
+    "옛날", "어느날", "봄", "여름", "가을", "겨울",
+    "아침", "저녁", "밤", "낮", "그때", "마지막",
+    "처음", "나중", "결국", "어느", "아주",
+}
+_PLACE_KEYWORDS = {
+    "산", "연못", "하늘", "마을", "집", "굴",
+    "세상", "결승선", "바다", "장", "수수밭",
+}
+_NEG_KEYWORDS = {"않다", "못하다", "아니다", "없다", "안"}
 
 
 def tokenize_text(text: str) -> list[str]:
     """
-    한국어 텍스트를 글로스 토큰 리스트로 변환.
-    문장부호 제거 + 공백 분리 + 조사/어미 제거.
+    한국어 텍스트 → KSL 어순 글로스 토큰 리스트.
+
+    kiwipiepy로 형태소 분석 후 KSL 어순으로 재배열:
+    시간 > 장소 > 명사(주어/목적어) > 부사 > 부정 > 서술어(동사/형용사)
+
+    기능어(조사, 어미 등)는 제거하고 내용어만 유지.
     """
-    cleaned = _PUNCT_RE.sub(" ", text)
-    raw_tokens = [t.strip() for t in cleaned.split() if t.strip()]
-    # 조사 제거
-    tokens = [_strip_josa(t) for t in raw_tokens]
-    # 빈 토큰 필터링
-    tokens = [t for t in tokens if t]
-    return tokens
+    result = _kiwi.analyze(text)
+    tokens = result[0][0]  # 최적 분석 결과
+
+    time_w, place_w, nouns, verbs, adjs, advs, negs = [], [], [], [], [], [], []
+
+    for token in tokens:
+        word = token.form
+        pos3 = token.tag[:3]  # e.g. 'NNG', 'VV-I' → 'VV-'[:3] = 'VV-' → use [:3]
+
+        if pos3 not in _VALID_POS or len(word) <= 1 or word in _STOPWORDS:
+            continue
+
+        if pos3 in ("NNG", "NNP"):
+            if word in _TIME_KEYWORDS:
+                time_w.append(word)
+            elif word in _PLACE_KEYWORDS:
+                place_w.append(word)
+            else:
+                nouns.append(word)
+        elif pos3 == "VV":
+            (negs if word in _NEG_KEYWORDS else verbs).append(word)
+        elif pos3 == "VA":
+            adjs.append(word)
+        elif pos3 == "MAG":
+            (negs if word in _NEG_KEYWORDS else advs).append(word)
+
+    # KSL 어순: 시간 > 장소 > 명사 > 부사 > 부정 > 동사 > 형용사
+    return time_w + place_w + nouns + advs + negs + verbs + adjs
 
 
 async def _fetch_motion_map(
