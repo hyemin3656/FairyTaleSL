@@ -28,7 +28,11 @@ class MotionClip(BaseModel):
     emotion_label: str
     blendshape_params: dict
     duration_sec: float
-    is_fallback: bool = False  # DB에 없어 FALLBACK 사용 여부
+    is_fallback: bool = False
+    fallback_type: str | None = None  # "decompose" | "text" | None
+    text_display: str | None = None
+    # 225차원 keypoint 벡터: lhand(63) + rhand(63) + pose(99)
+    keypoints: list[float] | None = None
 
 
 class GlossConvertResponse(BaseModel):

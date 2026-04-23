@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f7971e"/>
+      <stop offset="100%" style="stop-color:#ffd200"/>
+    </linearGradient>
+    <linearGradient id="night" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1a237e"/>
+      <stop offset="50%" style="stop-color:#311b92"/>
+      <stop offset="100%" style="stop-color:#4a148c"/>
+    </linearGradient>
+  </defs>
+  <!-- 낮/밤 분할 배경 -->
+  <rect width="200" height="300" fill="url(#bg)"/>
+  <rect x="200" y="0" width="200" height="300" fill="url(#night)"/>
+  <!-- 분할선 -->
+  <line x1="200" y1="0" x2="200" y2="300" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+  <!-- 해 -->
+  <circle cx="100" cy="100" r="50" fill="#FFD700"/>
+  <circle cx="100" cy="100" r="38" fill="#FFEB3B"/>
+  <!-- 햇살 -->
+  <line x1="100" y1="35" x2="100" y2="15" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+  <line x1="100" y1="165" x2="100" y2="185" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+  <line x1="35" y1="100" x2="15" y2="100" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+  <line x1="165" y1="100" x2="185" y2="100" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+  <line x1="55" y1="55" x2="41" y2="41" stroke="#FFD700" stroke-width="4" stroke-linecap="round"/>
+  <line x1="145" y1="55" x2="159" y2="41" stroke="#FFD700" stroke-width="4" stroke-linecap="round"/>
+  <line x1="55" y1="145" x2="41" y2="159" stroke="#FFD700" stroke-width="4" stroke-linecap="round"/>
+  <line x1="145" y1="145" x2="159" y2="159" stroke="#FFD700" stroke-width="4" stroke-linecap="round"/>
+  <!-- 달 -->
+  <circle cx="300" cy="95" r="45" fill="#FFFDE7"/>
+  <circle cx="318" cy="82" r="36" fill="#311b92"/>
+  <!-- 별 -->
+  <circle cx="230" cy="50" r="3" fill="rgba(255,255,200,0.9)"/>
+  <circle cx="260" cy="30" r="2" fill="rgba(255,255,200,0.8)"/>
+  <circle cx="350" cy="55" r="4" fill="rgba(255,255,200,0.9)"/>
+  <circle cx="375" cy="25" r="2" fill="rgba(255,255,200,0.7)"/>
+  <circle cx="215" cy="80" r="2" fill="rgba(255,255,200,0.7)"/>
+  <circle cx="390" cy="75" r="3" fill="rgba(255,255,200,0.8)"/>
+  <!-- 호랑이 -->
+  <ellipse cx="200" cy="240" rx="70" ry="35" fill="rgba(200,120,0,0.85)"/>
+  <circle cx="175" cy="215" r="22" fill="rgba(200,120,0,0.85)"/>
+  <!-- 귀 -->
+  <polygon points="162,198 155,182 172,193" fill="rgba(200,120,0,0.85)"/>
+  <polygon points="188,196 195,181 198,195" fill="rgba(200,120,0,0.85)"/>
+  <!-- 줄무늬 -->
+  <line x1="172" y1="220" x2="165" y2="248" stroke="rgba(100,55,0,0.5)" stroke-width="4"/>
+  <line x1="186" y1="222" x2="184" y2="250" stroke="rgba(100,55,0,0.5)" stroke-width="4"/>
+  <line x1="200" y1="220" x2="204" y2="248" stroke="rgba(100,55,0,0.5)" stroke-width="4"/>
+  <!-- 눈 -->
+  <circle cx="168" cy="212" r="4" fill="rgba(50,30,0,0.9)"/>
+  <circle cx="182" cy="211" r="4" fill="rgba(50,30,0,0.9)"/>
+  <!-- 수수 (오른쪽) -->
+  <rect x="340" y="180" width="8" height="100" fill="rgba(180,120,40,0.7)" rx="3"/>
+  <ellipse cx="344" cy="185" rx="15" ry="30" fill="rgba(160,100,30,0.7)"/>
+  <rect x="310" y="195" width="7" height="85" fill="rgba(180,120,40,0.65)" rx="3"/>
+  <ellipse cx="313" cy="200" rx="13" ry="26" fill="rgba(160,100,30,0.65)"/>
+</svg>

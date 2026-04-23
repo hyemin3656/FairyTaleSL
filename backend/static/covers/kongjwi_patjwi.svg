@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb"/>
+      <stop offset="100%" style="stop-color:#f5576c"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg)"/>
+  <!-- 달 -->
+  <circle cx="320" cy="60" r="40" fill="rgba(255,255,200,0.9)"/>
+  <circle cx="335" cy="50" r="32" fill="#f5576c"/>
+  <!-- 연꽃 -->
+  <ellipse cx="200" cy="260" rx="160" ry="25" fill="rgba(0,80,60,0.4)"/>
+  <!-- 연잎 -->
+  <ellipse cx="130" cy="248" rx="55" ry="20" fill="#2E7D32" transform="rotate(-15,130,248)"/>
+  <ellipse cx="270" cy="248" rx="55" ry="20" fill="#388E3C" transform="rotate(15,270,248)"/>
+  <!-- 연꽃 중앙 -->
+  <ellipse cx="200" cy="230" rx="20" ry="28" fill="#FFE082"/>
+  <ellipse cx="175" cy="215" rx="16" ry="35" fill="#F48FB1" transform="rotate(-20,175,215)"/>
+  <ellipse cx="225" cy="215" rx="16" ry="35" fill="#F48FB1" transform="rotate(20,225,215)"/>
+  <ellipse cx="200" cy="205" rx="16" ry="35" fill="#FCE4EC"/>
+  <ellipse cx="155" cy="225" rx="13" ry="30" fill="#F8BBD9" transform="rotate(-35,155,225)"/>
+  <ellipse cx="245" cy="225" rx="13" ry="30" fill="#F8BBD9" transform="rotate(35,245,225)"/>
+  <!-- 별 -->
+  <circle cx="80" cy="70" r="4" fill="rgba(255,255,255,0.8)"/>
+  <circle cx="150" cy="40" r="3" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="50" cy="120" r="2" fill="rgba(255,255,255,0.6)"/>
+</svg>

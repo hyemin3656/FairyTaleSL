@@ -1,8 +1,6 @@
 /**
  * useGlossWS — WebSocket 기반 글로스 스트리밍 훅
- *
- * 백엔드 WS /ws/gloss 에 연결, 텍스트를 전송하면
- * 글로스별 MotionClip을 실시간으로 수신한다.
+ * pause / resume 지원
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MotionClip } from "../api/gloss";
@@ -16,6 +14,7 @@ export interface GlossWSState {
   total: number;
   tokens: string[];
   errorMsg: string;
+  paused: boolean;
 }
 
 const INITIAL: GlossWSState = {
@@ -25,19 +24,19 @@ const INITIAL: GlossWSState = {
   total: 0,
   tokens: [],
   errorMsg: "",
+  paused: false,
 };
 
 export function useGlossWS() {
   const wsRef = useRef<WebSocket | null>(null);
   const [state, setState] = useState<GlossWSState>(INITIAL);
 
-  // WS URL: Vite proxy가 /ws → ws://localhost:8000 으로 포워딩
   const WS_URL = `ws://${window.location.host}/ws/gloss`;
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    setState((s) => ({ ...s, status: "connecting" }));
+    setState((s) => ({ ...s, status: "connecting", paused: false }));
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
@@ -54,6 +53,7 @@ export function useGlossWS() {
             tokens: msg.tokens,
             currentIndex: -1,
             currentClip: null,
+            paused: false,
           }));
           break;
         case "clip":
@@ -64,7 +64,13 @@ export function useGlossWS() {
           }));
           break;
         case "done":
-          setState((s) => ({ ...s, status: "done", currentClip: null }));
+          setState((s) => ({ ...s, status: "done", currentClip: null, paused: false }));
+          break;
+        case "paused":
+          setState((s) => ({ ...s, paused: true }));
+          break;
+        case "resumed":
+          setState((s) => ({ ...s, paused: false }));
           break;
         case "error":
           setState((s) => ({ ...s, status: "error", errorMsg: msg.message }));
@@ -78,12 +84,9 @@ export function useGlossWS() {
     ws.onclose = () => setState((s) => ({ ...s, status: "closed" }));
   }, [WS_URL]);
 
-  // 마운트 시 자동 연결
   useEffect(() => {
     connect();
-    return () => {
-      wsRef.current?.close();
-    };
+    return () => { wsRef.current?.close(); };
   }, [connect]);
 
   const sendText = useCallback((text: string) => {
@@ -99,13 +102,29 @@ export function useGlossWS() {
       currentClip: null,
       tokens: [],
       errorMsg: "",
+      paused: false,
     }));
     ws.send(JSON.stringify({ text }));
   }, []);
 
-  const reset = useCallback(() => {
-    setState((s) => ({ ...s, status: "idle", currentClip: null, currentIndex: -1, tokens: [] }));
+  const pause = useCallback(() => {
+    wsRef.current?.send(JSON.stringify({ type: "pause" }));
   }, []);
 
-  return { ...state, sendText, reset, reconnect: connect };
+  const resume = useCallback(() => {
+    wsRef.current?.send(JSON.stringify({ type: "resume" }));
+  }, []);
+
+  const reset = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      status: "idle",
+      currentClip: null,
+      currentIndex: -1,
+      tokens: [],
+      paused: false,
+    }));
+  }, []);
+
+  return { ...state, sendText, pause, resume, reset, reconnect: connect };
 }

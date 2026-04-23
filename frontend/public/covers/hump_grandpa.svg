@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="nightSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0D1B3E;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1A237E;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="moonGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:#FFFDE7;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#FFF9C4;stop-opacity:0.8"/>
+    </linearGradient>
+    <radialGradient id="fireGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#FF5722;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 밤 하늘 배경 -->
+  <rect width="400" height="300" fill="url(#nightSky)"/>
+
+  <!-- 별들 -->
+  <circle cx="30" cy="30" r="1.5" fill="white" opacity="0.9"/>
+  <circle cx="70" cy="20" r="1" fill="white" opacity="0.8"/>
+  <circle cx="120" cy="40" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="180" cy="15" r="2" fill="white" opacity="0.9"/>
+  <circle cx="240" cy="35" r="1" fill="white" opacity="0.8"/>
+  <circle cx="300" cy="20" r="1.5" fill="white" opacity="0.9"/>
+  <circle cx="350" cy="45" r="1" fill="white" opacity="0.7"/>
+  <circle cx="380" cy="25" r="2" fill="white" opacity="0.8"/>
+  <circle cx="50" cy="70" r="1" fill="white" opacity="0.6"/>
+  <circle cx="160" cy="60" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="320" cy="65" r="1" fill="white" opacity="0.7"/>
+
+  <!-- 달 -->
+  <circle cx="340" cy="60" r="35" fill="#FFFDE7" opacity="0.95"/>
+  <circle cx="328" cy="50" r="30" fill="#0D1B3E" opacity="0.15"/>
+  <!-- 달 크레이터 -->
+  <circle cx="335" cy="52" r="5" fill="#FFF9C4" opacity="0.4"/>
+  <circle cx="352" cy="70" r="4" fill="#FFF9C4" opacity="0.3"/>
+  <circle cx="325" cy="72" r="3" fill="#FFF9C4" opacity="0.4"/>
+
+  <!-- 숲 (실루엣) -->
+  <polygon points="0,280 0,160 25,120 50,160 75,100 100,150 125,90 150,155 175,110 200,165 225,95 250,155 275,115 300,160 325,105 350,160 375,120 400,155 400,280" fill="#0A2E0A"/>
+
+  <!-- 모닥불 빛 -->
+  <ellipse cx="195" cy="250" rx="60" ry="20" fill="url(#fireGlow)" opacity="0.6"/>
+
+  <!-- 모닥불 -->
+  <ellipse cx="195" cy="255" rx="20" ry="8" fill="#5D4037"/>
+  <polygon points="185,255 190,225 195,240 200,218 205,240 210,255" fill="#FF5722"/>
+  <polygon points="188,255 192,232 196,244 200,228 204,244 208,255" fill="#FF9800"/>
+  <polygon points="191,255 194,238 197,248 200,232 203,248 206,255" fill="#FFCC02"/>
+
+  <!-- 할아버지 실루엣 -->
+  <!-- 몸 -->
+  <ellipse cx="130" cy="235" rx="22" ry="28" fill="#1A237E" opacity="0.9"/>
+  <!-- 옷 주름 -->
+  <path d="M115,220 Q130,215 145,220" stroke="#0D1B3E" stroke-width="1.5" fill="none"/>
+  <path d="M112,230 Q130,225 148,230" stroke="#0D1B3E" stroke-width="1.5" fill="none"/>
+  <!-- 머리 -->
+  <circle cx="130" cy="205" r="16" fill="#C8A97E"/>
+  <!-- 혹 (뺨의 큰 혹) -->
+  <ellipse cx="142" cy="210" rx="11" ry="9" fill="#C8A97E" stroke="#A0785A" stroke-width="1.5"/>
+  <!-- 수염 -->
+  <path d="M122,214 Q120,220 118,218" stroke="#DDD" stroke-width="1.5" fill="none"/>
+  <path d="M125,216 Q123,223 120,222" stroke="#DDD" stroke-width="1.5" fill="none"/>
+  <!-- 모자 -->
+  <rect x="118" y="190" width="28" height="8" rx="2" fill="#4E342E"/>
+  <ellipse cx="132" cy="190" rx="18" ry="4" fill="#5D4037"/>
+  <rect x="122" y="175" width="20" height="16" rx="3" fill="#5D4037"/>
+  <!-- 지팡이 -->
+  <path d="M110,235 Q105,250 108,265" stroke="#795548" stroke-width="3" fill="none"/>
+  <path d="M108,265 Q106,270 112,268" stroke="#795548" stroke-width="3" fill="none"/>
+
+  <!-- 도깨비들 실루엣 -->
+  <!-- 도깨비 1 -->
+  <ellipse cx="250" cy="240" rx="16" ry="22" fill="#1A237E" opacity="0.85"/>
+  <circle cx="250" cy="218" r="13" fill="#283593" opacity="0.85"/>
+  <!-- 뿔 -->
+  <polygon points="245,207 243,195 248,208" fill="#283593" opacity="0.85"/>
+  <polygon points="255,207 257,195 252,208" fill="#283593" opacity="0.85"/>
+  <!-- 눈 (빛나는) -->
+  <circle cx="246" cy="218" r="3" fill="#FF9800" opacity="0.9"/>
+  <circle cx="254" cy="218" r="3" fill="#FF9800" opacity="0.9"/>
+
+  <!-- 도깨비 2 -->
+  <ellipse cx="290" cy="245" rx="14" ry="20" fill="#1A237E" opacity="0.8"/>
+  <circle cx="290" cy="226" r="11" fill="#283593" opacity="0.8"/>
+  <polygon points="286,216 284,205 289,217" fill="#283593" opacity="0.8"/>
+  <polygon points="294,216 296,205 291,217" fill="#283593" opacity="0.8"/>
+  <circle cx="287" cy="226" r="2.5" fill="#FFCC02" opacity="0.9"/>
+  <circle cx="293" cy="226" r="2.5" fill="#FFCC02" opacity="0.9"/>
+
+  <!-- 춤추는 음표 -->
+  <text x="162" y="195" font-family="Arial" font-size="18" fill="#FFD54F" opacity="0.8">♪</text>
+  <text x="175" y="180" font-family="Arial" font-size="14" fill="#FFD54F" opacity="0.7">♫</text>
+
+  <!-- 제목 -->
+  <rect x="0" y="0" width="400" height="52" fill="rgba(0,0,0,0.5)"/>
+  <text x="200" y="33" font-family="'Apple SD Gothic Neo', Arial" font-size="22" font-weight="bold" fill="#FFD54F" text-anchor="middle">혹부리 영감</text>
+</svg>

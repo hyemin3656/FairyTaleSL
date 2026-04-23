@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f9844a"/>
+      <stop offset="100%" style="stop-color:#fee140"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg)"/>
+  <!-- 눈 배경 -->
+  <ellipse cx="200" cy="290" rx="220" ry="60" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="80" cy="120" r="8" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="150" cy="60" r="5" fill="rgba(255,255,255,0.6)"/>
+  <circle cx="320" cy="90" r="7" fill="rgba(255,255,255,0.65)"/>
+  <circle cx="370" cy="50" r="4" fill="rgba(255,255,255,0.6)"/>
+  <!-- 솥 -->
+  <ellipse cx="130" cy="235" rx="55" ry="15" fill="rgba(40,30,20,0.8)"/>
+  <path d="M75 235 Q75 200 90 190 L170 190 Q185 200 185 235Z" fill="rgba(50,40,25,0.85)"/>
+  <ellipse cx="130" cy="190" rx="45" ry="12" fill="rgba(60,50,30,0.9)"/>
+  <!-- 팥죽 (빨간색) -->
+  <ellipse cx="130" cy="190" rx="38" ry="9" fill="rgba(180,30,30,0.9)"/>
+  <!-- 김 -->
+  <path d="M110 182 Q108 165 112 155" stroke="rgba(255,255,255,0.6)" stroke-width="3" fill="none"/>
+  <path d="M130 180 Q128 163 132 150" stroke="rgba(255,255,255,0.5)" stroke-width="3" fill="none"/>
+  <path d="M150 182 Q148 165 152 155" stroke="rgba(255,255,255,0.6)" stroke-width="3" fill="none"/>
+  <!-- 호랑이 -->
+  <ellipse cx="290" cy="230" rx="65" ry="40" fill="rgba(200,120,0,0.9)"/>
+  <circle cx="268" cy="198" r="25" fill="rgba(200,120,0,0.9)"/>
+  <polygon points="255,178 248,160 266,175" fill="rgba(200,120,0,0.9)"/>
+  <polygon points="281,176 285,158 292,174" fill="rgba(200,120,0,0.9)"/>
+  <!-- 줄무늬 -->
+  <line x1="266" y1="205" x2="258" y2="235" stroke="rgba(100,55,0,0.5)" stroke-width="4"/>
+  <line x1="280" y1="207" x2="278" y2="238" stroke="rgba(100,55,0,0.5)" stroke-width="4"/>
+  <line x1="295" y1="208" x2="298" y2="237" stroke="rgba(100,55,0,0.5)" stroke-width="4"/>
+  <!-- 눈 -->
+  <circle cx="260" cy="195" r="5" fill="rgba(30,20,0,0.9)"/>
+  <circle cx="276" cy="194" r="5" fill="rgba(30,20,0,0.9)"/>
+  <!-- 입 -->
+  <path d="M264 206 Q268 210 272 206" stroke="rgba(30,20,0,0.7)" stroke-width="2" fill="none"/>
+</svg>

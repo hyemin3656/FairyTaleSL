@@ -20,8 +20,8 @@ export default function BookReadPage() {
   const [showSummary, setShowSummary] = useState(false);
 
   const {
-    status, currentClip, currentIndex, total, tokens, errorMsg,
-    sendText, reset, reconnect,
+    status, currentClip, currentIndex, total, tokens, errorMsg, paused,
+    sendText, reset, reconnect, pause, resume,
   } = useGlossWS();
 
   useEffect(() => {
@@ -199,14 +199,23 @@ export default function BookReadPage() {
             <button
               className="btn-play"
               onClick={handlePlay}
-              disabled={!canPlay && !wsError}
+              disabled={!canPlay && !wsError && !isPlaying}
             >
-              {isPlaying
+              {isPlaying && !paused
                 ? "▶ 재생 중…"
                 : status === "connecting"
                   ? "연결 중…"
                   : "▶ 수어로 보기"}
             </button>
+
+            {isPlaying && (
+              <button
+                className="btn-pause"
+                onClick={paused ? resume : pause}
+              >
+                {paused ? "▶ 재개" : "⏸ 일시정지"}
+              </button>
+            )}
 
             {(status === "done" || canPlay) && tokens.length > 0 && (
               <button
