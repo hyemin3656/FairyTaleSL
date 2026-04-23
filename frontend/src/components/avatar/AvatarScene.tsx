@@ -1,139 +1,210 @@
-/**
- * AvatarScene — React Three Fiber 기반 3D 아바타 씬
- *
- * 더미 GLTF 단계에서는 절차적 인체형 메시를 사용.
- * 실제 아바타 GLB가 준비되면 <useGLTF> 로 교체 예정.
- *
- * 감정(emotion_label)에 따라 몸통 색상 변경,
- * 클립 전환 시 바운스 애니메이션 재생.
- */
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows } from "@react-three/drei";
+import { OrbitControls, Environment } from "@react-three/drei";
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import {
+  VRM,
+  VRMLoaderPlugin,
+  VRMUtils,
+  VRMHumanBoneName,
+  VRMExpressionPresetName,
+} from "@pixiv/three-vrm";
 import type { MotionClip } from "../../api/gloss";
 
-// ── 감정 → 색상 매핑 ──────────────────────────────────────────
-const EMOTION_COLORS: Record<string, string> = {
-  neutral:   "#6366f1",   // 보라
-  happy:     "#f59e0b",   // 노랑
-  sad:       "#60a5fa",   // 파랑
-  angry:     "#ef4444",   // 빨강
-  surprised: "#10b981",   // 초록
-};
-
-function emotionColor(label: string): string {
-  return EMOTION_COLORS[label] ?? EMOTION_COLORS.neutral;
+// ── keypoint 파싱 ─────────────────────────────────────────────
+function parseKeypoints(kp: number[]) {
+  const v3 = (b: number) => new THREE.Vector3(kp[b], kp[b + 1], kp[b + 2]);
+  return {
+    lhand: Array.from({ length: 21 }, (_, i) => v3(i * 3)),
+    rhand: Array.from({ length: 21 }, (_, i) => v3(63 + i * 3)),
+  };
 }
 
-// ── 절차적 인체형 아바타 ──────────────────────────────────────
-interface AvatarMeshProps {
+const isValidHand = (pts: THREE.Vector3[]) =>
+  pts.some(p => Math.abs(p.x - 0.5) + Math.abs(p.y - 0.5) > 0.05);
+
+// ── 감정 → VRM 표정 매핑 ─────────────────────────────────────
+const EMOTION_TO_VRM: Partial<Record<string, VRMExpressionPresetName>> = {
+  happy:     VRMExpressionPresetName.Happy,
+  sad:       VRMExpressionPresetName.Sad,
+  angry:     VRMExpressionPresetName.Angry,
+  surprised: VRMExpressionPresetName.Surprised,
+  relaxed:   VRMExpressionPresetName.Relaxed,
+};
+
+// ── VRM 손가락 bone 매핑 ──────────────────────────────────────
+const FINGER_MAP: { side: "Left" | "Right"; vrm: string[]; mpStart: number }[] = [];
+
+const FINGER_NAMES = [
+  { name: "Thumb",  start: 1  },
+  { name: "Index",  start: 5  },
+  { name: "Middle", start: 9  },
+  { name: "Ring",   start: 13 },
+  { name: "Little", start: 17 },
+];
+const JOINT_SUFFIX = ["Proximal", "Intermediate", "Distal"];
+
+for (const side of ["Left", "Right"] as const) {
+  for (const { name, start } of FINGER_NAMES) {
+    FINGER_MAP.push({
+      side,
+      vrm: JOINT_SUFFIX.map(s => `${side.toLowerCase()}${name}${s}`),
+      mpStart: start,
+    });
+  }
+}
+
+// ── VRM 아바타 컴포넌트 ───────────────────────────────────────
+interface VRMAvatarProps {
   clip: MotionClip | null;
   playing: boolean;
 }
 
-function AvatarMesh({ clip, playing }: AvatarMeshProps) {
-  const groupRef  = useRef<THREE.Group>(null!);
-  const bodyRef   = useRef<THREE.Mesh>(null!);
-  const headRef   = useRef<THREE.Mesh>(null!);
-  const lArmRef   = useRef<THREE.Mesh>(null!);
-  const rArmRef   = useRef<THREE.Mesh>(null!);
+function VRMAvatar({ clip, playing }: VRMAvatarProps) {
+  const [vrm, setVrm] = useState<VRM | null>(null);
 
-  // 클립 바뀔 때 bounce 트리거
-  const bounceRef = useRef(0);
   useEffect(() => {
-    if (clip) bounceRef.current = 1;
-  }, [clip]);
-
-  const color = emotionColor(clip?.emotion_label ?? "neutral");
-  const matColor = new THREE.Color(color);
+    const loader = new GLTFLoader();
+    loader.register(parser => new VRMLoaderPlugin(parser));
+    loader.load("/avatar.glb", gltf => {
+      const v = gltf.userData.vrm as VRM | undefined;
+      if (!v) return;
+      VRMUtils.removeUnnecessaryVertices(v.scene);
+      VRMUtils.combineSkeletons(v.scene);
+      v.scene.traverse(obj => { obj.frustumCulled = false; });
+      setVrm(v);
+    });
+  }, []);
 
   useFrame((_, delta) => {
-    if (!groupRef.current) return;
+    if (!vrm) return;
 
-    // 상하 부유
-    groupRef.current.position.y =
-      Math.sin(Date.now() * 0.002) * 0.05;
+    const hum = vrm.humanoid;
+    const expr = vrm.expressionManager;
+    const sp = playing ? 0.25 : 0.08;
 
-    // 바운스 애니메이션
-    if (bounceRef.current > 0) {
-      bounceRef.current = Math.max(0, bounceRef.current - delta * 3);
-      const scale = 1 + Math.sin(bounceRef.current * Math.PI) * 0.12;
-      groupRef.current.scale.setScalar(scale);
+    // ── 표정 ─────────────────────────────────────────────────
+    const allPresets = [
+      VRMExpressionPresetName.Happy,
+      VRMExpressionPresetName.Sad,
+      VRMExpressionPresetName.Angry,
+      VRMExpressionPresetName.Surprised,
+      VRMExpressionPresetName.Relaxed,
+    ];
+    if (expr) {
+      const target = clip ? EMOTION_TO_VRM[clip.emotion_label] : undefined;
+      for (const p of allPresets) {
+        const current = expr.getValue(p) ?? 0;
+        const goal = p === target ? 0.85 : 0;
+        expr.setValue(p, THREE.MathUtils.lerp(current, goal, sp));
+      }
+    }
+
+    const lArm  = hum.getNormalizedBoneNode(VRMHumanBoneName.LeftUpperArm);
+    const rArm  = hum.getNormalizedBoneNode(VRMHumanBoneName.RightUpperArm);
+    const lFore = hum.getNormalizedBoneNode(VRMHumanBoneName.LeftLowerArm);
+    const rFore = hum.getNormalizedBoneNode(VRMHumanBoneName.RightLowerArm);
+
+    // ── 대기 자세: 수어 준비 자세 ─────────────────────────────
+    if (!playing || !clip?.keypoints || clip.keypoints.length !== 225) {
+      const idle = 0.06;
+      // 대기: 차렷 자세 (z 양수=왼팔DOWN, z 음수=오른팔DOWN)
+      if (lArm) {
+        lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, 0.1, idle);
+        lArm.rotation.y = THREE.MathUtils.lerp(lArm.rotation.y, 0,   idle);
+        lArm.rotation.z = THREE.MathUtils.lerp(lArm.rotation.z, 1.5, idle);
+      }
+      if (rArm) {
+        rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, 0.1, idle);
+        rArm.rotation.y = THREE.MathUtils.lerp(rArm.rotation.y, 0,   idle);
+        rArm.rotation.z = THREE.MathUtils.lerp(rArm.rotation.z, -1.5, idle);
+      }
+      if (lFore) { lFore.rotation.x = THREE.MathUtils.lerp(lFore.rotation.x, 0.1, idle); lFore.rotation.y = 0; lFore.rotation.z = 0; }
+      if (rFore) { rFore.rotation.x = THREE.MathUtils.lerp(rFore.rotation.x, 0.1, idle); rFore.rotation.y = 0; rFore.rotation.z = 0; }
     } else {
-      groupRef.current.scale.setScalar(1);
+      const { lhand, rhand } = parseKeypoints(clip.keypoints);
+
+      // ── 팔: 손목(wrist) 위치로 구동 ────────────────────────
+      const driveArm = (
+        armName: VRMHumanBoneName,
+        foreName: VRMHumanBoneName,
+        wrist: THREE.Vector3,
+        isLeft: boolean,
+      ) => {
+        const armBone = hum.getNormalizedBoneNode(armName);
+        const foreBone = hum.getNormalizedBoneNode(foreName);
+        if (!armBone) return;
+
+        // T-포즈 팔 방향: 왼팔=-X, 오른팔=+X
+        const signX = isLeft ? -1 : 1;
+        const restDir = new THREE.Vector3(signX, 0, 0);
+
+        // wrist.y: 0=화면위(높은자세), 1=화면아래(낮은자세)
+        // vy: 손이 높을수록 팔도 올라감 (수어 중 대부분 가슴~어깨 높이)
+        const vy = THREE.MathUtils.clamp((0.55 - wrist.y) * 0.9, -0.1, 0.45);
+
+        // 위팔: 약간 바깥(signX)+아래, 앞으로 → 팔꿈치가 몸 앞-아래에 위치
+        const armTarget = new THREE.Vector3(signX * 0.3, -0.25 + vy * 0.8, -0.8).normalize();
+        armBone.quaternion.slerp(
+          new THREE.Quaternion().setFromUnitVectors(restDir, armTarget),
+          sp
+        );
+
+        if (foreBone) {
+          // 아래팔: 앞으로+위로, 약간 안쪽(signX * 0.05) → 교차 없이 자연스러운 굽힘
+          const foreTarget = new THREE.Vector3(signX * 0.05, 0.25 + vy * 0.5, -0.9).normalize();
+          foreBone.quaternion.slerp(
+            new THREE.Quaternion().setFromUnitVectors(restDir, foreTarget),
+            sp
+          );
+        }
+      };
+
+      if (isValidHand(lhand)) driveArm(VRMHumanBoneName.LeftUpperArm,  VRMHumanBoneName.LeftLowerArm,  lhand[0], true);
+      if (isValidHand(rhand)) driveArm(VRMHumanBoneName.RightUpperArm, VRMHumanBoneName.RightLowerArm, rhand[0], false);
+
+      // ── 손가락 ──────────────────────────────────────────────
+      const applyFingers = (hand: THREE.Vector3[], side: "Left" | "Right") => {
+        const isLeft = side === "Left";
+        const fingers = FINGER_MAP.filter(f => f.side === side);
+        for (const { vrm: boneNames, mpStart } of fingers) {
+          for (let j = 0; j < 3; j++) {
+            const boneName = boneNames[j] as VRMHumanBoneName;
+            const bone = hum.getNormalizedBoneNode(boneName);
+            if (!bone) continue;
+            const a = hand[mpStart + j];
+            const b = hand[mpStart + j + 1];
+            if (!a || !b) continue;
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const segLen = Math.sqrt(dx * dx + dy * dy) || 0.001;
+            const curl = THREE.MathUtils.clamp(dy / segLen * 1.2, -0.2, 1.4);
+            const signZ = isLeft ? 1 : -1;
+            bone.rotation.z = THREE.MathUtils.lerp(bone.rotation.z, curl * signZ, sp);
+          }
+        }
+      };
+
+      if (isValidHand(lhand)) applyFingers(lhand, "Left");
+      if (isValidHand(rhand)) applyFingers(rhand, "Right");
     }
 
-    // 팔 흔들기 (재생 중)
-    if (playing) {
-      const swing = Math.sin(Date.now() * 0.004) * 0.6;
-      if (lArmRef.current) lArmRef.current.rotation.z =  swing + 0.3;
-      if (rArmRef.current) rArmRef.current.rotation.z = -swing - 0.3;
-    } else {
-      if (lArmRef.current) lArmRef.current.rotation.z =  0.3;
-      if (rArmRef.current) rArmRef.current.rotation.z = -0.3;
-    }
-
-    // mouthSmile → 머리 스케일 Y 미세 변화 (블렌드셰이프 시뮬)
-    const smile = clip?.blendshape_params?.mouthSmile ?? 0;
-    if (headRef.current) {
-      headRef.current.scale.y = 1 + smile * 0.08;
-    }
+    // bone 조작 완료 후 VRM 업데이트 (항상 마지막에 호출)
+    vrm.update(delta);
   });
 
+  if (!vrm) return null;
   return (
-    <group ref={groupRef}>
-      {/* 몸통 */}
-      <mesh ref={bodyRef} position={[0, 0, 0]} castShadow>
-        <boxGeometry args={[0.5, 0.7, 0.25]} />
-        <meshStandardMaterial color={matColor} roughness={0.4} metalness={0.1} />
-      </mesh>
-
-      {/* 머리 */}
-      <mesh ref={headRef} position={[0, 0.65, 0]} castShadow>
-        <sphereGeometry args={[0.22, 32, 32]} />
-        <meshStandardMaterial color={matColor} roughness={0.4} metalness={0.1} />
-      </mesh>
-
-      {/* 눈 (왼) */}
-      <mesh position={[-0.08, 0.68, 0.2]}>
-        <sphereGeometry args={[0.035, 16, 16]} />
-        <meshStandardMaterial color="#1e1b4b" />
-      </mesh>
-      {/* 눈 (오) */}
-      <mesh position={[0.08, 0.68, 0.2]}>
-        <sphereGeometry args={[0.035, 16, 16]} />
-        <meshStandardMaterial color="#1e1b4b" />
-      </mesh>
-
-      {/* 왼팔 */}
-      <mesh ref={lArmRef} position={[-0.35, 0.05, 0]} rotation={[0, 0, 0.3]} castShadow>
-        <capsuleGeometry args={[0.07, 0.45, 8, 16]} />
-        <meshStandardMaterial color={matColor} roughness={0.5} />
-      </mesh>
-
-      {/* 오른팔 */}
-      <mesh ref={rArmRef} position={[0.35, 0.05, 0]} rotation={[0, 0, -0.3]} castShadow>
-        <capsuleGeometry args={[0.07, 0.45, 8, 16]} />
-        <meshStandardMaterial color={matColor} roughness={0.5} />
-      </mesh>
-
-      {/* 왼다리 */}
-      <mesh position={[-0.14, -0.6, 0]} castShadow>
-        <capsuleGeometry args={[0.08, 0.4, 8, 16]} />
-        <meshStandardMaterial color={matColor} roughness={0.5} />
-      </mesh>
-
-      {/* 오른다리 */}
-      <mesh position={[0.14, -0.6, 0]} castShadow>
-        <capsuleGeometry args={[0.08, 0.4, 8, 16]} />
-        <meshStandardMaterial color={matColor} roughness={0.5} />
-      </mesh>
-    </group>
+    <primitive
+      object={vrm.scene}
+      position={[0, -1.2, 0]}
+      rotation={[0, Math.PI, 0]}
+    />
   );
 }
 
-// ── 글로스 자막 오버레이 (DOM) ────────────────────────────────
+// ── 글로스 오버레이 ───────────────────────────────────────────
 interface GlossOverlayProps {
   clip: MotionClip | null;
   status: string;
@@ -184,40 +255,28 @@ export default function AvatarScene({
 
   return (
     <div className="avatar-scene-wrap">
-      {/* Three.js 캔버스 */}
       <Canvas
-        camera={{ position: [0, 0.3, 2.2], fov: 45 }}
+        camera={{ position: [0, 0.3, 1.5], fov: 46 }}
         shadows
         style={{ background: "#0f0e1a", borderRadius: 12 }}
       >
-        <ambientLight intensity={0.6} />
-        <directionalLight
-          position={[3, 5, 3]}
-          intensity={1.2}
-          castShadow
-          shadow-mapSize={[1024, 1024]}
-        />
-        <pointLight position={[-2, 2, -2]} intensity={0.4} color="#a5b4fc" />
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[1, 3, 2]} intensity={1.4} castShadow />
+        <pointLight position={[-1, 2, 2]} intensity={0.5} color="#c4b5fd" />
 
-        <AvatarMesh clip={clip} playing={playing} />
-
-        <ContactShadows
-          position={[0, -1.05, 0]}
-          opacity={0.4}
-          scale={2}
-          blur={1.5}
-        />
+        <VRMAvatar clip={clip} playing={playing} />
         <Environment preset="city" />
+
         <OrbitControls
           enablePan={false}
-          minDistance={1.5}
-          maxDistance={4}
+          minDistance={1.2}
+          maxDistance={3}
           minPolarAngle={Math.PI / 4}
           maxPolarAngle={Math.PI / 1.8}
+          target={[0, 0.25, 0]}
         />
       </Canvas>
 
-      {/* 글로스 오버레이 (캔버스 위) */}
       <GlossOverlay
         clip={clip}
         status={status}
@@ -225,7 +284,6 @@ export default function AvatarScene({
         total={total}
       />
 
-      {/* 글로스 토큰 바 */}
       {tokens.length > 0 && (
         <div className="gloss-tokens">
           {tokens.map((t, i) => (

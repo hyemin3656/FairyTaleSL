@@ -5,6 +5,9 @@
 형태소 분석: kiwipiepy (Java 불필요, 순수 Python)
 KSL 어순: 시간 > 장소 > 명사 > 부사 > 부정 > 서술어
 """
+import json
+import numpy as np
+from pathlib import Path
 from kiwipiepy import Kiwi
 
 from sqlalchemy import select
@@ -16,6 +19,52 @@ from schemas.motion import MotionClip
 FALLBACK_GLOSS = "FALLBACK"
 FALLBACK_URL = "/static/motions/fallback.glb"
 FALLBACK_DURATION = 1.0
+
+# 글로스 fallback 맵 로드 (decompose / text)
+_GLOSS_LIST_PATH = Path(__file__).parent.parent.parent / \
+    "data_pipeline/sign_generation/data/gloss_list.json"
+
+def _load_fallback_map() -> dict[str, dict]:
+    try:
+        with open(_GLOSS_LIST_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        return {
+            g["gloss"]: {
+                "type": g.get("fallback_type"),
+                "glosses": g.get("fallback_glosses", []),
+            }
+            for g in data
+            if g.get("fallback_type")
+        }
+    except FileNotFoundError:
+        return {}
+
+_FALLBACK_MAP: dict[str, dict] = _load_fallback_map()
+
+
+def _resolve_path(path: str) -> Path | None:
+    p = Path(path)
+    if p.exists():
+        return p
+    if "data_pipeline" in str(p):
+        idx = str(p).find("data_pipeline")
+        dp = Path("/") / str(p)[idx:]
+        if dp.exists():
+            return dp
+    return None
+
+
+def _load_keypoints(keypoint_path: str | None) -> list[float] | None:
+    """keypoint 파일 로드 → 225차원 float 리스트 (npy 전용, json은 포맷 불일치로 skip)."""
+    if not keypoint_path:
+        return None
+    p = _resolve_path(keypoint_path)
+    if not p:
+        return None
+    if p.suffix == ".json":
+        return None  # AI Hub json은 165차원으로 포맷 불일치
+    arr = np.load(str(p), allow_pickle=True)
+    return arr.astype(float).tolist()
 
 _kiwi = Kiwi()
 
@@ -90,40 +139,90 @@ async def _fetch_motion_map(
     return {row.gloss: row for row in result.scalars().all()}
 
 
+def _expand_tokens(tokens: list[str]) -> list[str]:
+    """decompose fallback 적용: 토큰 → 대체 글로스로 확장."""
+    expanded = []
+    for token in tokens:
+        fb = _FALLBACK_MAP.get(token)
+        if fb and fb["type"] == "decompose" and fb["glosses"]:
+            expanded.extend(fb["glosses"])
+        else:
+            expanded.append(token)
+    return expanded
+
+
 async def resolve_motions(
     db: AsyncSession, tokens: list[str]
 ) -> list[MotionClip]:
     """
     토큰 리스트를 받아 각 토큰에 대응하는 MotionClip 리스트를 반환.
-    DB에 해당 글로스가 없으면 FALLBACK 클립 사용.
+
+    우선순위:
+    1. DB에 해당 글로스가 있으면 해당 클립 반환
+    2. decompose fallback: 등록된 대체 글로스 클립으로 교체
+    3. text fallback: gltf_clip_url 없이 text_display만 설정
+    4. 기본 FALLBACK 클립 사용
     """
-    motion_map = await _fetch_motion_map(db, tokens)
+    expanded = _expand_tokens(tokens)
+    motion_map = await _fetch_motion_map(db, expanded)
     fallback = motion_map.get(FALLBACK_GLOSS)
 
     clips: list[MotionClip] = []
     for token in tokens:
+        fb = _FALLBACK_MAP.get(token)
+
+        # 1. DB에 직접 등록된 글로스
         motion = motion_map.get(token)
         if motion:
-            clips.append(
-                MotionClip(
-                    gloss=motion.gloss,
-                    gltf_clip_url=motion.gltf_clip_url,
-                    emotion_label=motion.emotion_label,
-                    blendshape_params=motion.blendshape_params or {},
-                    duration_sec=motion.duration_sec,
-                    is_fallback=False,
-                )
-            )
+            clips.append(MotionClip(
+                gloss=motion.gloss,
+                gltf_clip_url=motion.gltf_clip_url,
+                emotion_label=motion.emotion_label,
+                blendshape_params=motion.blendshape_params or {},
+                duration_sec=motion.duration_sec,
+                is_fallback=False,
+                keypoints=_load_keypoints(motion.keypoint_path),
+            ))
+
+        # 2. decompose fallback
+        elif fb and fb["type"] == "decompose":
+            for alt_gloss in fb["glosses"]:
+                alt_motion = motion_map.get(alt_gloss)
+                if alt_motion:
+                    clips.append(MotionClip(
+                        gloss=token,
+                        gltf_clip_url=alt_motion.gltf_clip_url,
+                        emotion_label=alt_motion.emotion_label,
+                        blendshape_params=alt_motion.blendshape_params or {},
+                        duration_sec=alt_motion.duration_sec,
+                        is_fallback=True,
+                        fallback_type="decompose",
+                        keypoints=_load_keypoints(alt_motion.keypoint_path),
+                    ))
+
+        # 3. text fallback
+        elif fb and fb["type"] == "text":
+            clips.append(MotionClip(
+                gloss=token,
+                gltf_clip_url="",
+                emotion_label="neutral",
+                blendshape_params={},
+                duration_sec=FALLBACK_DURATION,
+                is_fallback=True,
+                fallback_type="text",
+                text_display=token,
+            ))
+
+        # 4. 기본 FALLBACK
         else:
-            clips.append(
-                MotionClip(
-                    gloss=token,
-                    gltf_clip_url=fallback.gltf_clip_url if fallback else FALLBACK_URL,
-                    emotion_label=fallback.emotion_label if fallback else "neutral",
-                    blendshape_params=fallback.blendshape_params or {} if fallback else {},
-                    duration_sec=fallback.duration_sec if fallback else FALLBACK_DURATION,
-                    is_fallback=True,
-                )
-            )
+            clips.append(MotionClip(
+                gloss=token,
+                gltf_clip_url=fallback.gltf_clip_url if fallback else FALLBACK_URL,
+                emotion_label=fallback.emotion_label if fallback else "neutral",
+                blendshape_params=fallback.blendshape_params or {} if fallback else {},
+                duration_sec=fallback.duration_sec if fallback else FALLBACK_DURATION,
+                is_fallback=True,
+                fallback_type=None,
+            ))
 
     return clips
