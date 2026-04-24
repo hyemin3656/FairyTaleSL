@@ -28,6 +28,10 @@ class GlossMotion(Base):
     blendshape_params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     duration_sec: Mapped[float] = mapped_column(Float, default=1.0)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    keypoint_path:   Mapped[str | None] = mapped_column(String(500), nullable=True)
+    video_path:      Mapped[str | None] = mapped_column(String(500), nullable=True)
+    fallback_type:   Mapped[str | None] = mapped_column(String(20),  nullable=True)
+    fallback_glosses: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

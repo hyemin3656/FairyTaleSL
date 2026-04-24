@@ -6,6 +6,7 @@
 KSL 어순: 시간 > 장소 > 명사 > 부사 > 부정 > 서술어
 """
 import json
+import sqlite3
 import numpy as np
 from pathlib import Path
 from kiwipiepy import Kiwi
@@ -20,9 +21,11 @@ FALLBACK_GLOSS = "FALLBACK"
 FALLBACK_URL = "/static/motions/fallback.glb"
 FALLBACK_DURATION = 1.0
 
-# 글로스 fallback 맵 로드 (decompose / text)
 _GLOSS_LIST_PATH = Path(__file__).parent.parent.parent / \
     "data_pipeline/sign_generation/data/gloss_list.json"
+_MOTION_DB_PATH = Path(__file__).parent.parent.parent / \
+    "data_pipeline/sign_generation/data/motion_db.sqlite"
+
 
 def _load_fallback_map() -> dict[str, dict]:
     try:
@@ -42,27 +45,36 @@ def _load_fallback_map() -> dict[str, dict]:
 _FALLBACK_MAP: dict[str, dict] = _load_fallback_map()
 
 
-def _resolve_path(path: str) -> Path | None:
-    p = Path(path)
-    if p.exists():
-        return p
-    if "data_pipeline" in str(p):
-        idx = str(p).find("data_pipeline")
-        dp = Path("/") / str(p)[idx:]
-        if dp.exists():
-            return dp
+def _load_keypoints_from_sqlite(gloss: str) -> list[float] | None:
+    """motion_db.sqlite에서 BLOB keypoint 조회 → 225차원 float 리스트."""
+    if not _MOTION_DB_PATH.exists():
+        return None
+    try:
+        conn = sqlite3.connect(str(_MOTION_DB_PATH))
+        row = conn.execute(
+            "SELECT keypoint_data FROM motion_db WHERE gloss = ?", (gloss,)
+        ).fetchone()
+        conn.close()
+        if row and row[0]:
+            arr = np.frombuffer(row[0], dtype=np.float32)
+            return arr.astype(float).tolist()
+    except Exception:
+        pass
     return None
 
 
-def _load_keypoints(keypoint_path: str | None) -> list[float] | None:
-    """keypoint 파일 로드 → 225차원 float 리스트 (npy 전용, json은 포맷 불일치로 skip)."""
+def _load_keypoints(gloss: str, keypoint_path: str | None) -> list[float] | None:
+    """keypoint 로드: SQLite BLOB 우선, 없으면 .npy 파일 시도."""
+    kp = _load_keypoints_from_sqlite(gloss)
+    if kp:
+        return kp
     if not keypoint_path:
         return None
-    p = _resolve_path(keypoint_path)
-    if not p:
+    p = Path(keypoint_path)
+    if not p.exists():
         return None
     if p.suffix == ".json":
-        return None  # AI Hub json은 165차원으로 포맷 불일치
+        return None
     arr = np.load(str(p), allow_pickle=True)
     return arr.astype(float).tolist()
 
@@ -181,7 +193,7 @@ async def resolve_motions(
                 blendshape_params=motion.blendshape_params or {},
                 duration_sec=motion.duration_sec,
                 is_fallback=False,
-                keypoints=_load_keypoints(motion.keypoint_path),
+                keypoints=_load_keypoints(motion.gloss, motion.keypoint_path),
             ))
 
         # 2. decompose fallback
@@ -197,7 +209,7 @@ async def resolve_motions(
                         duration_sec=alt_motion.duration_sec,
                         is_fallback=True,
                         fallback_type="decompose",
-                        keypoints=_load_keypoints(alt_motion.keypoint_path),
+                        keypoints=_load_keypoints(alt_motion.gloss, alt_motion.keypoint_path),
                     ))
 
         # 3. text fallback

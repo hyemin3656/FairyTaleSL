@@ -7,6 +7,10 @@ export interface MotionClip {
   blendshape_params: Record<string, number>;
   duration_sec: number;
   is_fallback: boolean;
+  fallback_type?: string | null;
+  text_display?: string | null;
+  // 225차원 keypoint: lhand(0..62) + rhand(63..125) + pose(126..224)
+  keypoints?: number[] | null;
 }
 
 export interface GlossConvertResponse {
