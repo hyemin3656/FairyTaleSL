@@ -71,7 +71,7 @@ BOOKS = [
     },
     {
         "id": uuid.uuid4(),
-        "title": "별이를 찾아서",
+        "title": "별을 찾아서",
         "description": "우주를 여행하며 잃어버린 별을 찾는 소녀 이야기입니다.",
         "cover_image_url": "/static/covers/find_star.svg",
         "target_age_min": 7,
@@ -131,7 +131,7 @@ GLOSS_MOTIONS = [
     {"gloss": "집",     "gltf_clip_url": "/static/motions/fallback.glb", "emotion_label": "neutral",  "blendshape_params": {}, "duration_sec": 1.0},
     {"gloss": "비밀",   "gltf_clip_url": "/static/motions/fallback.glb", "emotion_label": "neutral",  "blendshape_params": {}, "duration_sec": 1.1},
 
-    # ── 별이를 찾아서 ──────────────────────────────────────────
+    # ── 별을 찾아서 ──────────────────────────────────────────
     {"gloss": "소녀",   "gltf_clip_url": "/static/motions/fallback.glb", "emotion_label": "happy",    "blendshape_params": {"mouthSmile": 0.3}, "duration_sec": 1.1},
     {"gloss": "별",     "gltf_clip_url": "/static/motions/fallback.glb", "emotion_label": "happy",    "blendshape_params": {"mouthSmile": 0.5, "eyeWide": 0.3}, "duration_sec": 1.2},
     {"gloss": "우주",   "gltf_clip_url": "/static/motions/fallback.glb", "emotion_label": "surprised","blendshape_params": {"eyeWide": 0.4}, "duration_sec": 1.3},

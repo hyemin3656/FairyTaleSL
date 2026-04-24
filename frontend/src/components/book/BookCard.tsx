@@ -1,12 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import type { BookListItem } from "../../api/books";
+import rabbitTurtleImg from "../../imgs/토끼와 거북이.jpg";
+import humpGrandpaImg from "../../imgs/혹부리 영감.jpg";
+import findStarImg from "../../imgs/별을 찾아서.jpg";
 
 interface Props {
   book: BookListItem;
 }
 
+function pickLocalCover(title: string): string | null {
+  if (title.includes("토끼") || title.includes("거북")) return rabbitTurtleImg;
+  if (title.includes("혹부리")) return humpGrandpaImg;
+  if (title.includes("별")) return findStarImg;
+  return null;
+}
+
 export default function BookCard({ book }: Props) {
   const navigate = useNavigate();
+  const localCover = pickLocalCover(book.title);
+  const coverSrc = localCover ?? book.cover_image_url;
 
   return (
     <article
@@ -17,8 +29,8 @@ export default function BookCard({ book }: Props) {
       onKeyDown={(e) => e.key === "Enter" && navigate(`/books/${book.id}`)}
     >
       <div style={coverWrapStyle}>
-        {book.cover_image_url ? (
-          <img src={book.cover_image_url} alt={book.title} style={coverImgStyle} />
+        {coverSrc ? (
+          <img src={coverSrc} alt={book.title} style={coverImgStyle} />
         ) : (
           <div style={coverPlaceholderStyle}>
             <span style={{ fontSize: 48 }}>📖</span>

@@ -127,5 +127,5 @@
 
   <!-- 제목 -->
   <rect x="0" y="0" width="400" height="50" fill="rgba(0,0,0,0.55)"/>
-  <text x="200" y="32" font-family="'Apple SD Gothic Neo', Arial" font-size="22" font-weight="bold" fill="#FFD54F" text-anchor="middle" filter="url(#glow)">별이를 찾아서</text>
+  <text x="200" y="32" font-family="'Apple SD Gothic Neo', Arial" font-size="22" font-weight="bold" fill="#FFD54F" text-anchor="middle" filter="url(#glow)">별을 찾아서</text>
 </svg>
