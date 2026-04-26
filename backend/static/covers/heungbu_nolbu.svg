@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6e7f"/>
+      <stop offset="100%" style="stop-color:#ffc3a0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg)"/>
+  <!-- 하늘 -->
+  <ellipse cx="200" cy="60" rx="180" ry="40" fill="rgba(255,255,255,0.15)"/>
+  <!-- 제비 -->
+  <path d="M120 80 Q140 60 160 80 Q140 90 120 80Z" fill="rgba(30,30,80,0.8)"/>
+  <path d="M155 80 Q175 60 195 80 Q175 90 155 80Z" fill="rgba(30,30,80,0.8)"/>
+  <!-- 박 (gourd) 왼쪽 -->
+  <ellipse cx="130" cy="190" rx="45" ry="55" fill="#8BC34A"/>
+  <ellipse cx="130" cy="155" rx="25" ry="30" fill="#7CB342"/>
+  <line x1="130" y1="125" x2="130" y2="110" stroke="#5D4037" stroke-width="4"/>
+  <!-- 박 오른쪽 -->
+  <ellipse cx="270" cy="195" rx="48" ry="58" fill="#FFD54F"/>
+  <ellipse cx="270" cy="158" rx="27" ry="32" fill="#FFC107"/>
+  <line x1="270" y1="126" x2="270" y2="108" stroke="#5D4037" stroke-width="4"/>
+  <!-- 빛 효과 -->
+  <circle cx="270" cy="185" r="20" fill="rgba(255,255,255,0.25)"/>
+</svg>

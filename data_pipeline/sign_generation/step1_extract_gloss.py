@@ -42,6 +42,25 @@ NEG_KEYWORDS = {"않다", "못하다", "아니다", "없다", "안"}
 
 # ── KSL 어순 변환 ──────────────────────────────────────────────
 
+def _merge_compounds(tokens) -> list[tuple[str, str]]:
+    """NNG/NNP + XSN(명사파생접미사) 연속 토큰을 복합명사로 합치기.
+    예: 나무(NNG) + 꾼(XSN) → 나무꾼(NNG)
+    """
+    merged: list[tuple[str, str]] = []
+    i = 0
+    while i < len(tokens):
+        tag = tokens[i].tag[:3]
+        if (tag in ("NNG", "NNP")
+                and i + 1 < len(tokens)
+                and tokens[i + 1].tag[:3] == "XSN"):
+            merged.append((tokens[i].form + tokens[i + 1].form, "NNG"))
+            i += 2
+        else:
+            merged.append((tokens[i].form, tag))
+            i += 1
+    return merged
+
+
 def convert_to_ksl_order(text: str) -> list[str]:
     """
     한국어 문장 → KSL 어순 글로스 시퀀스
@@ -50,15 +69,12 @@ def convert_to_ksl_order(text: str) -> list[str]:
     - 내용어(명사/동사/형용사/부사)만 남기고 재배열
     """
     result = kiwi.analyze(text)
-    tokens = result[0][0]
+    raw_tokens = result[0][0]
+    tokens = _merge_compounds(raw_tokens)  # 복합명사 합치기
 
     time_words, place_words, nouns, verbs, adjs, advs, negs = [], [], [], [], [], [], []
 
-    for token in tokens:
-        word = token.form
-        tag = token.tag  # str e.g. 'NNG', 'VV-I'
-        pos3 = tag[:3]
-
+    for word, pos3 in tokens:
         if len(word) <= 1 or word in STOPWORDS:
             continue
 
@@ -94,10 +110,8 @@ def extract_glosses(texts: list[str]) -> list[dict]:
 
     for text in texts:
         result = kiwi.analyze(text)
-        tokens = result[0][0]
-        for token in tokens:
-            word = token.form
-            pos3 = token.tag[:3]
+        tokens = _merge_compounds(result[0][0])
+        for word, pos3 in tokens:
             if pos3 in VALID_POS_PREFIX and len(word) > 1 and word not in STOPWORDS:
                 gloss_counter[word] += 1
                 gloss_pos_map[word] = POS_LABEL.get(pos3, pos3)
