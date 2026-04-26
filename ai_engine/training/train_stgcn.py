@@ -87,6 +87,14 @@ def main():
     p.add_argument("--num_workers",   type=int, default=2)
     p.add_argument("--device",        default="auto")
     p.add_argument("--seed",          type=int, default=42)
+    p.add_argument("--no_augment",    action="store_true",
+                   help="학습 augmentation 비활성화 (기본 활성)")
+    p.add_argument("--aug_noise_std", type=float, default=0.02,
+                   help="좌표 가우시안 노이즈 표준편차 (정규화 좌표 단위)")
+    p.add_argument("--aug_hand_swap_prob", type=float, default=0.0,
+                   help="좌우 손 swap 확률 (handedness 의미 있는 단어 다수라 기본 0)")
+    p.add_argument("--drop_zero_hand", action="store_true",
+                   help="양손 모두 0인 시퀀스 제외 (신규 ROI 데이터에서는 0건이라 불필요)")
     args = p.parse_args()
 
     set_seed(args.seed)
@@ -99,19 +107,27 @@ def main():
         json.dump(vars(args), f, indent=2)
 
     # ── Datasets / Loaders ───────────────────────────────────────────────
-    ds_args = dict(
+    ds_common = dict(
         split_csv=args.split_csv,
         keypoints_dir=args.keypoints_dir,
         label_map_path=args.label_map,
         t_fixed=args.t_fixed,
+        drop_zero_hand=args.drop_zero_hand,
     )
-    train_ds = KSLKeypointDataset(split="train", **ds_args)
-    val_ds   = KSLKeypointDataset(split="val",   **ds_args)
-    test_ds  = KSLKeypointDataset(split="test",  **ds_args)
+    train_ds = KSLKeypointDataset(
+        split="train",
+        augment=(not args.no_augment),
+        aug_noise_std=args.aug_noise_std,
+        aug_hand_swap_prob=args.aug_hand_swap_prob,
+        **ds_common,
+    )
+    val_ds  = KSLKeypointDataset(split="val",  augment=False, **ds_common)
+    test_ds = KSLKeypointDataset(split="test", augment=False, **ds_common)
     print(f"[data] train={len(train_ds)}, val={len(val_ds)}, test={len(test_ds)}, "
-          f"classes={train_ds.num_classes}")
-    print(f"[data] dropped(zero-hand) train={train_ds._dropped_zero_hand}, "
-          f"val={val_ds._dropped_zero_hand}, test={test_ds._dropped_zero_hand}")
+          f"classes={train_ds.num_classes}, augment={train_ds.augment}")
+    if args.drop_zero_hand:
+        print(f"[data] dropped(zero-hand) train={train_ds._dropped_zero_hand}, "
+              f"val={val_ds._dropped_zero_hand}, test={test_ds._dropped_zero_hand}")
 
     pin = (device.type == "cuda")
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,

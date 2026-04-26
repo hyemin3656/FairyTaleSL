@@ -125,10 +125,31 @@ def _fit_length(seq: np.ndarray, t_fixed: int) -> np.ndarray:
     return np.concatenate([seq, pad], axis=0)
 
 
+def _random_crop_or_pad(seq: np.ndarray, t_fixed: int) -> np.ndarray:
+    """학습용: T 차원을 t_fixed로 맞추되 시작점을 랜덤화."""
+    T = seq.shape[0]
+    if T == t_fixed:
+        return seq
+    if T > t_fixed:
+        start = np.random.randint(0, T - t_fixed + 1)
+        return seq[start:start + t_fixed]
+    pad_total = t_fixed - T
+    pad_left = np.random.randint(0, pad_total + 1)
+    pad_right = pad_total - pad_left
+    pad_l = np.zeros((pad_left,)  + seq.shape[1:], dtype=seq.dtype)
+    pad_r = np.zeros((pad_right,) + seq.shape[1:], dtype=seq.dtype)
+    return np.concatenate([pad_l, seq, pad_r], axis=0)
+
+
 class KSLKeypointDataset(Dataset):
     """
     반환 텐서: (3, T_fixed, 21, 2) float32   +  label_idx int
       C=3 (x,y,z), T=t_fixed, V=21, M=2
+
+    augment=True 일 때 적용 (학습 split만):
+      - 시간축 random crop / random-position pad
+      - 좌표 가우시안 노이즈 (σ=aug_noise_std), 0벡터(미검출) 프레임은 제외
+      - 좌우 손 swap (확률 aug_hand_swap_prob, 기본 0 — handedness가 의미있는 단어가 다수)
     """
 
     def __init__(
@@ -139,11 +160,17 @@ class KSLKeypointDataset(Dataset):
         split: str,
         t_fixed: int = 105,
         normalize: bool = True,
-        drop_zero_hand: bool = True,
+        drop_zero_hand: bool = False,
+        augment: bool = False,
+        aug_noise_std: float = 0.02,
+        aug_hand_swap_prob: float = 0.0,
     ):
         assert split in {"train", "val", "test"}
         self.t_fixed = t_fixed
         self.normalize = normalize
+        self.augment = augment
+        self.aug_noise_std = aug_noise_std
+        self.aug_hand_swap_prob = aug_hand_swap_prob
         self.label_map = load_label_map(label_map_path)
         self.num_classes = len(self.label_map)
 
@@ -164,7 +191,21 @@ class KSLKeypointDataset(Dataset):
         hands = arr[:, :HAND_DIMS].reshape(-1, NUM_HANDS, HAND_N, 3)  # (T, 2, 21, 3)
         if self.normalize:
             hands = _normalize_hands(hands)
-        hands = _fit_length(hands, self.t_fixed)          # (T_fixed, 2, 21, 3)
+
+        if self.augment:
+            hands = _random_crop_or_pad(hands, self.t_fixed)
+            if self.aug_noise_std > 0:
+                noise = (np.random.randn(*hands.shape).astype(np.float32)
+                         * self.aug_noise_std)
+                # 0벡터(미검출) 프레임에는 노이즈 추가 X
+                zero_mask = (hands.sum(axis=-1, keepdims=True) == 0)
+                hands = np.where(zero_mask, hands, hands + noise)
+            if self.aug_hand_swap_prob > 0 and np.random.rand() < self.aug_hand_swap_prob:
+                hands = hands[:, ::-1, :, :].copy()
+                hands[..., 0] = -hands[..., 0]            # x도 미러링
+        else:
+            hands = _fit_length(hands, self.t_fixed)
+
         # → (C, T, V, M)
         x = np.transpose(hands, (3, 0, 2, 1))             # (3, T, 21, 2)
         return torch.from_numpy(x).float(), ref.label_idx
