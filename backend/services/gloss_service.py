@@ -104,41 +104,29 @@ _NEG_KEYWORDS = {"않다", "못하다", "아니다", "없다", "안"}
 
 def tokenize_text(text: str) -> list[str]:
     """
-    한국어 텍스트 → KSL 어순 글로스 토큰 리스트.
+    한국어 텍스트 → 글로스 토큰 리스트 (텍스트 출현 순서 유지).
 
-    kiwipiepy로 형태소 분석 후 KSL 어순으로 재배열:
-    시간 > 장소 > 명사(주어/목적어) > 부사 > 부정 > 서술어(동사/형용사)
-
-    기능어(조사, 어미 등)는 제거하고 내용어만 유지.
+    kiwipiepy로 형태소 분석 후 내용어(명사, 동사, 형용사, 부사)만 추출.
+    기능어(조사, 어미 등)는 제거. 중복 단어는 첫 출현만 유지.
     """
     result = _kiwi.analyze(text)
     tokens = result[0][0]  # 최적 분석 결과
 
-    time_w, place_w, nouns, verbs, adjs, advs, negs = [], [], [], [], [], [], []
+    seen: set[str] = set()
+    ordered: list[str] = []
 
     for token in tokens:
         word = token.form
-        pos3 = token.tag[:3]  # e.g. 'NNG', 'VV-I' → 'VV-'[:3] = 'VV-' → use [:3]
+        pos3 = token.tag[:3]
 
         if pos3 not in _VALID_POS or len(word) <= 1 or word in _STOPWORDS:
             continue
+        if word in seen:
+            continue
+        seen.add(word)
+        ordered.append(word)
 
-        if pos3 in ("NNG", "NNP"):
-            if word in _TIME_KEYWORDS:
-                time_w.append(word)
-            elif word in _PLACE_KEYWORDS:
-                place_w.append(word)
-            else:
-                nouns.append(word)
-        elif pos3 == "VV":
-            (negs if word in _NEG_KEYWORDS else verbs).append(word)
-        elif pos3 == "VA":
-            adjs.append(word)
-        elif pos3 == "MAG":
-            (negs if word in _NEG_KEYWORDS else advs).append(word)
-
-    # KSL 어순: 시간 > 장소 > 명사 > 부사 > 부정 > 동사 > 형용사
-    return time_w + place_w + nouns + advs + negs + verbs + adjs
+    return ordered
 
 
 async def _fetch_motion_map(

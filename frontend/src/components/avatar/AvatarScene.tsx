@@ -142,13 +142,13 @@ function VRMAvatar({ clip, playing }: VRMAvatarProps) {
         const lift = THREE.MathUtils.clamp((0.65 - wrist.y) * 1.6, 0, 0.8);
 
         // z: 1.5=차렷, 0.6=수어 대기, lift로 더 올림
-        armBone.rotation.x = THREE.MathUtils.lerp(armBone.rotation.x, -0.4 - lift * 0.2, sp);
+        armBone.rotation.x = THREE.MathUtils.lerp(armBone.rotation.x, 0.3 + lift * 0.2, sp);
         armBone.rotation.y = THREE.MathUtils.lerp(armBone.rotation.y, isLeft ? 0.15 : -0.15, sp);
         armBone.rotation.z = THREE.MathUtils.lerp(armBone.rotation.z, signZ * (1.0 - lift * 0.5), sp);
 
         if (foreBone) {
-          const bend = THREE.MathUtils.clamp(0.7 + lift * 0.4, 0.5, 1.2);
-          foreBone.rotation.x = THREE.MathUtils.lerp(foreBone.rotation.x, -bend, sp);
+          const bend = THREE.MathUtils.clamp(0.3 + lift * 0.5, 0.2, 0.9);
+          foreBone.rotation.x = THREE.MathUtils.lerp(foreBone.rotation.x, bend, sp);
           foreBone.rotation.y = THREE.MathUtils.lerp(foreBone.rotation.y, 0, sp);
           foreBone.rotation.z = THREE.MathUtils.lerp(foreBone.rotation.z, 0, sp);
         }
