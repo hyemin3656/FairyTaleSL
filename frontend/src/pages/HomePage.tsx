@@ -27,24 +27,70 @@ export default function HomePage() {
         )}
       </div>
 
-      <div style={heroStyle}>
-        <h1 style={titleStyle}>PSYcho</h1>
-        <p style={subtitleStyle}>수어로 함께 읽는 동화책 플랫폼</p>
-        <button style={btnStyle} onClick={() => navigate("/books")}>
-          동화책 고르기
-        </button>
-      </div>
+      <main style={mainStyle}>
+        <section style={heroStyle}>
+          <span style={badgeStyle}>수어 학습 · 전래동화</span>
+          <h1 style={titleStyle}>FairyTaleSL</h1>
+          <p style={subtitleStyle}>수어로 함께 읽는 동화책 플랫폼</p>
+          <p style={leadStyle}>
+            귀에 익은 전래동화를 수어와 함께 읽어 보세요.
+            <br />
+            아이와 가족이 손끝으로 이야기를 나누는 가장 따뜻한 방법입니다.
+          </p>
+          <div style={ctaRowStyle}>
+            <button style={primaryBtnStyle} onClick={() => navigate("/books")}>
+              동화책 고르기
+            </button>
+            {!user && (
+              <button style={secondaryBtnStyle} onClick={() => navigate("/register")}>
+                무료로 시작하기
+              </button>
+            )}
+          </div>
+        </section>
+
+        <section style={featuresStyle}>
+          {FEATURES.map((f) => (
+            <div key={f.title} style={featureCardStyle}>
+              <div style={featureIconStyle}>{f.icon}</div>
+              <h3 style={featureTitleStyle}>{f.title}</h3>
+              <p style={featureDescStyle}>{f.desc}</p>
+            </div>
+          ))}
+        </section>
+
+        <footer style={footerStyle}>
+          © 2026 FairyTaleSL · 종합설계 프로젝트
+        </footer>
+      </main>
     </div>
   );
 }
 
+const FEATURES: { icon: string; title: string; desc: string }[] = [
+  {
+    icon: "📖",
+    title: "전래동화 13권",
+    desc: "토끼와 거북이부터 별을 찾아서까지, 친숙한 이야기들을 모았습니다.",
+  },
+  {
+    icon: "🤟",
+    title: "문장별 수어 영상",
+    desc: "한 문장씩 따라 읽으며 수어 단어와 표현을 자연스럽게 익힙니다.",
+  },
+  {
+    icon: "🌱",
+    title: "어린이 눈높이",
+    desc: "5–12세 연령대에 맞춘 짧은 단락과 부드러운 화면 구성을 제공합니다.",
+  },
+];
+
 const pageStyle: React.CSSProperties = {
   minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%)",
+  background: "linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
   position: "relative",
+  display: "flex",
+  justifyContent: "center",
 };
 const navStyle: React.CSSProperties = {
   position: "absolute",
@@ -67,27 +113,109 @@ const navBtnStyle: React.CSSProperties = {
   fontWeight: 600,
   borderRadius: 8,
 };
+const mainStyle: React.CSSProperties = {
+  width: "100%",
+  maxWidth: 1040,
+  padding: "120px 24px 48px",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 72,
+};
 const heroStyle: React.CSSProperties = {
   textAlign: "center",
   display: "flex",
   flexDirection: "column",
-  gap: 20,
+  gap: 16,
   alignItems: "center",
 };
+const badgeStyle: React.CSSProperties = {
+  display: "inline-block",
+  padding: "4px 12px",
+  borderRadius: 999,
+  background: "#eef2ff",
+  border: "1px solid #c7d2fe",
+  color: "#4338ca",
+  fontSize: 12,
+  fontWeight: 600,
+  letterSpacing: 0.2,
+};
 const titleStyle: React.CSSProperties = {
-  fontSize: 64,
+  fontSize: 56,
   fontWeight: 800,
   color: "#4f46e5",
-  letterSpacing: "-2px",
+  letterSpacing: "-1.5px",
+  margin: 0,
 };
-const subtitleStyle: React.CSSProperties = { fontSize: 20, color: "#475569" };
-const btnStyle: React.CSSProperties = {
+const subtitleStyle: React.CSSProperties = {
+  fontSize: 18,
+  color: "#475569",
+  margin: 0,
+};
+const leadStyle: React.CSSProperties = {
+  fontSize: 14,
+  color: "#64748b",
+  lineHeight: 1.7,
+  maxWidth: 480,
+  margin: "8px 0 0",
+};
+const ctaRowStyle: React.CSSProperties = {
   marginTop: 12,
-  padding: "14px 36px",
+  display: "flex",
+  gap: 12,
+  flexWrap: "wrap",
+  justifyContent: "center",
+};
+const primaryBtnStyle: React.CSSProperties = {
+  padding: "12px 28px",
   background: "#4f46e5",
   color: "#fff",
-  fontSize: 17,
+  fontSize: 15,
   fontWeight: 700,
-  borderRadius: 12,
-  boxShadow: "0 4px 16px rgba(79,70,229,0.3)",
+  borderRadius: 10,
+  boxShadow: "0 2px 8px rgba(79,70,229,0.18)",
+};
+const secondaryBtnStyle: React.CSSProperties = {
+  padding: "12px 24px",
+  background: "#fff",
+  color: "#4338ca",
+  fontSize: 15,
+  fontWeight: 600,
+  borderRadius: 10,
+  border: "1px solid #c7d2fe",
+};
+const featuresStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: 16,
+  width: "100%",
+};
+const featureCardStyle: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid #e2e8f0",
+  borderRadius: 14,
+  padding: "22px 20px",
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+};
+const featureIconStyle: React.CSSProperties = {
+  fontSize: 26,
+};
+const featureTitleStyle: React.CSSProperties = {
+  fontSize: 15,
+  fontWeight: 700,
+  color: "#1e293b",
+  margin: 0,
+};
+const featureDescStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: "#64748b",
+  lineHeight: 1.6,
+  margin: 0,
+};
+const footerStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: "#94a3b8",
+  textAlign: "center",
 };
