@@ -1,12 +1,13 @@
 """
 gloss_list.json → SQLite motion_db 적재.
 
-keypoint_data를 BLOB으로 직접 저장 후 .npy / .mp4 파일 삭제.
+keypoint_data를 (N, 225) float32 시퀀스 BLOB으로 저장 후 .npy / .mp4 파일 삭제.
 원본 영상 URL은 ksl.mv.db(H2)에 보존됨.
 
 테이블: motion_db
   gloss         : 글로스 (PK)
-  keypoint_data : 225차원 float32 numpy 배열 (BLOB)
+  keypoint_data : N×225 float32 시퀀스 BLOB (15fps)
+  frame_count   : 프레임 수 N
   emotion_label : 기쁨 | 슬픔 | 분노 | 놀람 | 중립
   fallback_type : NULL | "decompose" | "text"
   is_registered : 1=keypoint 등록 완료, 0=미등록
@@ -28,23 +29,30 @@ with open(GLOSS_LIST_PATH, encoding="utf-8") as f:
 conn = sqlite3.connect(str(DB_PATH))
 cur  = conn.cursor()
 
+KEYPOINT_FPS = 15  # step3에서 추출한 fps
+
 cur.execute("""
     CREATE TABLE IF NOT EXISTS motion_db (
         id            INTEGER PRIMARY KEY AUTOINCREMENT,
         gloss         TEXT UNIQUE NOT NULL,
         keypoint_data BLOB,
+        frame_count   INTEGER DEFAULT 1,
         emotion_label TEXT DEFAULT '중립',
         fallback_type TEXT,
         is_registered INTEGER DEFAULT 0,
         created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 """)
-# 기존 DB에 keypoint_data 컬럼이 없으면 추가
-try:
-    cur.execute("ALTER TABLE motion_db ADD COLUMN keypoint_data BLOB")
-    conn.commit()
-except Exception:
-    pass
+# 기존 DB 컬럼 마이그레이션
+for col, definition in [
+    ("keypoint_data", "BLOB"),
+    ("frame_count",   "INTEGER DEFAULT 1"),
+]:
+    try:
+        cur.execute(f"ALTER TABLE motion_db ADD COLUMN {col} {definition}")
+        conn.commit()
+    except Exception:
+        pass
 conn.commit()
 
 success, fail, deleted_npy, deleted_mp4 = 0, 0, 0, 0
@@ -57,26 +65,32 @@ for g in gloss_list:
     fallback_type = g.get("fallback_type")
 
     keypoint_data = None
+    frame_count   = 1
     is_registered = 0
 
     if keypoint_path:
         kp = Path(keypoint_path)
         if kp.exists() and kp.suffix == '.npy':
             arr = np.load(str(kp), allow_pickle=False)
-            keypoint_data = arr.astype(np.float32).tobytes()
+            if arr.ndim == 1:          # 레거시 단일 프레임 (225,) → (1, 225)
+                arr = arr.reshape(1, -1)
+            arr = arr.astype(np.float32)
+            keypoint_data = arr.tobytes()
+            frame_count   = arr.shape[0]
             is_registered = 1
 
     try:
         cur.execute("""
             INSERT INTO motion_db
-                (gloss, keypoint_data, emotion_label, fallback_type, is_registered)
-            VALUES (?, ?, ?, ?, ?)
+                (gloss, keypoint_data, frame_count, emotion_label, fallback_type, is_registered)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(gloss) DO UPDATE SET
                 keypoint_data = excluded.keypoint_data,
+                frame_count   = excluded.frame_count,
                 emotion_label = excluded.emotion_label,
                 fallback_type = excluded.fallback_type,
                 is_registered = excluded.is_registered;
-        """, (gloss, keypoint_data, emotion_label, fallback_type, is_registered))
+        """, (gloss, keypoint_data, frame_count, emotion_label, fallback_type, is_registered))
         success += 1
 
         # DB 적재 성공 후 파일 삭제

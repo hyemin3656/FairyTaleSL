@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
 import * as THREE from "three";
@@ -12,18 +12,6 @@ import {
 } from "@pixiv/three-vrm";
 import type { MotionClip } from "../../api/gloss";
 
-// ── keypoint 파싱 ─────────────────────────────────────────────
-function parseKeypoints(kp: number[]) {
-  const v3 = (b: number) => new THREE.Vector3(kp[b], kp[b + 1], kp[b + 2]);
-  return {
-    lhand: Array.from({ length: 21 }, (_, i) => v3(i * 3)),
-    rhand: Array.from({ length: 21 }, (_, i) => v3(63 + i * 3)),
-  };
-}
-
-const isValidHand = (pts: THREE.Vector3[]) =>
-  pts.some(p => Math.abs(p.x - 0.5) + Math.abs(p.y - 0.5) > 0.05);
-
 // ── 감정 → VRM 표정 매핑 ─────────────────────────────────────
 const EMOTION_TO_VRM: Partial<Record<string, VRMExpressionPresetName>> = {
   happy:     VRMExpressionPresetName.Happy,
@@ -33,9 +21,15 @@ const EMOTION_TO_VRM: Partial<Record<string, VRMExpressionPresetName>> = {
   relaxed:   VRMExpressionPresetName.Relaxed,
 };
 
-// ── VRM 손가락 bone 매핑 ──────────────────────────────────────
-const FINGER_MAP: { side: "Left" | "Right"; vrm: string[]; mpStart: number }[] = [];
+const ALL_PRESETS = [
+  VRMExpressionPresetName.Happy,
+  VRMExpressionPresetName.Sad,
+  VRMExpressionPresetName.Angry,
+  VRMExpressionPresetName.Surprised,
+  VRMExpressionPresetName.Relaxed,
+];
 
+// ── VRM 손가락 bone 매핑 ──────────────────────────────────────
 const FINGER_NAMES = [
   { name: "Thumb",  start: 1  },
   { name: "Index",  start: 5  },
@@ -45,6 +39,8 @@ const FINGER_NAMES = [
 ];
 const JOINT_SUFFIX = ["Proximal", "Intermediate", "Distal"];
 
+type FingerEntry = { side: "Left" | "Right"; vrm: string[]; mpStart: number };
+const FINGER_MAP: FingerEntry[] = [];
 for (const side of ["Left", "Right"] as const) {
   for (const { name, start } of FINGER_NAMES) {
     FINGER_MAP.push({
@@ -55,6 +51,110 @@ for (const side of ["Left", "Right"] as const) {
   }
 }
 
+// ── 프레임 선형 보간 ──────────────────────────────────────────
+function lerpFrames(f0: number[], f1: number[], t: number): number[] {
+  return f0.map((v, i) => v + (f1[i] - v) * t);
+}
+
+// ── 포즈 랜드마크 기반 팔 구동 ───────────────────────────────
+// 포즈: indices 126..224 (33점 × 3)
+// 11=왼쪽어깨, 13=왼쪽팔꿈치, 15=왼쪽손목
+// 12=오른쪽어깨, 14=오른쪽팔꿈치, 16=오른쪽손목
+function drivePoseBones(kp: number[], hum: VRM["humanoid"], sp: number) {
+  const p = (i: number) => ({ x: kp[126 + i * 3], y: kp[126 + i * 3 + 1], z: kp[126 + i * 3 + 2] });
+  const lSh = p(11), lEl = p(13), lWr = p(15);
+  const rSh = p(12), rEl = p(14), rWr = p(16);
+
+  const lArm  = hum.getNormalizedBoneNode(VRMHumanBoneName.LeftUpperArm);
+  const rArm  = hum.getNormalizedBoneNode(VRMHumanBoneName.RightUpperArm);
+  const lFore = hum.getNormalizedBoneNode(VRMHumanBoneName.LeftLowerArm);
+  const rFore = hum.getNormalizedBoneNode(VRMHumanBoneName.RightLowerArm);
+
+  const hasL = lSh.y > 0 && lWr.y > 0;
+  const hasR = rSh.y > 0 && rWr.y > 0;
+
+  if (hasL && lArm) {
+    // dy: 손목이 어깨보다 얼마나 낮은지 (+ = 낮음 = 팔 내림)
+    const dy = lWr.y - lSh.y;
+    // dx: 손목이 어깨보다 얼마나 몸 안쪽인지 (signer 기준 좌어깨에서 우측 = 몸 중앙 방향)
+    const dx = lWr.x - lSh.x;
+    const targetZ = THREE.MathUtils.clamp(dy * 2.5 + 0.3, 0.0, 1.5);
+    // dx 음수 = 손목이 어깨보다 왼쪽(이미지) = signer 팔이 옆으로 → 앞으로 이동 → VRM x 음수
+    const targetX = THREE.MathUtils.clamp(dx * 2.0 - 0.2, -1.2, 0.3);
+    lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, targetX, sp);
+    lArm.rotation.z = THREE.MathUtils.lerp(lArm.rotation.z, targetZ, sp);
+  }
+  if (hasR && rArm) {
+    const dy = rWr.y - rSh.y;
+    const dx = rWr.x - rSh.x;
+    const targetZ = THREE.MathUtils.clamp(dy * 2.5 + 0.3, 0.0, 1.5);
+    const targetX = THREE.MathUtils.clamp(dx * 2.0 + 0.2, -0.3, 1.2);
+    rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, targetX, sp);
+    rArm.rotation.z = THREE.MathUtils.lerp(rArm.rotation.z, -targetZ, sp);
+  }
+
+  // 팔꿈치 굽힘: 어깨-손목 직선 중간점보다 팔꿈치가 위에 있으면 굽힘
+  if (hasL && lFore && lEl.y > 0) {
+    const midY = (lSh.y + lWr.y) / 2;
+    const bend = THREE.MathUtils.clamp((midY - lEl.y) * 3.0, 0.0, 1.5);
+    lFore.rotation.x = THREE.MathUtils.lerp(lFore.rotation.x, bend, sp);
+    lFore.rotation.y = THREE.MathUtils.lerp(lFore.rotation.y, 0, sp);
+    lFore.rotation.z = THREE.MathUtils.lerp(lFore.rotation.z, 0, sp);
+  }
+  if (hasR && rFore && rEl.y > 0) {
+    const midY = (rSh.y + rWr.y) / 2;
+    const bend = THREE.MathUtils.clamp((midY - rEl.y) * 3.0, 0.0, 1.5);
+    rFore.rotation.x = THREE.MathUtils.lerp(rFore.rotation.x, bend, sp);
+    rFore.rotation.y = THREE.MathUtils.lerp(rFore.rotation.y, 0, sp);
+    rFore.rotation.z = THREE.MathUtils.lerp(rFore.rotation.z, 0, sp);
+  }
+}
+
+// ── 손가락 구동 ───────────────────────────────────────────────
+// lhand: kp[0..62], rhand: kp[63..125]
+function driveHandBones(kp: number[], hum: VRM["humanoid"], sp: number) {
+  const v3 = (b: number) => new THREE.Vector3(kp[b], kp[b + 1], kp[b + 2]);
+  const lhand = Array.from({ length: 21 }, (_, i) => v3(i * 3));
+  const rhand = Array.from({ length: 21 }, (_, i) => v3(63 + i * 3));
+
+  const hasL = lhand.some(p => Math.abs(p.x - 0.5) + Math.abs(p.y - 0.5) > 0.05);
+  const hasR = rhand.some(p => Math.abs(p.x - 0.5) + Math.abs(p.y - 0.5) > 0.05);
+
+  for (const { side, vrm: boneNames, mpStart } of FINGER_MAP) {
+    const hand = side === "Left" ? lhand : rhand;
+    const has  = side === "Left" ? hasL  : hasR;
+    if (!has) continue;
+    const signZ = side === "Left" ? 1 : -1;
+
+    for (let j = 0; j < 3; j++) {
+      const bone = hum.getNormalizedBoneNode(boneNames[j] as VRMHumanBoneName);
+      if (!bone) continue;
+      const a = hand[mpStart + j];
+      const b = hand[mpStart + j + 1];
+      if (!a || !b) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const segLen = Math.sqrt(dx * dx + dy * dy) || 0.001;
+      const curl = THREE.MathUtils.clamp(dy / segLen * 1.2, -0.2, 1.4);
+      bone.rotation.z = THREE.MathUtils.lerp(bone.rotation.z, curl * signZ, sp);
+    }
+  }
+}
+
+// ── 대기 자세 ─────────────────────────────────────────────────
+function driveIdlePose(hum: VRM["humanoid"], rate: number) {
+  const b = (name: VRMHumanBoneName) => hum.getNormalizedBoneNode(name);
+  const lArm  = b(VRMHumanBoneName.LeftUpperArm);
+  const rArm  = b(VRMHumanBoneName.RightUpperArm);
+  const lFore = b(VRMHumanBoneName.LeftLowerArm);
+  const rFore = b(VRMHumanBoneName.RightLowerArm);
+  const L = (cur: number, tgt: number) => THREE.MathUtils.lerp(cur, tgt, rate);
+
+  if (lArm)  { lArm.rotation.x  = L(lArm.rotation.x,  0.1); lArm.rotation.y  = L(lArm.rotation.y,  0); lArm.rotation.z  = L(lArm.rotation.z,  1.5); }
+  if (rArm)  { rArm.rotation.x  = L(rArm.rotation.x,  0.1); rArm.rotation.y  = L(rArm.rotation.y,  0); rArm.rotation.z  = L(rArm.rotation.z, -1.5); }
+  if (lFore) { lFore.rotation.x = L(lFore.rotation.x, 0.1); lFore.rotation.y = 0; lFore.rotation.z = 0; }
+  if (rFore) { rFore.rotation.x = L(rFore.rotation.x, 0.1); rFore.rotation.y = 0; rFore.rotation.z = 0; }
+}
+
 // ── VRM 아바타 컴포넌트 ───────────────────────────────────────
 interface VRMAvatarProps {
   clip: MotionClip | null;
@@ -63,6 +163,8 @@ interface VRMAvatarProps {
 
 function VRMAvatar({ clip, playing }: VRMAvatarProps) {
   const [vrm, setVrm] = useState<VRM | null>(null);
+  const elapsedRef  = useRef(0);
+  const prevGlossRef = useRef<string | null>(null);
 
   useEffect(() => {
     const loader = new GLTFLoader();
@@ -80,110 +182,54 @@ function VRMAvatar({ clip, playing }: VRMAvatarProps) {
   useFrame((_, delta) => {
     if (!vrm) return;
 
-    const hum = vrm.humanoid;
+    const hum  = vrm.humanoid;
     const expr = vrm.expressionManager;
-    const sp = playing ? 0.25 : 0.08;
+    const sp   = playing ? 0.3 : 0.08;
+    const idle = 0.06;
 
     // ── 표정 ─────────────────────────────────────────────────
-    const allPresets = [
-      VRMExpressionPresetName.Happy,
-      VRMExpressionPresetName.Sad,
-      VRMExpressionPresetName.Angry,
-      VRMExpressionPresetName.Surprised,
-      VRMExpressionPresetName.Relaxed,
-    ];
     if (expr) {
       const target = clip ? EMOTION_TO_VRM[clip.emotion_label] : undefined;
-      for (const p of allPresets) {
-        const current = expr.getValue(p) ?? 0;
+      for (const p of ALL_PRESETS) {
+        const cur  = expr.getValue(p) ?? 0;
         const goal = p === target ? 0.85 : 0;
-        expr.setValue(p, THREE.MathUtils.lerp(current, goal, sp));
+        expr.setValue(p, THREE.MathUtils.lerp(cur, goal, sp));
       }
     }
 
-    const lArm  = hum.getNormalizedBoneNode(VRMHumanBoneName.LeftUpperArm);
-    const rArm  = hum.getNormalizedBoneNode(VRMHumanBoneName.RightUpperArm);
-    const lFore = hum.getNormalizedBoneNode(VRMHumanBoneName.LeftLowerArm);
-    const rFore = hum.getNormalizedBoneNode(VRMHumanBoneName.RightLowerArm);
+    // ── 클립 전환 시 elapsed 리셋 ─────────────────────────────
+    const currentGloss = clip?.gloss ?? null;
+    if (currentGloss !== prevGlossRef.current) {
+      elapsedRef.current = 0;
+      prevGlossRef.current = currentGloss;
+    }
 
-    // ── 대기 자세: 수어 준비 자세 ─────────────────────────────
-    if (!playing || !clip?.keypoints || clip.keypoints.length !== 225) {
-      const idle = 0.06;
-      // 대기: 차렷 자세 (z 양수=왼팔DOWN, z 음수=오른팔DOWN)
-      if (lArm) {
-        lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, 0.1, idle);
-        lArm.rotation.y = THREE.MathUtils.lerp(lArm.rotation.y, 0,   idle);
-        lArm.rotation.z = THREE.MathUtils.lerp(lArm.rotation.z, 1.5, idle);
-      }
-      if (rArm) {
-        rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, 0.1, idle);
-        rArm.rotation.y = THREE.MathUtils.lerp(rArm.rotation.y, 0,   idle);
-        rArm.rotation.z = THREE.MathUtils.lerp(rArm.rotation.z, -1.5, idle);
-      }
-      if (lFore) { lFore.rotation.x = THREE.MathUtils.lerp(lFore.rotation.x, 0.1, idle); lFore.rotation.y = 0; lFore.rotation.z = 0; }
-      if (rFore) { rFore.rotation.x = THREE.MathUtils.lerp(rFore.rotation.x, 0.1, idle); rFore.rotation.y = 0; rFore.rotation.z = 0; }
+    // ── 키포인트 시퀀스 재생 ──────────────────────────────────
+    const frames = clip?.keypoints;
+    const fps    = clip?.fps ?? 15;
+
+    if (playing && frames && frames.length > 0) {
+      elapsedRef.current += delta;
+
+      // 프레임 인덱스 계산 (루프)
+      const totalFrames = frames.length;
+      const framePos    = (elapsedRef.current * fps) % totalFrames;
+      const f0 = Math.floor(framePos);
+      const f1 = Math.min(f0 + 1, totalFrames - 1);
+      const t  = framePos - f0;
+
+      // 보간된 현재 키포인트
+      const kp = lerpFrames(frames[f0], frames[f1], t);
+
+      // 포즈 랜드마크로 팔 구동
+      drivePoseBones(kp, hum, sp);
+      // 손 랜드마크로 손가락 구동
+      driveHandBones(kp, hum, sp);
     } else {
-      const { lhand, rhand } = parseKeypoints(clip.keypoints);
-
-      // ── 팔: Euler 회전으로 구동 (부모 본 좌표계 문제 회피) ──
-      // wrist.y: 0=화면 위(손 높음), 1=화면 아래(손 낮음)
-      // liftFactor: 0(낮음) ~ 0.8(높음)
-      const driveArm = (
-        armName: VRMHumanBoneName,
-        foreName: VRMHumanBoneName,
-        wrist: THREE.Vector3,
-        isLeft: boolean,
-      ) => {
-        const armBone = hum.getNormalizedBoneNode(armName);
-        const foreBone = hum.getNormalizedBoneNode(foreName);
-        if (!armBone) return;
-
-        const signZ = isLeft ? 1 : -1;
-        const lift = THREE.MathUtils.clamp((0.65 - wrist.y) * 1.6, 0, 0.8);
-
-        // z: 1.5=차렷, 0.6=수어 대기, lift로 더 올림
-        armBone.rotation.x = THREE.MathUtils.lerp(armBone.rotation.x, 0.3 + lift * 0.2, sp);
-        armBone.rotation.y = THREE.MathUtils.lerp(armBone.rotation.y, isLeft ? 0.15 : -0.15, sp);
-        armBone.rotation.z = THREE.MathUtils.lerp(armBone.rotation.z, signZ * (1.0 - lift * 0.5), sp);
-
-        if (foreBone) {
-          const bend = THREE.MathUtils.clamp(0.3 + lift * 0.5, 0.2, 0.9);
-          foreBone.rotation.x = THREE.MathUtils.lerp(foreBone.rotation.x, bend, sp);
-          foreBone.rotation.y = THREE.MathUtils.lerp(foreBone.rotation.y, 0, sp);
-          foreBone.rotation.z = THREE.MathUtils.lerp(foreBone.rotation.z, 0, sp);
-        }
-      };
-
-      if (isValidHand(lhand)) driveArm(VRMHumanBoneName.LeftUpperArm,  VRMHumanBoneName.LeftLowerArm,  lhand[0], true);
-      if (isValidHand(rhand)) driveArm(VRMHumanBoneName.RightUpperArm, VRMHumanBoneName.RightLowerArm, rhand[0], false);
-
-      // ── 손가락 ──────────────────────────────────────────────
-      const applyFingers = (hand: THREE.Vector3[], side: "Left" | "Right") => {
-        const isLeft = side === "Left";
-        const fingers = FINGER_MAP.filter(f => f.side === side);
-        for (const { vrm: boneNames, mpStart } of fingers) {
-          for (let j = 0; j < 3; j++) {
-            const boneName = boneNames[j] as VRMHumanBoneName;
-            const bone = hum.getNormalizedBoneNode(boneName);
-            if (!bone) continue;
-            const a = hand[mpStart + j];
-            const b = hand[mpStart + j + 1];
-            if (!a || !b) continue;
-            const dx = b.x - a.x;
-            const dy = b.y - a.y;
-            const segLen = Math.sqrt(dx * dx + dy * dy) || 0.001;
-            const curl = THREE.MathUtils.clamp(dy / segLen * 1.2, -0.2, 1.4);
-            const signZ = isLeft ? 1 : -1;
-            bone.rotation.z = THREE.MathUtils.lerp(bone.rotation.z, curl * signZ, sp);
-          }
-        }
-      };
-
-      if (isValidHand(lhand)) applyFingers(lhand, "Left");
-      if (isValidHand(rhand)) applyFingers(rhand, "Right");
+      // 대기 자세
+      driveIdlePose(hum, playing ? sp : idle);
     }
 
-    // bone 조작 완료 후 VRM 업데이트 (항상 마지막에 호출)
     vrm.update(delta);
   });
 

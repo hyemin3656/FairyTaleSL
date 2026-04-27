@@ -9,8 +9,9 @@ export interface MotionClip {
   is_fallback: boolean;
   fallback_type?: string | null;
   text_display?: string | null;
-  // 225차원 keypoint: lhand(0..62) + rhand(63..125) + pose(126..224)
-  keypoints?: number[] | null;
+  // N×225 keypoint 시퀀스 (15fps): lhand(0..62) + rhand(63..125) + pose(126..224)
+  keypoints?: number[][] | null;
+  fps?: number;
 }
 
 export interface GlossConvertResponse {

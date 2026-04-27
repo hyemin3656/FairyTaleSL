@@ -1,11 +1,11 @@
 """
-KCISA 수어 영상에서 MediaPipe Tasks API로 keypoint 추출.
+KCISA 수어 영상에서 MediaPipe Tasks API로 keypoint 시퀀스 추출.
 
-출력 포맷: 225차원 npy (좌손63 + 우손63 + 포즈99) — AI Hub 포맷과 동일
+출력 포맷: (N, 225) float32 npy — 전체 프레임 시퀀스
   - 좌손: 21점 × 3(x,y,z) = 63
   - 우손: 21점 × 3       = 63
   - 포즈: 33점 × 3       = 99
-프레임 평균으로 글로스당 대표 벡터 1개 저장.
+  - 30fps 영상에서 매 2프레임마다 1장 추출 (→ 15fps 시퀀스)
 """
 import json
 import urllib.request
@@ -85,22 +85,33 @@ def extract_frame_vector(rgb_frame, pose_lm, hand_lm) -> np.ndarray | None:
     return None if np.all(vec == 0) else vec
 
 
+TARGET_FPS = 15  # 30fps 영상에서 2프레임마다 1장 샘플링
+
+
 def process_video(video_path: Path, pose_lm, hand_lm) -> np.ndarray | None:
-    """영상 → 프레임 평균 keypoint 벡터."""
+    """영상 → (N, 225) float32 시퀀스. 30fps → 15fps 다운샘플."""
     cap = cv2.VideoCapture(str(video_path))
+    src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    step = max(1, round(src_fps / TARGET_FPS))  # 몇 프레임마다 1장
+
     frames = []
+    idx = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        vec = extract_frame_vector(rgb, pose_lm, hand_lm)
-        if vec is not None:
-            frames.append(vec)
+        if idx % step == 0:
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            vec = extract_frame_vector(rgb, pose_lm, hand_lm)
+            if vec is not None:
+                frames.append(vec)
+        idx += 1
 
     cap.release()
-    return np.mean(frames, axis=0) if frames else None
+    if not frames:
+        return None
+    return np.array(frames, dtype=np.float32)  # (N, 225)
 
 
 def main():
@@ -128,14 +139,15 @@ def main():
                 continue
 
             print(f"추출 중: {gloss}", end=" ... ", flush=True)
-            avg_vec = process_video(video_path, pose_lm, hand_lm)
+            seq = process_video(video_path, pose_lm, hand_lm)
 
-            if avg_vec is not None:
-                np.save(str(save_path), avg_vec)
+            if seq is not None:
+                np.save(str(save_path), seq)          # (N, 225) 저장
                 g["keypoint_path"] = str(save_path)
+                g["frame_count"]   = seq.shape[0]
                 g["registered"] = True
                 success += 1
-                print("✅")
+                print(f"✅ ({seq.shape[0]}프레임)")
             else:
                 print("❌ (감지 실패)")
                 fail += 1
