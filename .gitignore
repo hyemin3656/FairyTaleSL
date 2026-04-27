@@ -71,6 +71,9 @@ htmlcov/
 # AI Hub 원본 데이터 (대용량)
 data_pipeline/raw_data/
 
+# 백엔드 커버 이미지 (frontend/public/covers/로 이동됨)
+backend/static/covers/
+
 # 수어 파이프라인 대용량 데이터
 data_pipeline/sign_generation/data/videos/
 data_pipeline/sign_generation/data/keypoints/

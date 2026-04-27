@@ -364,16 +364,19 @@ async def seed():
             await db.commit()
             print(f"동화 {len(books_data)}권 삽입 완료")
 
-        # GlossMotion 삽입 (없는 경우만)
-        motion_count = (await db.execute(select(func.count()).select_from(GlossMotion))).scalar()
-        if motion_count:
-            print(f"모션 데이터 이미 존재 ({motion_count}개). 건너뜁니다.")
-        else:
-            motions_data = _build_gloss_motions()
-            for motion_data in motions_data:
-                db.add(GlossMotion(id=uuid.uuid4(), created_at=now, **motion_data))
-            await db.commit()
-            print(f"모션 {len(motions_data)}개 삽입 완료")
+        # GlossMotion UPSERT (gloss 기준으로 항상 최신 상태 유지)
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+        motions_data = _build_gloss_motions()
+        for motion_data in motions_data:
+            stmt = pg_insert(GlossMotion).values(
+                id=uuid.uuid4(), created_at=now, **motion_data
+            ).on_conflict_do_update(
+                index_elements=["gloss"],
+                set_={k: motion_data[k] for k in motion_data}
+            )
+            await db.execute(stmt)
+        await db.commit()
+        print(f"모션 {len(motions_data)}개 upsert 완료")
 
 
 if __name__ == "__main__":
