@@ -107,17 +107,21 @@ class STGCNBlock(nn.Module):
 # ── ST-GCN Main ───────────────────────────────────────────────────────────────
 class STGCN(nn.Module):
     """
-    ST-GCN for hand-gesture / sign-language gloss recognition.
-    Output: CTC-compatible frame-level logits (B, T', num_classes).
+    ST-GCN for hand-gesture / sign-language recognition.
+
+    mode='ctc'      : (B, T', num_classes) log-softmax  — 연속수어/CTC 학습용
+    mode='classify' : (B, num_classes) logits           — 고립단어 분류용 (CE 손실)
     """
 
     def __init__(self, num_classes: int, num_nodes: int = NUM_NODES,
-                 in_channels: int = 3, num_hands: int = 2):
+                 in_channels: int = 3, num_hands: int = 2,
+                 mode: str = "ctc"):
         super().__init__()
+        assert mode in {"ctc", "classify"}
+        self.mode = mode
         self.num_hands = num_hands
         A = build_block_adjacency(num_nodes, HAND_EDGES, num_hands)  # (V*M, V*M)
 
-        # Input projection per hand, then merge
         self.input_bn = nn.BatchNorm1d(in_channels * num_nodes * num_hands)
 
         self.layers = nn.ModuleList([
@@ -129,27 +133,26 @@ class STGCN(nn.Module):
             STGCNBlock(256,         256, A, dropout=0.5),
         ])
 
-        # CTC head: project to vocab per timestep
         self.fc = nn.Linear(256, num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        x: (B, C, T, V, M)  — M hands aggregated by concatenation along V axis
-        Returns: (B, T', num_classes) log-softmax for CTCLoss
-        """
         B, C, T, V, M = x.shape
-        # Merge hands: (B, C, T, V*M)
         x = x.reshape(B, C, T, V * M)
 
-        # BatchNorm on raw input (flatten spatial)
-        bn_in = x.permute(0, 2, 1, 3).reshape(B * T, C * V * M)
-        # BN expects (N, C) for 1d or (N, C, L) — skip for simplicity on input
-        # Apply layers
+        # 입력 정규화: (B, C*V*M, T) 축으로 BatchNorm1d
+        bn_in = x.permute(0, 1, 3, 2).reshape(B, C * V * M, T)
+        bn_in = self.input_bn(bn_in)
+        x = bn_in.reshape(B, C, V * M, T).permute(0, 1, 3, 2)
+
         for layer in self.layers:
             x = layer(x)  # (B, ch, T', V*M)
 
-        # Global avg pool over nodes
         x = x.mean(dim=-1)        # (B, ch, T')
+        if self.mode == "classify":
+            x = x.mean(dim=-1)    # (B, ch)  ← 시간축 mean pool
+            return self.fc(x)     # (B, num_classes) logits
+
+        # ctc
         x = x.permute(0, 2, 1)    # (B, T', ch)
         x = self.fc(x)             # (B, T', num_classes)
         return F.log_softmax(x, dim=-1)
