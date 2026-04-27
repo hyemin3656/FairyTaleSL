@@ -45,8 +45,11 @@ def _load_fallback_map() -> dict[str, dict]:
 _FALLBACK_MAP: dict[str, dict] = _load_fallback_map()
 
 
-def _load_keypoints_from_sqlite(gloss: str) -> list[float] | None:
-    """motion_db.sqlite에서 BLOB keypoint 조회 → 225차원 float 리스트."""
+KEYPOINT_FPS = 15.0  # step3에서 추출한 fps
+
+
+def _load_keypoints_from_sqlite(gloss: str) -> list[list[float]] | None:
+    """motion_db.sqlite에서 BLOB 조회 → N×225 float 시퀀스."""
     if not _MOTION_DB_PATH.exists():
         return None
     try:
@@ -57,28 +60,42 @@ def _load_keypoints_from_sqlite(gloss: str) -> list[float] | None:
         conn.close()
         if row and row[0]:
             arr = np.frombuffer(row[0], dtype=np.float32)
-            return arr.astype(float).tolist()
+            n_frames = max(1, len(arr) // 225)
+            seq = arr[: n_frames * 225].reshape(n_frames, 225)
+            return seq.tolist()
     except Exception:
         pass
     return None
 
 
-def _load_keypoints(gloss: str, keypoint_path: str | None) -> list[float] | None:
+def _load_keypoints(gloss: str, keypoint_path: str | None) -> list[list[float]] | None:
     """keypoint 로드: SQLite BLOB 우선, 없으면 .npy 파일 시도."""
-    kp = _load_keypoints_from_sqlite(gloss)
-    if kp:
-        return kp
+    seq = _load_keypoints_from_sqlite(gloss)
+    if seq:
+        return seq
     if not keypoint_path:
         return None
     p = Path(keypoint_path)
-    if not p.exists():
+    if not p.exists() or p.suffix != ".npy":
         return None
-    if p.suffix == ".json":
-        return None
-    arr = np.load(str(p), allow_pickle=True)
-    return arr.astype(float).tolist()
+    arr = np.load(str(p), allow_pickle=False).astype(np.float32)
+    if arr.ndim == 1:
+        arr = arr.reshape(1, -1)
+    return arr.tolist()
 
 _kiwi = Kiwi()
+
+# 동화에 등장하는 복합명사 — kiwipiepy가 분리하므로 사전에 등록
+_COMPOUND_NOUNS = [
+    "박씨", "알밤", "동아줄", "두레박", "오작교", "날개옷",
+    "날개", "나무꾼", "공양미", "인당수", "단군왕검", "태백산",
+    "금도끼", "은도끼", "쇠도끼", "연못가", "팥죽", "수수밭",
+]
+for _noun in _COMPOUND_NOUNS:
+    try:
+        _kiwi.add_user_word(_noun, "NNG", score=10)
+    except Exception:
+        pass
 
 # kiwipiepy POS prefix → 유효 품사
 _VALID_POS = {"NNG", "NNP", "VV", "VA", "MAG"}
@@ -112,18 +129,24 @@ def tokenize_text(text: str) -> list[str]:
     result = _kiwi.analyze(text)
     tokens = result[0][0]  # 최적 분석 결과
 
-    seen: set[str] = set()
     ordered: list[str] = []
 
     for token in tokens:
         word = token.form
         pos3 = token.tag[:3]
 
-        if pos3 not in _VALID_POS or len(word) <= 1 or word in _STOPWORDS:
+        if pos3 not in _VALID_POS:
             continue
-        if word in seen:
+
+        # 동사/형용사: 어간 → 기본형 (살→살다, 가→가다, 크→크다)
+        if pos3 in ("VV", "VA") and not word.endswith("다"):
+            word = word + "다"
+
+        # 명사는 단음절(봄, 박, 소 등)도 허용; 동사/형용사는 "다" 붙으면 최소 2자
+        if word in _STOPWORDS:
             continue
-        seen.add(word)
+        if pos3 not in ("NNG", "NNP") and len(word) < 2:
+            continue
         ordered.append(word)
 
     return ordered
@@ -174,14 +197,17 @@ async def resolve_motions(
         # 1. DB에 직접 등록된 글로스
         motion = motion_map.get(token)
         if motion:
+            kp_seq = _load_keypoints(motion.gloss, motion.keypoint_path)
+            duration = len(kp_seq) / KEYPOINT_FPS if kp_seq else motion.duration_sec
             clips.append(MotionClip(
                 gloss=motion.gloss,
                 gltf_clip_url=motion.gltf_clip_url,
                 emotion_label=motion.emotion_label,
                 blendshape_params=motion.blendshape_params or {},
-                duration_sec=motion.duration_sec,
+                duration_sec=duration,
                 is_fallback=False,
-                keypoints=_load_keypoints(motion.gloss, motion.keypoint_path),
+                keypoints=kp_seq,
+                fps=KEYPOINT_FPS,
             ))
 
         # 2. decompose fallback
@@ -189,15 +215,18 @@ async def resolve_motions(
             for alt_gloss in fb["glosses"]:
                 alt_motion = motion_map.get(alt_gloss)
                 if alt_motion:
+                    alt_kp = _load_keypoints(alt_motion.gloss, alt_motion.keypoint_path)
+                    alt_dur = len(alt_kp) / KEYPOINT_FPS if alt_kp else alt_motion.duration_sec
                     clips.append(MotionClip(
                         gloss=token,
                         gltf_clip_url=alt_motion.gltf_clip_url,
                         emotion_label=alt_motion.emotion_label,
                         blendshape_params=alt_motion.blendshape_params or {},
-                        duration_sec=alt_motion.duration_sec,
+                        duration_sec=alt_dur,
                         is_fallback=True,
                         fallback_type="decompose",
-                        keypoints=_load_keypoints(alt_motion.gloss, alt_motion.keypoint_path),
+                        keypoints=alt_kp,
+                        fps=KEYPOINT_FPS,
                     ))
 
         # 3. text fallback

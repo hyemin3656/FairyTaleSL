@@ -76656,5 +76656,47 @@
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
+  },
+  {
+    "gloss": "올라가다",
+    "pos": "VV",
+    "freq": 0,
+    "registered": false,
+    "video_path": null,
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "오르다"
+    ]
+  },
+  {
+    "gloss": "따다",
+    "pos": "VV",
+    "freq": 0,
+    "registered": false,
+    "video_path": null,
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "따르다"
+    ]
+  },
+  {
+    "gloss": "풀리다",
+    "pos": "VV",
+    "freq": 0,
+    "registered": false,
+    "video_path": null,
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "풀다"
+    ]
   }
 ]
