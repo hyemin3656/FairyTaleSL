@@ -39,6 +39,12 @@ cur.execute("""
         created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 """)
+# 기존 DB에 keypoint_data 컬럼이 없으면 추가
+try:
+    cur.execute("ALTER TABLE motion_db ADD COLUMN keypoint_data BLOB")
+    conn.commit()
+except Exception:
+    pass
 conn.commit()
 
 success, fail, deleted_npy, deleted_mp4 = 0, 0, 0, 0
@@ -55,8 +61,8 @@ for g in gloss_list:
 
     if keypoint_path:
         kp = Path(keypoint_path)
-        if kp.exists():
-            arr = np.load(str(kp))
+        if kp.exists() and kp.suffix == '.npy':
+            arr = np.load(str(kp), allow_pickle=False)
             keypoint_data = arr.astype(np.float32).tobytes()
             is_registered = 1
 

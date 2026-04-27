@@ -125,7 +125,9 @@ function VRMAvatar({ clip, playing }: VRMAvatarProps) {
     } else {
       const { lhand, rhand } = parseKeypoints(clip.keypoints);
 
-      // ── 팔: 손목(wrist) 위치로 구동 ────────────────────────
+      // ── 팔: Euler 회전으로 구동 (부모 본 좌표계 문제 회피) ──
+      // wrist.y: 0=화면 위(손 높음), 1=화면 아래(손 낮음)
+      // liftFactor: 0(낮음) ~ 0.8(높음)
       const driveArm = (
         armName: VRMHumanBoneName,
         foreName: VRMHumanBoneName,
@@ -136,28 +138,19 @@ function VRMAvatar({ clip, playing }: VRMAvatarProps) {
         const foreBone = hum.getNormalizedBoneNode(foreName);
         if (!armBone) return;
 
-        // T-포즈 팔 방향: 왼팔=-X, 오른팔=+X
-        const signX = isLeft ? -1 : 1;
-        const restDir = new THREE.Vector3(signX, 0, 0);
+        const signZ = isLeft ? 1 : -1;
+        const lift = THREE.MathUtils.clamp((0.65 - wrist.y) * 1.6, 0, 0.8);
 
-        // wrist.y: 0=화면위(높은자세), 1=화면아래(낮은자세)
-        // vy: 손이 높을수록 팔도 올라감 (수어 중 대부분 가슴~어깨 높이)
-        const vy = THREE.MathUtils.clamp((0.55 - wrist.y) * 0.9, -0.1, 0.45);
-
-        // 위팔: 약간 바깥(signX)+아래, 앞으로 → 팔꿈치가 몸 앞-아래에 위치
-        const armTarget = new THREE.Vector3(signX * 0.3, -0.25 + vy * 0.8, -0.8).normalize();
-        armBone.quaternion.slerp(
-          new THREE.Quaternion().setFromUnitVectors(restDir, armTarget),
-          sp
-        );
+        // z: 1.5=차렷, 0.6=수어 대기, lift로 더 올림
+        armBone.rotation.x = THREE.MathUtils.lerp(armBone.rotation.x, -0.4 - lift * 0.2, sp);
+        armBone.rotation.y = THREE.MathUtils.lerp(armBone.rotation.y, isLeft ? 0.15 : -0.15, sp);
+        armBone.rotation.z = THREE.MathUtils.lerp(armBone.rotation.z, signZ * (1.0 - lift * 0.5), sp);
 
         if (foreBone) {
-          // 아래팔: 앞으로+위로, 약간 안쪽(signX * 0.05) → 교차 없이 자연스러운 굽힘
-          const foreTarget = new THREE.Vector3(signX * 0.05, 0.25 + vy * 0.5, -0.9).normalize();
-          foreBone.quaternion.slerp(
-            new THREE.Quaternion().setFromUnitVectors(restDir, foreTarget),
-            sp
-          );
+          const bend = THREE.MathUtils.clamp(0.7 + lift * 0.4, 0.5, 1.2);
+          foreBone.rotation.x = THREE.MathUtils.lerp(foreBone.rotation.x, -bend, sp);
+          foreBone.rotation.y = THREE.MathUtils.lerp(foreBone.rotation.y, 0, sp);
+          foreBone.rotation.z = THREE.MathUtils.lerp(foreBone.rotation.z, 0, sp);
         }
       };
 

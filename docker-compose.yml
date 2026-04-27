@@ -28,7 +28,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - ../data_pipeline:/data_pipeline:ro
+      - ./data_pipeline:/data_pipeline:ro
     networks:
       - internal
       - public
