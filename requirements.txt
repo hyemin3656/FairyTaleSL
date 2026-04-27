@@ -1,0 +1,5 @@
+torch
+torchvision
+openmim
+mmengine
+mmcv==2.1.0
