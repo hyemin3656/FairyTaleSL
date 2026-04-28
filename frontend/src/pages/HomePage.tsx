@@ -31,22 +31,44 @@ export default function HomePage() {
         <section style={heroStyle}>
           <span style={badgeStyle}>수어 학습 · 전래동화</span>
           <h1 style={titleStyle}>FairyTaleSL</h1>
-          <p style={subtitleStyle}>수어로 함께 읽는 동화책 플랫폼</p>
-          <p style={leadStyle}>
-            귀에 익은 전래동화를 수어와 함께 읽어 보세요.
-            <br />
-            아이와 가족이 손끝으로 이야기를 나누는 가장 따뜻한 방법입니다.
-          </p>
-          <div style={ctaRowStyle}>
-            <button style={primaryBtnStyle} onClick={() => navigate("/books")}>
-              동화책 고르기
-            </button>
-            {!user && (
-              <button style={secondaryBtnStyle} onClick={() => navigate("/register")}>
-                무료로 시작하기
-              </button>
-            )}
-          </div>
+          {user ? (
+            <>
+              <p style={subtitleStyle}>
+                안녕하세요, <strong style={{ color: "#4338ca" }}>{user.nickname}</strong>님 👋
+              </p>
+              <p style={leadStyle}>
+                오늘은 어떤 이야기를 함께 읽어볼까요?
+                <br />
+                마지막에 읽던 동화부터 이어서 학습할 수 있어요.
+              </p>
+              <div style={ctaRowStyle}>
+                <button style={primaryBtnStyle} onClick={() => navigate("/books")}>
+                  동화책 보러 가기
+                </button>
+                <button style={secondaryBtnStyle} onClick={() => navigate("/mypage")}>
+                  내 학습 기록
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p style={subtitleStyle}>수어로 함께 읽는 동화책 플랫폼</p>
+              <p style={leadStyle}>
+                귀에 익은 전래동화를 수어와 함께 읽어 보세요.
+                <br />
+                아이와 가족이 손끝으로 이야기를 나누는 가장 따뜻한 방법입니다.
+              </p>
+              <div style={ctaRowStyle}>
+                <button style={primaryBtnStyle} onClick={() => navigate("/books")}>
+                  동화책 고르기
+                </button>
+              </div>
+              <p style={loginHintStyle}>
+                학습 기록을 저장하려면 <a style={linkStyle} onClick={() => navigate("/login")}>로그인</a>하거나{" "}
+                <a style={linkStyle} onClick={() => navigate("/register")}>회원가입</a>하세요.
+              </p>
+            </>
+          )}
         </section>
 
         <section style={featuresStyle}>
@@ -183,6 +205,17 @@ const secondaryBtnStyle: React.CSSProperties = {
   fontWeight: 600,
   borderRadius: 10,
   border: "1px solid #c7d2fe",
+};
+const loginHintStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: "#94a3b8",
+  marginTop: 4,
+};
+const linkStyle: React.CSSProperties = {
+  color: "#4f46e5",
+  fontWeight: 600,
+  cursor: "pointer",
+  textDecoration: "underline",
 };
 const featuresStyle: React.CSSProperties = {
   display: "grid",
