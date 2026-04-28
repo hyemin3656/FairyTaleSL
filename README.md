@@ -60,6 +60,33 @@ https://drive.google.com/file/d/1EG3CH4RL7f8yjyEi-wnRlO2zzgA6ioc7/view?usp=drive
 
 ---
 
+## Input Format
+
+The test code supports two input formats for inference:
+
+### 1. Base64-encoded Frames (Recommended)
+- Input: `List[str]` (e.g., `data:image/jpeg;base64,...`)
+- Suitable for real-time applications (e.g., webcam streaming)
+- Frames are decoded into RGB numpy arrays before inference
+- result = predictor.predict_frames("examples/frames")
+
+### 2. Image Directory
+- Input: `str` (path to a directory containing images)
+- Supported formats: `.jpg`, `.jpeg`, `.png`, `.bmp`
+- Useful for offline testing and debugging
+- Frames are loaded from disk in sorted order
+
+### 3. Pre-loaded Frames (NumPy Arrays)
+- Input: `List[np.ndarray]`
+- Each frame should have shape `(H, W, 3)` in RGB format
+- Suitable for advanced usage where frames are already processed in memory
+
+> ⚠️ Note  
+> In `test_predictor.py`, update the argument of `predictor.predict_frames()` depending on the input type:
+> - Directory path (`str`)
+> - Base64 image list (`List[str]`)
+> - NumPy frame list (`List[np.ndarray]`)
+
 ## 🚀 Usage
 
 Run inference on a single video:
