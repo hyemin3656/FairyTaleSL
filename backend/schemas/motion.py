@@ -31,8 +31,9 @@ class MotionClip(BaseModel):
     is_fallback: bool = False
     fallback_type: str | None = None  # "decompose" | "text" | None
     text_display: str | None = None
-    # 225차원 keypoint 벡터: lhand(63) + rhand(63) + pose(99)
-    keypoints: list[float] | None = None
+    # N×225 keypoint 시퀀스 (15fps): lhand(63) + rhand(63) + pose(99)
+    keypoints: list[list[float]] | None = None
+    fps: float = 15.0
 
 
 class GlossConvertResponse(BaseModel):
