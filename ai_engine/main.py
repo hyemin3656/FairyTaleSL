@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import predict, qa
+from routers import predict, predict_tsn, qa
 
 
 @asynccontextmanager
@@ -24,6 +24,12 @@ async def lifespan(app: FastAPI):
     get_model(vocab=VOCAB, device="cpu")
     load_weights(WEIGHTS_PATH)
     print("[AI Engine] ST-GCN ready.")
+    # TSN(MMAction2) 모델 사전 로드 (체크포인트 없으면 lazy 유지)
+    try:
+        from routers.predict_tsn import get_predictor
+        get_predictor()
+    except Exception as e:
+        print(f"[AI Engine] TSN preload skipped: {e}")
     # T5 백그라운드 로드 예약 (첫 요청 전에 미리 시작)
     from models.t5_qa import preload as t5_preload
     t5_preload()
@@ -45,6 +51,7 @@ app.add_middleware(
 )
 
 app.include_router(predict.router)
+app.include_router(predict_tsn.router)
 app.include_router(qa.router)
 
 

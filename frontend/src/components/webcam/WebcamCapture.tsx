@@ -1,212 +1,213 @@
 /**
- * WebcamCapture — 웹캠 스트림 + MediaPipe HandLandmarker
+ * WebcamCapture — 웹캠 + TSN(MMAction2) 프레임 기반 인식
  *
- * MediaPipe tasks-vision HandLandmarker로 손 랜드마크를 추출하고
- * onLandmarks 콜백으로 전달. 캔버스에 랜드마크 오버레이 렌더링.
- *
- * 모델/WASM은 CDN에서 로드 (초기 1회, 이후 캐시됨).
+ * 30fps 캡처 → 3초 sliding window → 1초마다 25프레임 균등 샘플링하여
+ * AI Engine /predict_frames 호출. 결과는 onPrediction 콜백으로 부모에 전달.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  HandLandmarker,
-  FilesetResolver,
-  type HandLandmarkerResult,
-} from "@mediapipe/tasks-vision";
-import type { HandData } from "../../hooks/useRecognitionWS";
 
-interface WebcamCaptureProps {
-  onLandmarks: (hands: HandData[]) => void;
-  mirrored?: boolean;
+export interface TsnPrediction {
+  class_id: number;
+  label: string;
+  score: number;
 }
 
-const WASM_CDN =
-  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
-const MODEL_URL =
-  "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+interface WebcamCaptureProps {
+  onPrediction?: (preds: TsnPrediction[]) => void;
+  mirrored?: boolean;
+  endpoint?: string;
+}
 
-// 연결선 색상
-const CONN_COLOR = "rgba(99,102,241,0.8)";
-const POINT_COLOR = "#f59e0b";
-
-// 손 연결 인덱스 (MediaPipe 21개 랜드마크)
-const HAND_CONNECTIONS: [number, number][] = [
-  [0,1],[1,2],[2,3],[3,4],
-  [0,5],[5,6],[6,7],[7,8],
-  [5,9],[9,10],[10,11],[11,12],
-  [9,13],[13,14],[14,15],[15,16],
-  [13,17],[17,18],[18,19],[19,20],
-  [0,17],
-];
-
-type InitState = "idle" | "loading" | "ready" | "error";
+const FPS = 30;
+const CAPTURE_INTERVAL_MS = 1000 / FPS;
+const WINDOW_MS = 3000;
+const NUM_CLIPS = 25;
+const PREDICT_INTERVAL_MS = 1000;
+const DEFAULT_ENDPOINT = "http://localhost:8001/predict_frames";
 
 export default function WebcamCapture({
-  onLandmarks,
+  onPrediction,
   mirrored = true,
+  endpoint = DEFAULT_ENDPOINT,
 }: WebcamCaptureProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const landmarkerRef = useRef<HandLandmarker | null>(null);
-  const rafRef = useRef<number>(0);
-  const streamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const frameBufferRef = useRef<{ time: number; frame: string }[]>([]);
+  const captureTimerRef = useRef<number | null>(null);
+  const predictTimerRef = useRef<number | null>(null);
+  const isPredictingRef = useRef(false);
+  const onPredictionRef = useRef(onPrediction);
 
-  const [initState, setInitState] = useState<InitState>("idle");
-  const [camError, setCamError] = useState("");
+  const [running, setRunning] = useState(false);
+  const [predictions, setPredictions] = useState<TsnPrediction[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
-  // ── MediaPipe 초기화 ───────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-    setInitState("loading");
+  // 콜백 ref 동기화 (closure 문제 회피)
+  useEffect(() => { onPredictionRef.current = onPrediction; }, [onPrediction]);
 
-    (async () => {
-      try {
-        const vision = await FilesetResolver.forVisionTasks(WASM_CDN);
-        const landmarker = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
-          runningMode: "VIDEO",
-          numHands: 2,
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
-        if (cancelled) { landmarker.close(); return; }
-        landmarkerRef.current = landmarker;
-        setInitState("ready");
-      } catch {
-        if (!cancelled) setInitState("error");
-      }
-    })();
+  const captureFrame = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0) return;
+    if (!canvasRef.current) canvasRef.current = document.createElement("canvas");
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
 
-    return () => { cancelled = true; };
+    const frame = canvas.toDataURL("image/jpeg", 0.8);
+    const now = Date.now();
+    frameBufferRef.current.push({ time: now, frame });
+    frameBufferRef.current = frameBufferRef.current.filter(
+      (f) => now - f.time <= WINDOW_MS
+    );
   }, []);
 
-  // ── 카메라 시작 ───────────────────────────────────────────
-  useEffect(() => {
-    if (initState !== "ready") return;
+  const uniformSample = (
+    buffer: { time: number; frame: string }[],
+    n: number
+  ): string[] => {
+    const total = buffer.length;
+    if (total <= n) return buffer.map((f) => f.frame);
+    const out: string[] = [];
+    for (let i = 0; i < n; i++) {
+      out.push(buffer[Math.floor((i * total) / n)].frame);
+    }
+    return out;
+  };
 
-    navigator.mediaDevices
-      .getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } })
-      .then((stream) => {
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
+  const startWebcam = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { frameRate: FPS, width: 640, height: 480 },
+        audio: false,
+      });
+      if (!videoRef.current) return;
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+      setRunning(true);
+      setErrorMsg("");
+
+      captureTimerRef.current = window.setInterval(captureFrame, CAPTURE_INTERVAL_MS);
+      predictTimerRef.current = window.setInterval(async () => {
+        if (isPredictingRef.current) return;
+        const buffer = frameBufferRef.current;
+        if (buffer.length < NUM_CLIPS) return;
+        const frames = uniformSample(buffer, NUM_CLIPS);
+        try {
+          isPredictingRef.current = true;
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ frames, topk: 67 }),
+          });
+          if (!res.ok) {
+            setErrorMsg(`서버 오류 ${res.status}`);
+            return;
+          }
+          const data: { predictions: TsnPrediction[] } = await res.json();
+          setPredictions(data.predictions);
+          onPredictionRef.current?.(data.predictions);
+        } catch (e) {
+          setErrorMsg(`요청 실패: ${(e as Error).message}`);
+        } finally {
+          isPredictingRef.current = false;
         }
-      })
-      .catch((e) => {
-        setCamError(`카메라 접근 실패: ${e.message}`);
-      });
-
-    return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [initState]);
-
-  // ── 프레임 루프 ───────────────────────────────────────────
-  const drawLandmarks = useCallback(
-    (result: HandLandmarkerResult, w: number, h: number) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.clearRect(0, 0, w, h);
-
-      result.landmarks.forEach((lm) => {
-        // 연결선
-        ctx.strokeStyle = CONN_COLOR;
-        ctx.lineWidth = 2;
-        HAND_CONNECTIONS.forEach(([a, b]) => {
-          const pA = lm[a], pB = lm[b];
-          ctx.beginPath();
-          ctx.moveTo(pA.x * w, pA.y * h);
-          ctx.lineTo(pB.x * w, pB.y * h);
-          ctx.stroke();
-        });
-        // 점
-        ctx.fillStyle = POINT_COLOR;
-        lm.forEach((p) => {
-          ctx.beginPath();
-          ctx.arc(p.x * w, p.y * h, 4, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      });
-    },
-    []
-  );
-
-  const processFrame = useCallback(() => {
-    const video = videoRef.current;
-    const landmarker = landmarkerRef.current;
-    if (!video || !landmarker || video.readyState < 2) {
-      rafRef.current = requestAnimationFrame(processFrame);
-      return;
+      }, PREDICT_INTERVAL_MS);
+    } catch (e) {
+      setErrorMsg(`카메라 접근 실패: ${(e as Error).message}`);
     }
+  }, [captureFrame, endpoint]);
 
-    const w = video.videoWidth;
-    const h = video.videoHeight;
+  const stopWebcam = useCallback(() => {
+    if (captureTimerRef.current !== null) clearInterval(captureTimerRef.current);
+    if (predictTimerRef.current !== null) clearInterval(predictTimerRef.current);
+    captureTimerRef.current = null;
+    predictTimerRef.current = null;
+    const stream = videoRef.current?.srcObject as MediaStream | null;
+    stream?.getTracks().forEach((t) => t.stop());
+    if (videoRef.current) videoRef.current.srcObject = null;
+    frameBufferRef.current = [];
+    setRunning(false);
+    setPredictions([]);
+  }, []);
 
-    // 캔버스 크기 동기화
-    if (canvasRef.current) {
-      canvasRef.current.width = w;
-      canvasRef.current.height = h;
-    }
-
-    const result = landmarker.detectForVideo(video, performance.now());
-    drawLandmarks(result, w, h);
-
-    // 랜드마크 콜백
-    if (result.landmarks.length > 0) {
-      const hands: HandData[] = result.landmarks.map((lm, i) => ({
-        landmarks: lm.map((p) => ({ x: p.x, y: p.y, z: p.z })),
-        handedness: result.handedness[i]?.[0]?.categoryName ?? "Unknown",
-      }));
-      onLandmarks(hands);
-    } else {
-      onLandmarks([]);
-    }
-
-    rafRef.current = requestAnimationFrame(processFrame);
-  }, [drawLandmarks, onLandmarks]);
-
-  const handleVideoPlay = useCallback(() => {
-    rafRef.current = requestAnimationFrame(processFrame);
-  }, [processFrame]);
-
-  // ── 렌더 ─────────────────────────────────────────────────
-  if (initState === "idle" || initState === "loading") {
-    return (
-      <div className="webcam-loading">
-        <div className="spinner" />
-        <span>MediaPipe 모델 로드 중…</span>
-      </div>
-    );
-  }
-
-  if (initState === "error") {
-    return (
-      <div className="webcam-error">MediaPipe 초기화 실패. 네트워크를 확인하세요.</div>
-    );
-  }
-
-  if (camError) {
-    return <div className="webcam-error">{camError}</div>;
-  }
+  // 언마운트 정리
+  useEffect(() => stopWebcam, [stopWebcam]);
 
   return (
-    <div
-      className="webcam-wrap"
-      style={{ transform: mirrored ? "scaleX(-1)" : "none" }}
-    >
+    <div className="webcam-wrap" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <video
         ref={videoRef}
         className="webcam-video"
         playsInline
         muted
-        onPlay={handleVideoPlay}
+        autoPlay
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          background: "#000",
+          borderRadius: 12,
+          transform: mirrored ? "scaleX(-1)" : "none",
+        }}
       />
-      <canvas ref={canvasRef} className="webcam-canvas" />
+      <div style={{ display: "flex", gap: 8 }}>
+        {!running ? (
+          <button onClick={startWebcam} style={btnStyle}>
+            카메라 시작
+          </button>
+        ) : (
+          <button onClick={stopWebcam} style={{ ...btnStyle, background: "#ef4444" }}>
+            카메라 정지
+          </button>
+        )}
+      </div>
+      {errorMsg && <div style={errorStyle}>{errorMsg}</div>}
+      {predictions.length > 0 && (
+        <div style={predBoxStyle}>
+          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>인식 결과</div>
+          {predictions.map((p) => (
+            <div key={p.class_id} style={predRowStyle}>
+              <span>{p.label}</span>
+              <span style={{ color: "#4f46e5", fontWeight: 600 }}>
+                {(p.score * 100).toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
+const btnStyle: React.CSSProperties = {
+  padding: "8px 16px",
+  background: "#4f46e5",
+  color: "#fff",
+  fontSize: 14,
+  fontWeight: 600,
+  borderRadius: 8,
+  border: "none",
+  cursor: "pointer",
+};
+const errorStyle: React.CSSProperties = {
+  padding: "8px 12px",
+  background: "#fef2f2",
+  border: "1px solid #fecaca",
+  color: "#b91c1c",
+  borderRadius: 8,
+  fontSize: 13,
+};
+const predBoxStyle: React.CSSProperties = {
+  padding: 12,
+  background: "#fff",
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+};
+const predRowStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  fontSize: 14,
+  padding: "4px 0",
+};
