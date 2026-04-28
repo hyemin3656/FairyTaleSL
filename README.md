@@ -71,10 +71,17 @@ python test_predictor.py
 ## Folder Structure
 
 workspace/
+
 ├── mmaction2/
+
 └── FairyTaleSL/
+
   └── configs/
+  
   └── checkpoints/
+  
   └── examples/
+  
   └── src/
+  
   └── test_predictor.py/
