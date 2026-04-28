@@ -1,6 +1,6 @@
 # Custom TSN config for MMAction2
 _base_ = [
-    'tsn_imagenet-pretrained-r50_8xb32-1x1x8-100e_kinetics400-rgb.py'  # inherit template config
+    '../../mmaction2/configs/recognition/tsn/tsn_imagenet-pretrained-r50_8xb32-1x1x8-100e_kinetics400-rgb.py'  # inherit template config
 ]
 
 # model settings
