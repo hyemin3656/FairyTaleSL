@@ -68,20 +68,15 @@ Run inference on a single video:
 python test_predictor.py
 ```
 
-## Folder Structure
+## 📁 Project Structure
 
+```bash
 workspace/
-
 ├── mmaction2/
-
 └── FairyTaleSL/
-
-  └── configs/
-  
-  └── checkpoints/
-  
-  └── examples/
-  
-  └── src/
-  
-  └── test_predictor.py/
+    ├── configs/
+    ├── checkpoints/
+    ├── examples/
+    ├── src/
+    └── test_predictor.py
+```
