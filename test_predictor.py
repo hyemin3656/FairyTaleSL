@@ -7,5 +7,5 @@ predictor = TSNPredictor(
     device="cuda:0"
 )
 
-result = predictor.predict("examples/04_56.mp4")
+result = predictor.predict_frames("examples/frames")
 print(result)

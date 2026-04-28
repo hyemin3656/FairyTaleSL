@@ -19,6 +19,7 @@ ann_file_train = 'data/ksl_video/train_list.txt'
 ann_file_val = 'data/ksl_video/val_list.txt'
 ann_file_test = 'data/ksl_video/test_list.txt'
 
+
 train_dataloader = dict(
     batch_size=8,
     dataset=dict(
