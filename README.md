@@ -44,6 +44,14 @@ pip install -v -e .
 
 ---
 
+### 4. Clone this repository
+
+```bash
+cd ../
+git clone https://github.com/hyemin3656/FairyTaleSL.git
+```
+---
+
 ## 📦 Checkpoint
 
 Download your trained model and place it here:
@@ -59,3 +67,14 @@ Run inference on a single video:
 ```bash
 python test_predictor.py
 ```
+
+## Folder Structure
+
+workspace/
+├── mmaction2/
+└── FairyTaleSL/
+  └── configs/
+  └── checkpoints/
+  └── examples/
+  └── src/
+  └── test_predictor.py/
