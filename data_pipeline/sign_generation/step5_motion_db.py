@@ -85,7 +85,7 @@ for g in gloss_list:
                 (gloss, keypoint_data, frame_count, emotion_label, fallback_type, is_registered)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(gloss) DO UPDATE SET
-                keypoint_data = excluded.keypoint_data,
+                keypoint_data = COALESCE(excluded.keypoint_data, keypoint_data),
                 frame_count   = excluded.frame_count,
                 emotion_label = excluded.emotion_label,
                 fallback_type = excluded.fallback_type,

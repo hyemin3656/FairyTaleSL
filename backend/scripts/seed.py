@@ -40,7 +40,7 @@ _BLENDSHAPE_MAP = {
 _GLOSS_LIST_PATH = (
     Path("/data_pipeline/sign_generation/data/gloss_list.json")
     if Path("/data_pipeline").exists()
-    else Path(__file__).parent.parent.parent.parent / "data_pipeline/sign_generation/data/gloss_list.json"
+    else Path(__file__).parent.parent.parent / "data_pipeline/sign_generation/data/gloss_list.json"
 )
 
 

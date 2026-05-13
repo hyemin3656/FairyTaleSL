@@ -48,40 +48,50 @@ _FALLBACK_MAP: dict[str, dict] = _load_fallback_map()
 KEYPOINT_FPS = 15.0  # step3에서 추출한 fps
 
 
-def _load_keypoints_from_sqlite(gloss: str) -> list[list[float]] | None:
-    """motion_db.sqlite에서 BLOB 조회 → N×225 float 시퀀스."""
+def _load_from_sqlite(gloss: str) -> tuple[list[list[float]] | None, dict | None]:
+    """motion_db.sqlite에서 keypoint_data(BLOB)와 anim_data(JSON)를 함께 조회."""
     if not _MOTION_DB_PATH.exists():
-        return None
+        return None, None
     try:
         conn = sqlite3.connect(str(_MOTION_DB_PATH))
         row = conn.execute(
-            "SELECT keypoint_data FROM motion_db WHERE gloss = ?", (gloss,)
+            "SELECT keypoint_data, anim_data FROM motion_db WHERE gloss = ?", (gloss,)
         ).fetchone()
         conn.close()
-        if row and row[0]:
+        if not row:
+            return None, None
+        keypoints = None
+        if row[0]:
             arr = np.frombuffer(row[0], dtype=np.float32)
             n_frames = max(1, len(arr) // 225)
             seq = arr[: n_frames * 225].reshape(n_frames, 225)
-            return seq.tolist()
+            keypoints = seq.tolist()
+        anim_data = None
+        if row[1]:
+            try:
+                anim_data = json.loads(row[1])
+            except Exception:
+                pass
+        return keypoints, anim_data
     except Exception:
         pass
-    return None
+    return None, None
 
 
-def _load_keypoints(gloss: str, keypoint_path: str | None) -> list[list[float]] | None:
-    """keypoint 로드: SQLite BLOB 우선, 없으면 .npy 파일 시도."""
-    seq = _load_keypoints_from_sqlite(gloss)
-    if seq:
-        return seq
+def _load_anim(gloss: str, keypoint_path: str | None) -> tuple[list[list[float]] | None, dict | None]:
+    """keypoint + anim_data 로드: SQLite 우선, 없으면 .npy 파일 시도."""
+    kp, anim = _load_from_sqlite(gloss)
+    if kp:
+        return kp, anim
     if not keypoint_path:
-        return None
+        return None, None
     p = Path(keypoint_path)
     if not p.exists() or p.suffix != ".npy":
-        return None
+        return None, None
     arr = np.load(str(p), allow_pickle=False).astype(np.float32)
     if arr.ndim == 1:
         arr = arr.reshape(1, -1)
-    return arr.tolist()
+    return arr.tolist(), None
 
 _kiwi = Kiwi()
 
@@ -197,7 +207,7 @@ async def resolve_motions(
         # 1. DB에 직접 등록된 글로스
         motion = motion_map.get(token)
         if motion:
-            kp_seq = _load_keypoints(motion.gloss, motion.keypoint_path)
+            kp_seq, anim_data = _load_anim(motion.gloss, motion.keypoint_path)
             duration = len(kp_seq) / KEYPOINT_FPS if kp_seq else motion.duration_sec
             clips.append(MotionClip(
                 gloss=motion.gloss,
@@ -208,6 +218,7 @@ async def resolve_motions(
                 is_fallback=False,
                 keypoints=kp_seq,
                 fps=KEYPOINT_FPS,
+                animation_data=anim_data,
             ))
 
         # 2. decompose fallback
@@ -215,7 +226,7 @@ async def resolve_motions(
             for alt_gloss in fb["glosses"]:
                 alt_motion = motion_map.get(alt_gloss)
                 if alt_motion:
-                    alt_kp = _load_keypoints(alt_motion.gloss, alt_motion.keypoint_path)
+                    alt_kp, alt_anim = _load_anim(alt_motion.gloss, alt_motion.keypoint_path)
                     alt_dur = len(alt_kp) / KEYPOINT_FPS if alt_kp else alt_motion.duration_sec
                     clips.append(MotionClip(
                         gloss=token,
@@ -227,6 +238,7 @@ async def resolve_motions(
                         fallback_type="decompose",
                         keypoints=alt_kp,
                         fps=KEYPOINT_FPS,
+                        animation_data=alt_anim,
                     ))
 
         # 3. text fallback

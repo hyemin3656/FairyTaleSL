@@ -20,10 +20,10 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     birthdate: Mapped[date | None] = mapped_column(Date, nullable=True)
     gender: Mapped[str | None] = mapped_column(
-        Enum("M", "F", "OTHER", name="gender_enum"), nullable=True
+        Enum("M", "F", "OTHER", name="gender_enum", create_type=False), nullable=True
     )
     role: Mapped[str] = mapped_column(
-        Enum("child", "guardian", "admin", name="role_enum"),
+        Enum("child", "guardian", "admin", name="role_enum", create_type=False),
         nullable=False,
         default="child",
     )

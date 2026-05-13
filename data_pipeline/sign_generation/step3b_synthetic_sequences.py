@@ -56,22 +56,49 @@ def smoothstep(t: float) -> float:
     return t * t * (3 - 2 * t)
 
 
-def make_sequence(sign_frame: np.ndarray) -> np.ndarray:
-    """1-프레임 수어자세 → (N_FRAMES, 225) 시퀀스."""
+# pose 내 팔 관련 랜드마크 인덱스 (0-based, pose 블록 기준)
+# lSh=11, rSh=12, lEl=13, rEl=14, lWr=15, rWr=16
+_ARM_POSE_IDX = [11, 12, 13, 14, 15, 16]
+
+def _amplify_sign_pose(sign: np.ndarray, amp: float = 2.0) -> np.ndarray:
+    """
+    수어자세에서 팔/손목 좌표를 중립 대비 amp배 증폭.
+
+    중립(y=1.0) 기준 손목이 y=0.78이면 차이 0.22를 amp배로 늘려
+    y = 1.0 - amp*0.22 = 0.56 으로 이동 → 팔이 더 올라가 보임.
+    손 landmark는 변경 없음 (손가락 모양 유지).
+    """
+    out = sign.copy()
+    off = 126  # pose 블록 시작
+    neutral_arm = NEUTRAL[off:off + 33 * 3].copy()
+
+    for idx in _ARM_POSE_IDX:
+        for ch in range(3):  # x, y, z
+            pos     = off + idx * 3 + ch
+            n_val   = neutral_arm[idx * 3 + ch]
+            s_val   = sign[pos]
+            out[pos] = n_val + amp * (s_val - n_val)
+
+    return out
+
+
+def make_sequence(sign_frame: np.ndarray, amp: float = 2.0) -> np.ndarray:
+    """1-프레임 수어자세 → (N_FRAMES, 225) 시퀀스 (포즈 amplification 포함)."""
+    amplified = _amplify_sign_pose(sign_frame, amp)
     frames = []
-    ease_in_end  = 6    # 0~5: ease-in
-    hold_end     = 21   # 6~20: 유지
+    ease_in_end = 6    # 0~5: ease-in
+    hold_end    = 21   # 6~20: 유지
     # 21~29: ease-out
 
     for i in range(N_FRAMES):
         if i < ease_in_end:
             t = smoothstep(i / ease_in_end)
-            f = NEUTRAL * (1 - t) + sign_frame * t
+            f = NEUTRAL * (1 - t) + amplified * t
         elif i < hold_end:
-            f = sign_frame.copy()
+            f = amplified.copy()
         else:
             t = smoothstep((i - hold_end) / (N_FRAMES - hold_end))
-            f = sign_frame * (1 - t) + NEUTRAL * t
+            f = amplified * (1 - t) + NEUTRAL * t
         frames.append(f)
 
     return np.array(frames, dtype=np.float32)  # (N_FRAMES, 225)
@@ -81,51 +108,50 @@ def main():
     conn = sqlite3.connect(str(DB_PATH))
     cur  = conn.cursor()
 
-    cur.execute("SELECT COUNT(*) FROM motion_db WHERE keypoint_data IS NOT NULL")
-    total = cur.fetchone()[0]
-    print(f"keypoint 있는 글로스: {total}개 → {N_FRAMES}-프레임 시퀀스 생성")
-
-    cur.execute("SELECT gloss, keypoint_data FROM motion_db WHERE keypoint_data IS NOT NULL")
-    rows = cur.fetchall()
-
-    updated = 0
-    skipped = 0
-    bad_dim = 0
-
-    for gloss, blob in rows:
+    # ── 1) 실제 영상에서 추출한 keypoint로 synthetic 시퀀스 생성 ─
+    # is_registered=1 이지만 프레임 수가 적은 경우만 처리 (= 구 1-프레임 데이터)
+    cur.execute("""
+        SELECT gloss, keypoint_data FROM motion_db
+        WHERE keypoint_data IS NOT NULL AND is_registered = 1
+    """)
+    rows_real = cur.fetchall()
+    updated_real = 0
+    for gloss, blob in rows_real:
         arr = np.frombuffer(blob, dtype=np.float32)
-
-        # 225차원이 아닌 keypoint는 건너뜀
         if len(arr) % 225 != 0:
-            bad_dim += 1
             continue
-
-        n_frames = max(1, len(arr) // 225)
-
-        if n_frames >= N_FRAMES:
-            skipped += 1
-            continue
-
-        # 대표 프레임: 기존 시퀀스의 중간 프레임
-        mid = n_frames // 2
+        n = len(arr) // 225
+        if n >= N_FRAMES:
+            continue  # 이미 충분한 프레임 (실제 영상 데이터) — 건드리지 않음
+        mid = n // 2
         sign_frame = arr[mid * 225 : (mid + 1) * 225].copy()
+        seq = make_sequence(sign_frame, amp=2.0)
+        cur.execute("UPDATE motion_db SET keypoint_data=? WHERE gloss=?", (seq.tobytes(), gloss))
+        updated_real += 1
+    conn.commit()
+    print(f"실제 keypoint synthetic 변환: {updated_real}개")
 
-        seq = make_sequence(sign_frame)
-        new_blob = seq.tobytes()
+    # ── 2) keypoint가 없는 글로스 → 평균 포즈 기반 synthetic ─────
+    avg_pose_path = Path("/tmp/avg_sign_pose.npy")
+    if not avg_pose_path.exists():
+        print("평균 포즈 파일 없음 (/tmp/avg_sign_pose.npy). 먼저 평균 포즈를 계산하세요.")
+        conn.close()
+        return
 
-        cur.execute(
-            "UPDATE motion_db SET keypoint_data=? WHERE gloss=?",
-            (new_blob, gloss)
-        )
-        updated += 1
-        if updated % 500 == 0:
-            print(f"  {updated}/{len(rows)} 완료...")
-            conn.commit()
+    avg_sign = np.load(str(avg_pose_path)).astype(np.float32)
+    generic_seq = make_sequence(avg_sign, amp=1.0)  # 평균 포즈는 증폭 없이
+    generic_blob = generic_seq.tobytes()
 
+    cur.execute("SELECT COUNT(*) FROM motion_db WHERE keypoint_data IS NULL")
+    null_count = cur.fetchone()[0]
+    print(f"keypoint 없는 글로스: {null_count}개 → generic synthetic 시퀀스 생성")
+
+    cur.execute("UPDATE motion_db SET keypoint_data=? WHERE keypoint_data IS NULL", (generic_blob,))
+    updated_null = cur.rowcount
     conn.commit()
     conn.close()
 
-    print(f"\n완료: {updated}개 업데이트, {skipped}개 건너뜀 (이미 {N_FRAMES}프레임+), {bad_dim}개 차원 불일치")
+    print(f"\n완료: 실제→synthetic {updated_real}개, generic {updated_null}개")
     print(f"각 글로스: {N_FRAMES}프레임 @{TARGET_FPS}fps = {N_FRAMES/TARGET_FPS:.1f}초")
 
 

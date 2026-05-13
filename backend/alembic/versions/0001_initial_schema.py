@@ -17,10 +17,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enum 타입 생성
-    op.execute("CREATE TYPE gender_enum AS ENUM ('M', 'F', 'OTHER')")
-    op.execute("CREATE TYPE role_enum AS ENUM ('child', 'guardian', 'admin')")
-
     op.create_table(
         "users",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),

@@ -54,7 +54,7 @@ export default function HomePage() {
             <>
               <p style={subtitleStyle}>수어로 함께 읽는 동화책 플랫폼</p>
               <p style={leadStyle}>
-                귀에 익은 전래동화를 수어와 함께 읽어 보세요.
+                전래동화를 수어와 함께 읽어 보세요.
                 <br />
                 아이와 가족이 손끝으로 이야기를 나누는 가장 따뜻한 방법입니다.
               </p>
@@ -82,7 +82,7 @@ export default function HomePage() {
         </section>
 
         <footer style={footerStyle}>
-          © 2026 FairyTaleSL · 종합설계 프로젝트
+          © 2026 FairyTaleSL
         </footer>
       </main>
     </div>
