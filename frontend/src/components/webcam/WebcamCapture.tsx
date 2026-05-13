@@ -21,7 +21,7 @@ interface WebcamCaptureProps {
 const FPS = 30;
 const CAPTURE_INTERVAL_MS = 1000 / FPS;
 const WINDOW_MS = 3000;
-const NUM_CLIPS = 25;
+const NUM_CLIPS = 8;       // TSN segment 수 ↓ — CPU 추론 ~3× 빨라짐
 const PREDICT_INTERVAL_MS = 1000;
 const DEFAULT_ENDPOINT = "http://localhost:8001/predict_frames";
 

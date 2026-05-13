@@ -24,10 +24,14 @@ async def lifespan(app: FastAPI):
     get_model(vocab=VOCAB, device="cpu")
     load_weights(WEIGHTS_PATH)
     print("[AI Engine] ST-GCN ready.")
-    # TSN(MMAction2) 모델 사전 로드 (체크포인트 없으면 lazy 유지)
+    # TSN(MMAction2) 모델 사전 로드 + dummy 추론으로 첫 호출 페널티 제거
     try:
         from routers.predict_tsn import get_predictor
-        get_predictor()
+        import numpy as np
+        predictor = get_predictor()
+        dummy_frames = [np.zeros((240, 320, 3), dtype=np.uint8)] * 8
+        predictor.predict_frames(dummy_frames, topk=1)
+        print("[AI Engine] TSN warmed up.")
     except Exception as e:
         print(f"[AI Engine] TSN preload skipped: {e}")
     # T5 백그라운드 로드 예약 (첫 요청 전에 미리 시작)
