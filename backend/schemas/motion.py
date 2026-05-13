@@ -34,6 +34,8 @@ class MotionClip(BaseModel):
     # N×225 keypoint 시퀀스 (15fps): lhand(63) + rhand(63) + pose(99)
     keypoints: list[list[float]] | None = None
     fps: float = 15.0
+    # 사전 계산된 bone rotation 데이터 (step6_bake_anim.py 생성)
+    animation_data: dict | None = None
 
 
 class GlossConvertResponse(BaseModel):

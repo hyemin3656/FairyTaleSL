@@ -1,17 +1,43 @@
 import { useNavigate } from "react-router-dom";
 import type { BookListItem } from "../../api/books";
-import rabbitTurtleImg from "../../imgs/토끼와 거북이.jpg";
-import humpGrandpaImg from "../../imgs/혹부리 영감.jpg";
-import findStarImg from "../../imgs/별을 찾아서.jpg";
+import imgGeonwoo     from "../../imgs/견우와 직녀.png";
+import imgGoldAxe     from "../../imgs/금도끼 은도끼.png";
+import imgDangun      from "../../imgs/단군신화.png";
+import imgFindStar    from "../../imgs/별을 찾아서.jpg";
+import imgFairy       from "../../imgs/선녀와 나무꾼.png";
+import imgSimcheong   from "../../imgs/심청전.png";
+import imgJanghwa     from "../../imgs/장화홍련.png";
+import imgKongjwi     from "../../imgs/콩쥐팥쥐.png";
+import imgRabbit      from "../../imgs/토끼와 거북이.jpg";
+import imgPatjuk      from "../../imgs/팥죽 할머니와 호랑이.png";
+import imgSun         from "../../imgs/해님 달님.png";
+import imgHumpback    from "../../imgs/혹부리 영감.jpg";
+import imgHeungbu     from "../../imgs/흥부와 놀부.png";
 
 interface Props {
   book: BookListItem;
 }
 
+const COVER_MAP: [string[], string][] = [
+  [["견우", "직녀"],            imgGeonwoo],
+  [["금도끼", "은도끼"],        imgGoldAxe],
+  [["단군"],                    imgDangun],
+  [["별이를 찾", "별을 찾"],    imgFindStar],
+  [["선녀", "나무꾼"],          imgFairy],
+  [["심청"],                    imgSimcheong],
+  [["장화", "홍련"],            imgJanghwa],
+  [["콩쥐", "팥쥐"],            imgKongjwi],
+  [["토끼", "거북"],            imgRabbit],
+  [["팥죽", "호랑이"],          imgPatjuk],
+  [["해님", "달님"],            imgSun],
+  [["혹부리"],                  imgHumpback],
+  [["흥부", "놀부"],            imgHeungbu],
+];
+
 function pickLocalCover(title: string): string | null {
-  if (title.includes("토끼") || title.includes("거북")) return rabbitTurtleImg;
-  if (title.includes("혹부리")) return humpGrandpaImg;
-  if (title.includes("별")) return findStarImg;
+  for (const [keywords, img] of COVER_MAP) {
+    if (keywords.some((kw) => title.includes(kw))) return img;
+  }
   return null;
 }
 

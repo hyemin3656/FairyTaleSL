@@ -12,6 +12,14 @@ export interface MotionClip {
   // N×225 keypoint 시퀀스 (15fps): lhand(0..62) + rhand(63..125) + pose(126..224)
   keypoints?: number[][] | null;
   fps?: number;
+  // 사전 계산된 본 회전 데이터 (step6_bake_anim.py 생성)
+  animation_data?: AnimData | null;
+}
+
+export interface AnimData {
+  fps: number;
+  n: number;
+  bones: Record<string, number[] | [number, number, number][]>;
 }
 
 export interface GlossConvertResponse {
