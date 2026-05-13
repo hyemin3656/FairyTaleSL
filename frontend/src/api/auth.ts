@@ -84,3 +84,12 @@ export async function saveQARecord(sessionId: string, payload: {
 }): Promise<void> {
   await http.post(`/sessions/${sessionId}/qa`, payload);
 }
+
+export async function saveSectionResult(sessionId: string, payload: {
+  section_order: number;
+  follow_along_passed?: boolean | null;
+  quiz_correct?: boolean | null;
+  quiz_attempts?: number;
+}): Promise<void> {
+  await http.post(`/sessions/${sessionId}/section-result`, payload);
+}

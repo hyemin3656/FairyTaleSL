@@ -1,0 +1,31 @@
+# FairyTaleSL 학습 시나리오 튜닝값
+# 수치 변경 시 서버 재기동 필요 (lazy-load 캐시 무효화 안 됨)
+
+recognition:
+  num_clips: 8                # TSN segment 수 — CPU 추론 속도와 trade-off
+  window_ms: 3000             # 프레임 버퍼 시간 윈도우
+  predict_interval_ms: 1000   # 예측 주기 (프론트엔드 캡처 측에서도 동일 적용)
+  success_threshold: 0.5      # 따라하기 통과 점수 (softmax)
+  hint_threshold: 0.3         # "비슷해요" 피드백 진입 점수
+  topk: 67                    # 전체 클래스 점수 전달 (중복 라벨 합산용)
+
+scenario:
+  pause_on_question: true
+  resume_strategy: token_index    # 질문 마치기 후 재개 지점 — 토큰 인덱스 보존
+  follow_along_optional: true     # 부 모드: 따라하기
+  child_question_optional: true   # 부 모드: 아이가 질문하기
+  quiz_required: true             # 주 모드: 저장된 퀴즈
+
+quiz:
+  max_retries: 2                  # 풀기 모드 최대 시도 후 정답 공개
+  similarity_threshold: 0.7       # 사전 합성된 동의어와 정답 매칭 임계값 (TODO: 알고리즘 결정 후 조정)
+  synonyms_per_answer: 10         # Gemini 사전생성 시 답안당 동의어 개수
+  trigger: section_end            # 트리거 지점 — 섹션 종료 시 (TODO: 추후 mid-section timestamp 도입 가능)
+
+child_question:
+  llm_model: gemini-2.5-flash
+  response_style: child_friendly  # "쉬운 단어, 1-2문장" 시스템 프롬프트 반영
+  max_output_tokens: 120
+
+llm:
+  gemini_model: gemini-2.5-flash  # 퀴즈 사전생성 / 아이 질문 응답 공통

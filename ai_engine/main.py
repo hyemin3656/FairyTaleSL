@@ -24,16 +24,16 @@ async def lifespan(app: FastAPI):
     get_model(vocab=VOCAB, device="cpu")
     load_weights(WEIGHTS_PATH)
     print("[AI Engine] ST-GCN ready.")
-    # TSN(MMAction2) 모델 사전 로드 + dummy 추론으로 첫 호출 페널티 제거
+    # 수어 인식기 사전 로드 + dummy 추론으로 첫 호출 페널티 제거
     try:
-        from routers.predict_tsn import get_predictor
+        from routers.predict_tsn import get_recognizer
         import numpy as np
-        predictor = get_predictor()
+        recognizer = get_recognizer()
         dummy_frames = [np.zeros((240, 320, 3), dtype=np.uint8)] * 8
-        predictor.predict_frames(dummy_frames, topk=1)
-        print("[AI Engine] TSN warmed up.")
+        recognizer.predict_clip(dummy_frames, topk=1)
+        print("[AI Engine] Recognizer warmed up.")
     except Exception as e:
-        print(f"[AI Engine] TSN preload skipped: {e}")
+        print(f"[AI Engine] Recognizer preload skipped: {e}")
     # T5 백그라운드 로드 예약 (첫 요청 전에 미리 시작)
     from models.t5_qa import preload as t5_preload
     t5_preload()

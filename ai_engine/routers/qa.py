@@ -1,11 +1,14 @@
 """
-POST /qa/question — 질문 생성
-POST /qa/evaluate — 답변 평가
+POST /qa/question — T5 섹션 이해도 질문 생성 (레거시)
+POST /qa/evaluate — T5 답변 평가 (레거시)
+POST /qa/followup — T5 후속 질문 (레거시)
+POST /qa/child    — Gemini 2.5 Flash 아이 자유질문 응답 (FairyTaleSL 시나리오)
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from models.t5_qa import generate_question, evaluate_answer, generate_followup_question
+from models.gemini_child import answer_child_question
 
 router = APIRouter(prefix="/qa", tags=["qa"])
 
@@ -52,3 +55,21 @@ async def followup(req: FollowupRequest):
         feedback=req.feedback,
     )
     return {"question": question}
+
+
+class ChildQARequest(BaseModel):
+    question: str
+    story_context: str   # 현재 섹션 본문 (TODO: 멀티섹션 컨텍스트 도입 시 string concat)
+
+
+@router.post("/child")
+async def qa_child(req: ChildQARequest):
+    if not req.question.strip():
+        raise HTTPException(status_code=400, detail="question is empty")
+    try:
+        answer = answer_child_question(req.question, req.story_context)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"gemini error: {e}")
+    return {"answer": answer}

@@ -528,6 +528,273 @@ a {
 }
 .btn-practice:hover { background: #059669; }
 
+/* ── btn-skip-playback (빠르게 완료) ── */
+.btn-skip-playback {
+  background: #ede9fe;
+  color: var(--color-primary);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #c4b5fd;
+  transition: background 0.15s, color 0.15s;
+  margin-left: auto;
+}
+.btn-skip-playback:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+}
+.btn-skip-playback:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── SECTION_DONE 단계 카드 ── */
+.section-done {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+.step-card.step-optional   { border-left: 4px solid #10b981; }
+.step-card.step-required   { border-left: 4px solid #f59e0b; background: #fffbeb; }
+.step-card.step-advance    { border-left: 4px solid var(--color-primary); }
+
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.step-badge {
+  display: inline-block;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+.step-badge.step-badge-required {
+  background: #fde68a;
+  color: #92400e;
+}
+.step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.step-desc {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.step-desc strong { color: #b45309; }
+
+.btn-solve-cta {
+  align-self: flex-start;
+  background: #f59e0b;
+  color: white;
+  padding: 11px 26px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-solve-cta:hover { background: #d97706; transform: translateY(-1px); }
+
+.section-note {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+  padding: 8px 0;
+}
+
+/* ── QuizPanel ── */
+.quiz-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px;
+  background: linear-gradient(135deg, #faf5ff 0%, #fff7ed 100%);
+  border: 2px solid #ddd6fe;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+}
+
+.quiz-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9d5ff;
+}
+.quiz-panel-icon { font-size: 28px; }
+.quiz-panel-titles { display: flex; flex-direction: column; gap: 2px; }
+.quiz-panel-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+.quiz-panel-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.quiz-question-box {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e9d5ff;
+}
+.quiz-question-label {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+.quiz-question {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* 풀기/정답보기 카드형 선택 */
+.quiz-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.quiz-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 14px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+.quiz-choice:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.08); }
+.quiz-choice-primary {
+  border-color: var(--color-primary);
+  background: #f5f3ff;
+}
+.quiz-choice-primary:hover { background: var(--color-primary); color: white; }
+.quiz-choice-primary:hover .quiz-choice-desc { color: #ede9fe; }
+.quiz-choice-secondary {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.quiz-choice-secondary:hover { border-color: #64748b; }
+.quiz-choice-emoji { font-size: 28px; }
+.quiz-choice-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: inherit;
+}
+.quiz-choice-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* 답안 입력 블록 */
+.quiz-answer-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e9d5ff;
+}
+.quiz-answer-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.3px;
+}
+.quiz-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  background: white;
+  color: var(--color-text);
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.quiz-input:focus { outline: none; border-color: var(--color-primary); }
+.quiz-attempts {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  align-self: flex-end;
+}
+.btn-submit-quiz {
+  align-self: flex-start;
+  padding: 11px 26px;
+  font-size: 15px;
+}
+
+/* 결과 표시 */
+.quiz-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: 12px;
+}
+.quiz-result.success { background: #d1fae5; border: 1px solid #6ee7b7; }
+.quiz-result.reveal  { background: #fef3c7; border: 1px solid #fcd34d; }
+.quiz-result-badge {
+  font-size: 16px;
+  font-weight: 800;
+  color: #065f46;
+}
+.quiz-result-badge-reveal { color: #92400e; }
+.quiz-result-text {
+  font-size: 15px;
+  margin: 0;
+  color: var(--color-text);
+}
+.quiz-result-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+  font-style: italic;
+}
+.btn-acknowledge {
+  align-self: flex-start;
+  margin-top: 6px;
+  background: var(--color-primary);
+  color: white;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-acknowledge:hover { background: var(--color-primary-hover); transform: translateY(-1px); }
+.feedback.error { background: #fee2e2; color: #991b1b; }
+
 /* ── SignPracticePage ── */
 .practice-page {
   min-height: 100vh;

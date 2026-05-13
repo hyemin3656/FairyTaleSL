@@ -15,7 +15,8 @@ from core.database import get_db
 from routers.auth import get_current_user
 from schemas.user import LearningSessionOut, MyPageResponse, UserOut, SessionQAOut
 from services.user_service import (
-    create_session, update_session, save_qa_record, get_user_sessions
+    create_session, update_session, save_qa_record, get_user_sessions,
+    upsert_section_result,
 )
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -37,6 +38,13 @@ class QARecordRequest(BaseModel):
     user_answer: str | None = None
     llm_response: str | None = None
     score: float | None = None                 # 0.0–1.0
+
+
+class SectionResultRequest(BaseModel):
+    section_order: int
+    follow_along_passed: bool | None = None
+    quiz_correct: bool | None = None
+    quiz_attempts: int | None = None
 
 
 @router.post("", response_model=dict, status_code=201)
@@ -83,6 +91,26 @@ async def add_qa(
         score=req.score,
     )
     return {"qa_id": str(record.id)}
+
+
+@router.post("/{session_id}/section-result", response_model=dict, status_code=201)
+async def upsert_section(
+    session_id: uuid.UUID,
+    req: SectionResultRequest,
+    user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """섹션별 결과 upsert (따라하기/퀴즈). 같은 (session_id, section_order)는 덮어쓰기."""
+    row = await upsert_section_result(
+        db, session_id,
+        section_order=req.section_order,
+        follow_along_passed=req.follow_along_passed,
+        quiz_correct=req.quiz_correct,
+        quiz_attempts=req.quiz_attempts,
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="세션을 찾을 수 없습니다.")
+    return {"ok": True, "id": str(row.id)}
 
 
 @router.get("/me", response_model=MyPageResponse)

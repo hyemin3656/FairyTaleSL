@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
-from routers import books, motions, gloss, ws, recognition_ws, qa, auth, sessions
+from routers import books, motions, gloss, ws, recognition_ws, qa, auth, sessions, quizzes
 
 app = FastAPI(
     title="PSYcho API",
@@ -36,6 +36,7 @@ app.include_router(recognition_ws.router)  # /ws/recognition
 app.include_router(qa.router, prefix="/api/v1")        # /api/v1/qa/*
 app.include_router(auth.router, prefix="/api/v1")      # /api/v1/auth/*
 app.include_router(sessions.router, prefix="/api/v1")  # /api/v1/sessions/*
+app.include_router(quizzes.router, prefix="/api/v1")   # /api/v1/books/{id}/quizzes, /api/v1/quizzes/{id}/check
 
 
 @app.get("/health")

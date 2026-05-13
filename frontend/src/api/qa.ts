@@ -44,3 +44,17 @@ export async function generateFollowup(
   });
   return data;
 }
+
+export interface ChildQAResponse {
+  answer: string;
+}
+
+export async function askChildQuestion(
+  question: string, storyContext: string
+): Promise<ChildQAResponse> {
+  const { data } = await http.post<ChildQAResponse>("/qa/child", {
+    question,
+    story_context: storyContext,
+  });
+  return data;
+}

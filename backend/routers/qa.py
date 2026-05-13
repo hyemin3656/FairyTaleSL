@@ -52,3 +52,13 @@ class FollowupRequest(BaseModel):
 @router.post("/followup")
 async def make_followup(req: FollowupRequest):
     return await _post("/qa/followup", req.model_dump())
+
+
+class ChildQARequest(BaseModel):
+    question: str
+    story_context: str
+
+
+@router.post("/child")
+async def child_qa(req: ChildQARequest):
+    return await _post("/qa/child", req.model_dump())

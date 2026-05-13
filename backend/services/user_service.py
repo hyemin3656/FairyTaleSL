@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from core.security import hash_password, verify_password
 from models.user import User
 from models.session import LearningSession, SessionQA
+from models.section_result import SectionResult
 from models.book import Book
 from schemas.user import RegisterRequest
 
@@ -97,6 +98,54 @@ async def save_qa_record(db: AsyncSession, session_id: uuid.UUID,
     await db.commit()
     await db.refresh(record)
     return record
+
+
+async def upsert_section_result(
+    db: AsyncSession,
+    session_id: uuid.UUID,
+    section_order: int,
+    follow_along_passed: bool | None = None,
+    quiz_correct: bool | None = None,
+    quiz_attempts: int | None = None,
+) -> SectionResult | None:
+    """섹션별 결과 upsert. 세션이 없으면 None 반환."""
+    # 세션 소유권 확인은 라우터에서 처리
+    sess = await db.get(LearningSession, session_id)
+    if not sess:
+        return None
+
+    result = await db.execute(
+        select(SectionResult).where(
+            SectionResult.session_id == session_id,
+            SectionResult.section_order == section_order,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if row is None:
+        row = SectionResult(
+            session_id=session_id,
+            section_order=section_order,
+            follow_along_passed=follow_along_passed,
+            quiz_correct=quiz_correct,
+            quiz_attempts=quiz_attempts or 0,
+        )
+        db.add(row)
+    else:
+        if follow_along_passed is not None:
+            row.follow_along_passed = follow_along_passed
+        if quiz_correct is not None or quiz_attempts is not None:
+            # quiz_correct는 None도 의미 있음 (정답보기) — quiz_attempts와 함께 들어올 때만 갱신
+            row.quiz_correct = quiz_correct
+            if quiz_attempts is not None:
+                row.quiz_attempts = quiz_attempts
+
+    # last_section_order 갱신
+    if section_order > sess.last_section_order:
+        sess.last_section_order = section_order
+
+    await db.commit()
+    await db.refresh(row)
+    return row
 
 
 async def get_user_sessions(db: AsyncSession, user_id: uuid.UUID) -> list:
