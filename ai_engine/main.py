@@ -8,9 +8,17 @@ AI Engine — FastAPI 서비스 (포트 8001)
   POST /qa/evaluate  — pko-T5 답변 평가
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# 루트 .env 를 우선 로드 — Gemini API 키 등 (ai_engine/.env 가 있으면 그것이 override)
+_ROOT_ENV = Path(__file__).resolve().parents[1] / ".env"
+if _ROOT_ENV.exists():
+    load_dotenv(_ROOT_ENV)
+load_dotenv()   # ai_engine/.env (있으면)
 
 from routers import predict, predict_tsn, qa
 

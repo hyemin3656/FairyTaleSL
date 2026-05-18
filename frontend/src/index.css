@@ -635,6 +635,27 @@ a {
   gap: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e9d5ff;
+  position: relative;
+}
+.btn-quiz-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4b5563;
+  background: white;
+  border: 1.5px solid #d1d5db;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+  margin-right: 4px;
+}
+.btn-quiz-back:hover {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #9ca3af;
 }
 .quiz-panel-icon { font-size: 28px; }
 .quiz-panel-titles { display: flex; flex-direction: column; gap: 2px; }
@@ -794,6 +815,292 @@ a {
 }
 .btn-acknowledge:hover { background: var(--color-primary-hover); transform: translateY(-1px); }
 .feedback.error { background: #fee2e2; color: #991b1b; }
+
+/* ── ChildQuestionPanel (아이가 질문하기) ── */
+.cq-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  background: #f8faff;
+  border: 2px solid #c7d2fe;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+}
+
+/* 헤더 */
+.cq-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e7ff;
+}
+.cq-header-title { display: flex; align-items: center; gap: 12px; }
+.cq-header-icon { font-size: 26px; }
+.cq-header-text { display: flex; flex-direction: column; gap: 2px; }
+.cq-header-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #4338ca;
+}
+.cq-header-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.btn-cq-exit {
+  flex-shrink: 0;
+  background: white;
+  color: #b91c1c;
+  border: 2px solid #fca5a5;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  cursor: pointer;
+}
+.btn-cq-exit:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+/* 입력 모드 탭 */
+.cq-mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px;
+  background: #eef2ff;
+  border-radius: 10px;
+}
+.cq-mode-tab {
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6366f1;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.cq-mode-tab:hover:not(.active) { background: rgba(99, 102, 241, 0.08); }
+.cq-mode-tab.active {
+  background: white;
+  color: #4338ca;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.18);
+}
+
+/* 입력 카드 (수어 누적 / 키보드) */
+.cq-input-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e0e7ff;
+}
+.cq-input-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.3px;
+}
+.cq-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+  align-items: center;
+}
+.cq-token {
+  display: inline-block;
+  background: #ede9fe;
+  color: #4338ca;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.cq-placeholder {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+.cq-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  background: white;
+  color: var(--color-text);
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+.cq-textarea:focus { outline: none; border-color: #6366f1; }
+
+/* 지우기 버튼 — 명확히 보이도록 */
+.btn-cq-clear {
+  align-self: flex-start;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-cq-clear:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+/* 보낼 질문 미리보기 + 보내기 버튼 */
+.cq-send-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+}
+.cq-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+.cq-preview-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+  letter-spacing: 0.3px;
+}
+.cq-preview-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+.cq-preview-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+  font-weight: 400;
+}
+.btn-cq-send {
+  align-self: flex-end;
+  background: #f59e0b;
+  color: white;
+  padding: 11px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-cq-send:hover:not(:disabled) {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+.btn-cq-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 응답 / 오류 */
+.cq-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f0fdf4;
+  border: 1px solid #6ee7b7;
+  border-radius: 10px;
+}
+.cq-answer-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #065f46;
+}
+.cq-answer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #d1fae5;
+  border-radius: 8px;
+}
+.cq-answer-section-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #047857;
+  letter-spacing: 0.02em;
+}
+.cq-answer-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.6;
+}
+.cq-answer-gloss {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cq-answer-gloss-token {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #065f46;
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  border-radius: 999px;
+}
+.cq-answer-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+  font-style: italic;
+}
+.cq-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+}
+.cq-error-text {
+  font-size: 14px;
+  color: #991b1b;
+  margin: 0;
+  flex: 1;
+}
+.btn-cq-retry {
+  flex-shrink: 0;
+  background: #ef4444;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-cq-retry:hover { background: #dc2626; }
 
 /* ── SignPracticePage ── */
 .practice-page {

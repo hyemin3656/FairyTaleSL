@@ -71,5 +71,11 @@ async def qa_child(req: ChildQARequest):
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"gemini error: {e}")
+        msg = str(e)
+        if "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower() or " 429" in msg:
+            raise HTTPException(
+                status_code=429,
+                detail="오늘의 AI 응답 한도를 모두 사용했어요. 잠시 후 다시 시도해 주세요.",
+            )
+        raise HTTPException(status_code=500, detail=f"gemini error: {msg}")
     return {"answer": answer}

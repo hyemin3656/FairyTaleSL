@@ -61,6 +61,7 @@ export default function BookReadPage() {
   const exitChildQuestion   = useScenarioStore((s) => s.exitChildQuestion);
   const startQuiz           = useScenarioStore((s) => s.startQuiz);
   const finishQuiz          = useScenarioStore((s) => s.finishQuiz);
+  const cancelQuizAction    = useScenarioStore((s) => s.cancelQuiz);
   const nextSectionAction   = useScenarioStore((s) => s.nextSection);
   const resetStore          = useScenarioStore((s) => s.reset);
 
@@ -384,12 +385,18 @@ export default function BookReadPage() {
             </div>
           )}
 
-          {/* CHILD_QUESTION 패널 */}
+          {/* CHILD_QUESTION 패널 — Gemini에 책 전체 본문을 컨텍스트로 전달
+              (책 한 권 약 1.5K~3K 토큰 수준이라 무료 한도 부담은 적고,
+               "직녀가 누구야"처럼 다른 섹션에 등장하는 인물·정보도 답할 수 있게 됨) */}
           {mode === "CHILD_QUESTION" && currentSection && (
             <ChildQuestionPanel
-              storyContext={currentSection.text}
+              storyContext={book.sections.map((s, i) => {
+                const head = s.title ? `${i + 1}. ${s.title}` : `${i + 1}.`;
+                return `[${head}]\n${s.text}`;
+              }).join("\n\n")}
               onAnswer={handleChildAnswer}
               onExit={handleExitChildQ}
+              answerGlossTokens={ws.tokens}
             />
           )}
 
@@ -410,7 +417,11 @@ export default function BookReadPage() {
 
           {/* QUIZ 패널 */}
           {mode === "QUIZ" && pendingQuiz && (
-            <QuizPanel quiz={pendingQuiz} onComplete={handleQuizComplete} />
+            <QuizPanel
+              quiz={pendingQuiz}
+              onComplete={handleQuizComplete}
+              onCancel={cancelQuizAction}
+            />
           )}
 
           {/* SECTION_DONE: 단계별 카드로 명확하게 구분 */}

@@ -74,6 +74,7 @@ interface ScenarioState {
 
   startQuiz: (quiz: Quiz) => void;
   finishQuiz: (result: { correct: boolean | null; attempts: number }) => void;
+  cancelQuiz: () => void;        // 결과 기록 없이 QUIZ → SECTION_DONE 복귀
 
   nextSection: () => void;
   complete: () => void;
@@ -84,7 +85,7 @@ const initial: Omit<ScenarioState,
   | "startSession" | "pause" | "resume" | "sectionEnd" | "skipPlayback"
   | "enterFollowAlong" | "passFollowAlong" | "skipFollowAlong"
   | "enterChildQuestion" | "exitChildQuestion"
-  | "startQuiz" | "finishQuiz"
+  | "startQuiz" | "finishQuiz" | "cancelQuiz"
   | "nextSection" | "complete" | "reset"
 > = {
   mode: "IDLE",
@@ -216,6 +217,12 @@ export const useScenarioStore = create<ScenarioState>((set, get) => ({
         quizAttempts: attempts,
       }),
     });
+  },
+
+  cancelQuiz: () => {
+    const { mode } = get();
+    if (mode !== "QUIZ") return warnInvalid("cancelQuiz", mode);
+    set({ mode: "SECTION_DONE", pendingQuiz: null });
   },
 
   nextSection: () => {

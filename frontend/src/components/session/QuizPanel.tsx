@@ -28,9 +28,10 @@ type Outcome = "correct" | "wrong-final" | "revealed-only";
 interface Props {
   quiz: QuizOut;
   onComplete: (r: { correct: boolean | null; attempts: number }) => void;
+  onCancel?: () => void;
 }
 
-export default function QuizPanel({ quiz, onComplete }: Props) {
+export default function QuizPanel({ quiz, onComplete, onCancel }: Props) {
   const [phase, setPhase] = useState<Phase>("choosing");
   const [answer, setAnswer] = useState("");
   const [attempts, setAttempts] = useState(0);
@@ -101,6 +102,15 @@ export default function QuizPanel({ quiz, onComplete }: Props) {
   return (
     <div className="quiz-panel">
       <div className="quiz-panel-header">
+        {onCancel && phase !== "revealed" && phase !== "submitting" && (
+          <button
+            className="btn-quiz-back"
+            onClick={onCancel}
+            title="퀴즈를 종료하고 섹션 화면으로 돌아가요"
+          >
+            ← 뒤로가기
+          </button>
+        )}
         <span className="quiz-panel-icon">🧠</span>
         <div className="quiz-panel-titles">
           <span className="quiz-panel-title">퀴즈</span>
