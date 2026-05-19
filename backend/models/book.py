@@ -55,6 +55,7 @@ class BookSection(Base):
     order: Mapped[int] = mapped_column(Integer, nullable=False)  # 구간 순서 (1-based)
     title: Mapped[str | None] = mapped_column(String(200), nullable=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)  # 원문 텍스트
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     book: Mapped["Book"] = relationship(back_populates="sections")
 

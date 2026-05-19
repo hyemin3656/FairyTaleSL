@@ -317,12 +317,19 @@ function driveIdlePose(hum: VRM["humanoid"], rate: number) {
 interface VRMAvatarProps {
   clip: MotionClip | null;
   playing: boolean;
+  frozen: boolean;
 }
 
-function VRMAvatar({ clip, playing }: VRMAvatarProps) {
+function VRMAvatar({ clip, playing, frozen }: VRMAvatarProps) {
   const [vrm, setVrm] = useState<VRM | null>(null);
-  const elapsedRef  = useRef(0);
+  const elapsedRef   = useRef(0);
   const prevGlossRef = useRef<string | null>(null);
+  const frozenRef    = useRef(frozen);
+  const playingRef   = useRef(playing);
+  const clipRef      = useRef(clip);
+  frozenRef.current  = frozen;
+  playingRef.current = playing;
+  clipRef.current    = clip;
 
   useEffect(() => {
     const loader = new GLTFLoader();
@@ -339,6 +346,10 @@ function VRMAvatar({ clip, playing }: VRMAvatarProps) {
 
   useFrame((_, delta) => {
     if (!vrm) return;
+
+    const playing = playingRef.current;
+    const frozen  = frozenRef.current;
+    const clip    = clipRef.current;
 
     const hum  = vrm.humanoid;
     const expr = vrm.expressionManager;
@@ -367,14 +378,14 @@ function VRMAvatar({ clip, playing }: VRMAvatarProps) {
     const frames   = clip?.keypoints;
     const fps      = clip?.fps ?? 15;
 
-    if (playing && (animData || (frames && frames.length > 0))) {
+    const hasAnim = !!(animData || (frames && frames.length > 0));
+
+    if (playing && !frozen && hasAnim) {
       elapsedRef.current += delta;
 
       if (animData) {
-        // 사전 계산된 본 회전 데이터 사용 (우선순위)
         driveAnimData(animData, elapsedRef.current, hum, sp);
       } else if (frames && frames.length > 0) {
-        // fallback: 실시간 keypoint 구동
         const totalFrames = frames.length;
         const framePos    = (elapsedRef.current * fps) % totalFrames;
         const f0 = Math.floor(framePos);
@@ -384,10 +395,11 @@ function VRMAvatar({ clip, playing }: VRMAvatarProps) {
         drivePoseBones(kp, hum, sp);
         driveHandBones(kp, hum, sp);
       }
-    } else {
-      // 대기 자세
+    } else if (!frozen || !hasAnim) {
+      // 대기 자세: frozen이어도 재생할 애니메이션이 없으면 idle 유지 (T포즈 방지)
       driveIdlePose(hum, playing ? sp : idle);
     }
+    // frozen && hasAnim → 마지막 프레임 포즈 그대로 유지
 
     vrm.update(delta);
   });
@@ -440,6 +452,7 @@ interface AvatarSceneProps {
   currentIndex: number;
   total: number;
   tokens: string[];
+  frozen?: boolean;
 }
 
 export default function AvatarScene({
@@ -448,6 +461,7 @@ export default function AvatarScene({
   currentIndex,
   total,
   tokens,
+  frozen = false,
 }: AvatarSceneProps) {
   const playing = status === "streaming";
 
@@ -462,7 +476,7 @@ export default function AvatarScene({
         <directionalLight position={[1, 3, 2]} intensity={1.4} castShadow />
         <pointLight position={[-1, 2, 2]} intensity={0.5} color="#c4b5fd" />
 
-        <VRMAvatar clip={clip} playing={playing} />
+        <VRMAvatar clip={clip} playing={playing} frozen={frozen} />
         <Environment preset="city" />
 
         <OrbitControls

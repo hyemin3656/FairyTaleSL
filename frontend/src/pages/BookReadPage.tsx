@@ -332,6 +332,7 @@ export default function BookReadPage() {
             currentIndex={ws.currentIndex}
             total={ws.total}
             tokens={ws.tokens}
+            frozen={mode === "PAUSED"}
           />
           {wsError && (
             <div className="ws-error">
@@ -343,11 +344,25 @@ export default function BookReadPage() {
 
         {/* 텍스트 + 컨트롤 + 모드별 패널 */}
         <section className="text-section">
+          <div className="section-image-wrap">
+            {currentSection?.image_url ? (
+              <img
+                className="section-image"
+                src={currentSection.image_url}
+                alt={currentSection.title ?? "섹션 삽화"}
+              />
+            ) : (
+              <div className="section-image-placeholder">
+                <span>🖼</span>
+                <span>삽화 준비 중</span>
+              </div>
+            )}
+          </div>
           {currentSection?.title && <h2 className="section-title">{currentSection.title}</h2>}
           <p className="section-text">{currentSection?.text}</p>
 
-          {/* STORY_PLAYING 또는 PAUSED: 재생/일시정지/질문하기/빠르게 완료 */}
-          {(mode === "STORY_PLAYING" || mode === "PAUSED") && (
+          {/* STORY_PLAYING: 수어로 보기 / 재생 중 / 일시정지 / 넘어가기 */}
+          {mode === "STORY_PLAYING" && (
             <div className="read-controls">
               <button
                 className="btn-play"
@@ -361,17 +376,8 @@ export default function BookReadPage() {
                     : "▶ 수어로 보기"}
               </button>
 
-              {isPlaying && mode === "STORY_PLAYING" && (
+              {isPlaying && (
                 <button className="btn-pause" onClick={handlePause}>⏸ 일시정지</button>
-              )}
-
-              {mode === "PAUSED" && (
-                <>
-                  <button className="btn-pause" onClick={handleResume}>▶ 재개</button>
-                  <button className="btn-practice" onClick={handleEnterChildQ}>
-                    ❓ 아이가 질문하기
-                  </button>
-                </>
               )}
 
               <button
@@ -380,7 +386,24 @@ export default function BookReadPage() {
                 disabled={skipPendingRef.current}
                 title="아바타 수어 생성을 건너뛰고 따라해보기/퀴즈로 바로 이동합니다."
               >
-                {skipPendingRef.current ? "⏳ 준비 중…" : "⏩ 빠르게 완료"}
+                {skipPendingRef.current ? "⏳ 준비 중…" : "⏩ 넘어가기"}
+              </button>
+            </div>
+          )}
+
+          {/* PAUSED: 재개 / 질문하기 / 넘어가기 */}
+          {mode === "PAUSED" && (
+            <div className="read-controls">
+              <button className="btn-pause" onClick={handleResume}>▶ 재개</button>
+              <button className="btn-practice" onClick={handleEnterChildQ}>
+                ❓ 질문하기
+              </button>
+              <button
+                className="btn-skip-playback"
+                onClick={handleSkipPlayback}
+                disabled={skipPendingRef.current}
+              >
+                {skipPendingRef.current ? "⏳ 준비 중…" : "⏩ 넘어가기"}
               </button>
             </div>
           )}

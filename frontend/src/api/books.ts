@@ -17,6 +17,7 @@ export interface BookSection {
   order: number;
   title: string | null;
   text: string;
+  image_url: string | null;
 }
 
 export interface BookDetail extends BookListItem {

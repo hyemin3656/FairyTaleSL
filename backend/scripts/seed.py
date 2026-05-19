@@ -121,6 +121,7 @@ def _build_books() -> list[dict]:
                 "order": seg["segment_id"],
                 "title": f"{tale['title']} {seg['segment_id']}부",
                 "text":  " ".join(_sent_text(s) for s in seg["sentences"]),
+                "image_url": f"/static/images/sections/{tid}_{seg['segment_id']}.png",
             }
             for seg in tale["segments"]
         ]
@@ -149,21 +150,9 @@ BOOKS = _build_books() + [
         "categories": ["전래민담", "판타지"],
         "author": "전래동화",
         "sections": [
-            {
-                "order": 1,
-                "title": "할아버지의 혹",
-                "text": "얼굴에 큰 혹이 달린 할아버지가 있었습니다. 어느 날 숲 속에서 길을 잃었습니다.",
-            },
-            {
-                "order": 2,
-                "title": "도깨비 잔치",
-                "text": "할아버지는 도깨비들의 잔치를 발견했습니다. 할아버지가 노래를 부르자 도깨비들이 좋아했습니다.",
-            },
-            {
-                "order": 3,
-                "title": "혹을 떼다",
-                "text": "도깨비들은 노래의 비밀이 혹 속에 있다고 생각해 혹을 떼어 주었습니다. 할아버지는 기뻐하며 집으로 돌아갔습니다.",
-            },
+            {"order": 1, "title": "할아버지의 혹", "text": "얼굴에 큰 혹이 달린 할아버지가 있었습니다. 어느 날 숲 속에서 길을 잃었습니다.", "image_url": None},
+            {"order": 2, "title": "도깨비 잔치", "text": "할아버지는 도깨비들의 잔치를 발견했습니다. 할아버지가 노래를 부르자 도깨비들이 좋아했습니다.", "image_url": None},
+            {"order": 3, "title": "혹을 떼다", "text": "도깨비들은 노래의 비밀이 혹 속에 있다고 생각해 혹을 떼어 주었습니다. 할아버지는 기뻐하며 집으로 돌아갔습니다.", "image_url": None},
         ],
     },
     {

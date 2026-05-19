@@ -195,7 +195,8 @@ a {
 
 /* ── text-section ── */
 .text-section {
-  flex: 0 0 360px;
+  flex: 0 0 520px;
+  min-width: 0;
   min-height: 0;
   overflow-y: auto;
   display: flex;
@@ -206,6 +207,38 @@ a {
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow);
+}
+
+.section-image-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  flex-shrink: 0;
+  border-radius: calc(var(--radius) - 4px);
+  overflow: hidden;
+  background: #1a1a2e;
+}
+
+.section-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.section-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 14px;
+}
+
+.section-image-placeholder span:first-child {
+  font-size: 36px;
 }
 
 .section-title {
@@ -222,7 +255,8 @@ a {
 
 .read-controls {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .btn-play {
@@ -232,6 +266,7 @@ a {
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
+  white-space: nowrap;
   transition: background 0.15s;
 }
 .btn-play:hover:not(:disabled) { background: var(--color-primary-hover); }
@@ -244,6 +279,7 @@ a {
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
+  white-space: nowrap;
   transition: background 0.15s;
 }
 .btn-pause:hover { background: #d97706; }
@@ -271,7 +307,7 @@ a {
 /* ── AvatarScene (R3F) ── */
 .avatar-scene-wrap {
   flex: 1;
-  min-height: 0;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -524,6 +560,7 @@ a {
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
+  white-space: nowrap;
   transition: background 0.15s;
 }
 .btn-practice:hover { background: #059669; }
@@ -536,9 +573,9 @@ a {
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
   border: 1px solid #c4b5fd;
   transition: background 0.15s, color 0.15s;
-  margin-left: auto;
 }
 .btn-skip-playback:hover:not(:disabled) {
   background: var(--color-primary);

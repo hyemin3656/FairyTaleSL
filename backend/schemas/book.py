@@ -11,6 +11,7 @@ class BookSectionOut(BaseModel):
     order: int
     title: str | None
     text: str
+    image_url: str | None = None
 
 
 class BookListItem(BaseModel):

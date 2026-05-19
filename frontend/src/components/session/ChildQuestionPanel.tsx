@@ -99,7 +99,7 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
         <div className="cq-header-title">
           <span className="cq-header-icon">❓</span>
           <div className="cq-header-text">
-            <span className="cq-header-name">아이가 질문하기</span>
+            <span className="cq-header-name">질문하기</span>
             <span className="cq-header-sub">동화에 대해 궁금한 점을 물어봐요</span>
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
             <div className="cq-input-label">인식된 질문 (수어)</div>
             <div className="cq-tokens">
               {labels.length === 0 ? (
-                <span className="cq-placeholder">손으로 수어를 보여주면 여기에 쌓입니다…</span>
+                <span className="cq-placeholder">수어를 해주세요</span>
               ) : (
                 labels.map((l, i) => <span key={i} className="cq-token">{l}</span>)
               )}
