@@ -163,11 +163,13 @@ _model: STGCN | None = None
 _vocab: list[str] = []
 
 
-def get_model(vocab: list[str], device: str = "cpu") -> STGCN:
+def get_model(vocab: list[str], device: str = "cpu",
+              mode: str = "classify") -> STGCN:
     global _model, _vocab
     if _model is None:
-        num_classes = len(vocab) + 1  # +1 for CTC blank
-        _model = STGCN(num_classes=num_classes).to(device)
+        # classify: 클래스 수 그대로, ctc: blank 토큰 +1
+        num_classes = len(vocab) if mode == "classify" else len(vocab) + 1
+        _model = STGCN(num_classes=num_classes, mode=mode).to(device)
         _model.eval()
         _vocab = vocab
     return _model
@@ -178,7 +180,7 @@ def load_weights(path: str):
     import os
     global _model
     if _model is not None and os.path.exists(path):
-        state = torch.load(path, map_location="cpu")
+        state = torch.load(path, map_location="cpu", weights_only=True)
         _model.load_state_dict(state, strict=False)
         print(f"[ST-GCN] weights loaded from {path}")
     else:

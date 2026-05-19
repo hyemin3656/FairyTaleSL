@@ -20,29 +20,18 @@ if _ROOT_ENV.exists():
     load_dotenv(_ROOT_ENV)
 load_dotenv()   # ai_engine/.env (있으면)
 
-from routers import predict, predict_tsn, qa
+from routers import predict, qa
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 서버 시작 시 ST-GCN 모델 초기화 (T5는 첫 요청 시 lazy load)
+    # ST-GCN classify 모드 초기화 (67 한국어 클래스)
     from models.stgcn import get_model, load_weights
-    import os
     from routers.predict import VOCAB, WEIGHTS_PATH
-    get_model(vocab=VOCAB, device="cpu")
+    get_model(vocab=VOCAB, device="cpu", mode="classify")
     load_weights(WEIGHTS_PATH)
-    print("[AI Engine] ST-GCN ready.")
-    # 수어 인식기 사전 로드 + dummy 추론으로 첫 호출 페널티 제거
-    try:
-        from routers.predict_tsn import get_recognizer
-        import numpy as np
-        recognizer = get_recognizer()
-        dummy_frames = [np.zeros((240, 320, 3), dtype=np.uint8)] * 8
-        recognizer.predict_clip(dummy_frames, topk=1)
-        print("[AI Engine] Recognizer warmed up.")
-    except Exception as e:
-        print(f"[AI Engine] Recognizer preload skipped: {e}")
-    # T5 백그라운드 로드 예약 (첫 요청 전에 미리 시작)
+    print(f"[AI Engine] ST-GCN ready (classify, {len(VOCAB)} classes).")
+    # T5 백그라운드 로드 예약
     from models.t5_qa import preload as t5_preload
     t5_preload()
     yield
@@ -63,7 +52,6 @@ app.add_middleware(
 )
 
 app.include_router(predict.router)
-app.include_router(predict_tsn.router)
 app.include_router(qa.router)
 
 

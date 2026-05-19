@@ -1,59 +1,38 @@
 /**
- * SignPracticePage — 수어 따라하기 연습 페이지
+ * SignPracticePage — 수어 따라하기 연습 페이지 (ST-GCN 버전)
  *
- * URL: /practice?gloss=토끼&bookId=xxx&section=1
+ * URL: /practice?gloss=안녕&bookId=xxx&section=1
  *
  * 흐름:
  *   1. URL 파라미터에서 목표 글로스 수신
- *   2. 웹캠 + MediaPipe로 손 랜드마크 추출
- *   3. WS /ws/recognition 으로 랜드마크 전송
- *   4. 서버 응답과 목표 글로스 비교 → 정확도 피드백
- *   5. 성공 시 책 읽기 페이지로 복귀
+ *   2. WebcamCapture (MediaPipe HandLandmarker) → WS /ws/recognition 전송
+ *   3. ST-GCN 인식 결과와 목표 글로스 비교 → 정확도 피드백
+ *   4. 성공 시 책 읽기 페이지로 복귀
  */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import WebcamCapture from "../components/webcam/WebcamCapture";
-import type { TsnPrediction } from "../components/webcam/WebcamCapture";
+import type { RecognitionPrediction } from "../components/webcam/WebcamCapture";
 
-const SUCCESS_THRESHOLD = 0.5;  // TSN softmax 점수 임계값
+const SUCCESS_THRESHOLD = 0.55;  // ST-GCN softmax 점수 임계값
 
 export default function SignPracticePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const targetGloss = searchParams.get("gloss") ?? "토끼";
+  const targetGloss = searchParams.get("gloss") ?? "안녕";
   const bookId      = searchParams.get("bookId");
   const section     = searchParams.get("section") ?? "0";
 
-  const [preds, setPreds] = useState<TsnPrediction[]>([]);
+  const [pred, setPred] = useState<RecognitionPrediction | null>(null);
 
-  const handlePrediction = useCallback((p: TsnPrediction[]) => {
-    setPreds(p);
+  const handlePrediction = useCallback((p: RecognitionPrediction) => {
+    setPred(p);
   }, []);
 
-  // class_labels.json의 중복 라벨("좋다"=21,65 / "부탁"=37,57) 보정 — 같은 라벨 점수 합산
-  const labelScores = useMemo(() => {
-    const m = new Map<string, number>();
-    preds.forEach((p) => m.set(p.label, (m.get(p.label) ?? 0) + p.score));
-    return m;
-  }, [preds]);
-
-  const topLabel = useMemo<{ label: string; score: number } | null>(() => {
-    let bestLabel: string | null = null;
-    let bestScore = -Infinity;
-    labelScores.forEach((score, label) => {
-      if (score > bestScore) {
-        bestScore = score;
-        bestLabel = label;
-      }
-    });
-    return bestLabel === null ? null : { label: bestLabel, score: bestScore };
-  }, [labelScores]);
-
-  const targetScore = labelScores.get(targetGloss) ?? 0;
-
-  const isMatch =
-    !!topLabel && topLabel.label === targetGloss && targetScore >= SUCCESS_THRESHOLD;
+  const confidence  = pred?.confidence ?? 0;
+  const topGloss    = pred?.gloss ?? null;
+  const isMatch     = topGloss === targetGloss && confidence >= SUCCESS_THRESHOLD;
 
   const handleBack = () => {
     if (bookId) {
@@ -64,7 +43,7 @@ export default function SignPracticePage() {
   };
 
   const barColor =
-    targetScore >= SUCCESS_THRESHOLD ? "#10b981" : targetScore >= 0.3 ? "#f59e0b" : "#ef4444";
+    confidence >= SUCCESS_THRESHOLD ? "#10b981" : confidence >= 0.3 ? "#f59e0b" : "#ef4444";
 
   return (
     <div className="practice-page">
@@ -89,19 +68,19 @@ export default function SignPracticePage() {
 
           <div className="recognition-card">
             <span className="recognition-label">인식된 수어</span>
-            {topLabel ? (
+            {topGloss ? (
               <>
                 <span className={`recognition-gloss ${isMatch ? "match" : "no-match"}`}>
-                  {topLabel.label}
+                  {topGloss}
                 </span>
                 <div className="conf-bar-wrap">
                   <div
                     className="conf-bar"
-                    style={{ width: `${targetScore * 100}%`, background: barColor }}
+                    style={{ width: `${confidence * 100}%`, background: barColor }}
                   />
                 </div>
                 <span className="conf-label">
-                  정확도 {Math.round(targetScore * 100)}%
+                  정확도 {Math.round(confidence * 100)}%
                 </span>
               </>
             ) : (
@@ -114,7 +93,7 @@ export default function SignPracticePage() {
               ✅ 잘 했어요! <strong>{targetGloss}</strong> 수어가 맞습니다.
             </div>
           )}
-          {topLabel && !isMatch && targetScore >= 0.3 && (
+          {topGloss && !isMatch && confidence >= 0.3 && (
             <div className="feedback hint">
               🤔 비슷해요! 조금 더 정확하게 해보세요.
             </div>

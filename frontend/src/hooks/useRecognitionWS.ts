@@ -12,7 +12,8 @@ export interface HandData { landmarks: HandLandmark[]; handedness: string; }
 export interface RecognitionResult {
   gloss: string;
   confidence: number;
-  is_dummy: boolean;
+  is_dummy?: boolean;
+  is_random_init?: boolean;
 }
 
 export type RecognitionStatus = "connecting" | "idle" | "active" | "error" | "closed";
@@ -42,7 +43,12 @@ export function useRecognitionWS() {
       const msg = JSON.parse(event.data as string);
       if (msg.type === "result") {
         setStatus("active");
-        setResult({ gloss: msg.gloss, confidence: msg.confidence, is_dummy: msg.is_dummy });
+        setResult({
+          gloss: msg.gloss,
+          confidence: msg.confidence,
+          is_dummy: msg.is_dummy,
+          is_random_init: msg.is_random_init,
+        });
       } else if (msg.type === "idle") {
         setStatus("idle");
         setResult(null);
@@ -65,13 +71,10 @@ export function useRecognitionWS() {
     return () => { wsRef.current?.close(); };
   }, [connect]);
 
+  // throttle은 WebcamCapture에서 이미 처리 — 여기서는 즉시 전송
   const sendLandmarks = useCallback((hands: HandData[]) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
-    const now = Date.now();
-    if (now - lastSendRef.current < SEND_INTERVAL_MS) return;
-    lastSendRef.current = now;
 
     ws.send(JSON.stringify({
       type: "landmarks",
