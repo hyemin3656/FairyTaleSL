@@ -1,7 +1,21 @@
 # FairyTaleSL
 
-동화 텍스트를 한국수어(KSL)로 교육하는 웹 서비스입니다.  
-ST-GCN(Spatial-Temporal Graph CNN) 기반 수어 인식으로 사용자가 카메라 앞에서 수어를 따라하면 실시간으로 인식·피드백합니다.
+한국 전래동화를 한국수어(KSL)로 배우는 웹 서비스입니다.  
+3D 아바타가 동화 본문을 수어로 재생하고, 아이가 직접 따라하거나 Gemini에게 질문하고, 퀴즈로 학습을 마무리합니다.
+
+---
+
+## 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| 수어 재생 | 동화 섹션 텍스트를 글로스로 변환 → 3D VRM 아바타가 수어 동작을 순서대로 재생 |
+| 일시정지 / 재개 | 재생 중 일시정지 시 아바타 동작 freeze, WebSocket 위치 보존 |
+| 질문하기 | 수어 또는 키보드로 질문 입력 → Gemini 2.5 Flash 답변 → 아바타가 수어로 답변 재생 |
+| 따라해보기 | 아바타가 보여준 수어 단어를 웹캠으로 직접 따라하면 ST-GCN이 인식·피드백 |
+| 퀴즈 | 섹션별 OX·객관식 퀴즈로 이해도 확인 |
+| 섹션 삽화 | 각 섹션 상단에 AI 생성 삽화 표시 (Imagen API) |
+| 학습 이력 | 세션별 따라하기 통과 여부, 퀴즈 정답률 저장 |
 
 ---
 
@@ -10,14 +24,31 @@ ST-GCN(Spatial-Temporal Graph CNN) 기반 수어 인식으로 사용자가 카�
 | 서비스 | 포트 | 설명 |
 |--------|------|------|
 | Nginx | 80 | 리버스 프록시 (진입점) |
-| Frontend | 5173 | Vite + React (MediaPipe HandLandmarker) |
-| Backend | 8000 | FastAPI + WebSocket `/ws/recognition` |
+| Frontend | 5173 | Vite + React + React Three Fiber (3D 아바타) |
+| Backend | 8000 | FastAPI + WebSocket (글로스 스트리밍, 세션 관리) |
 | AI Engine | 8001 | ST-GCN 수어 인식 (67 한국어 클래스) |
-| PostgreSQL | - | 내부 전용 |
+| PostgreSQL | — | 내부 전용 |
 
 ---
 
-## 수어 인식 파이프라인
+## 수어 재생 파이프라인
+
+```
+동화 텍스트
+  → kiwipiepy 형태소 분석 → KSL 어순 변환 → 글로스 시퀀스
+  → WebSocket /ws/gloss (글로스별 MotionClip 스트리밍)
+  → 프론트엔드: animation_data(사전 베이크 bone rotation) 수신
+  → React Three Fiber: VRM 아바타 본 직접 구동 (30fps)
+```
+
+- 글로스 수: **6,376개** (kiwipiepy 기반 추출)
+- 수어 영상: **6,156개** (AI Hub KSL 데이터셋)
+- 키포인트: MediaPipe Holistic 225차원 (손·포즈 통합)
+- 애니메이션: step6_bake_anim.py로 사전 베이크된 bone rotation JSON
+
+---
+
+## 수어 인식 파이프라인 (따라해보기)
 
 ```
 브라우저 웹캠
@@ -29,8 +60,11 @@ ST-GCN(Spatial-Temporal Graph CNN) 기반 수어 인식으로 사용자가 카�
   → 인식 결과 반환
 ```
 
-### 인식 대상 단어 (67개)
-안녕, 무엇, 고기, 비빔밥, 기쁘다, 취미, 나, 영화, 얼굴, 보다, 공부하다, 다시, 몇, 받다, 버스, 너, 휴대폰, 걷다, 서울 등 67개 한국어 단어
+---
+
+## 동화 목록 (13편)
+
+토끼와 거북이, 흥부와 놀부, 콩쥐팥쥐, 금도끼 은도끼, 심청전, 단군신화, 선녀와 나무꾼, 해님달님, 팥죽할머니와 호랑이, 견우와 직녀, 장화홍련, 혹부리 영감, 별을 찾아서
 
 ---
 
@@ -38,22 +72,20 @@ ST-GCN(Spatial-Temporal Graph CNN) 기반 수어 인식으로 사용자가 카�
 
 ### 방법 1 — Docker (권장)
 
-#### 사전 준비
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) 설치
-
 ```bash
 git clone https://github.com/hyemin3656/FairyTaleSL.git
 cd FairyTaleSL
 
 # 환경변수 설정
 cp .env.example .env
-# .env 파일에서 SECRET_KEY, LLM_API_KEY 값 설정
+# .env: SECRET_KEY, GEMINI_API_KEY 값 입력
 
 docker compose up --build
 ```
 
 초기 데이터 시딩 (최초 1회):
 ```bash
+docker compose exec backend alembic upgrade head
 docker compose exec backend python scripts/seed.py
 ```
 
@@ -61,51 +93,7 @@ docker compose exec backend python scripts/seed.py
 
 ---
 
-### 방법 2 — 로컬 직접 실행 (개발/GPU 서버)
-
-> AI Engine은 GPU 서버에서 실행하는 경우에 적합합니다.
-
-#### 사전 준비
-
-1. **학습 데이터 준비** (Google Drive에서 다운로드 후 변환)
-
-```bash
-pip install gdown
-mkdir -p ~/pose_align && cd ~/pose_align
-
-# holistic_results (train/val/test) 다운로드
-gdown --folder https://drive.google.com/drive/folders/1UvOW9TJA62yQBDEF2LGvyLRnajNHOGnm -O .
-
-# (T,V,4) 포맷 → ST-GCN (T,225) 포맷 변환
-cd /path/to/FairyTaleSL
-python ai_engine/pipelines/convert_holistic_to_flat.py \
-    --src_root ~/pose_align \
-    --out_dir  ai_engine/data/keypoints
-```
-
-2. **ST-GCN 학습**
-
-```bash
-# PyTorch (CUDA) 설치
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
-
-python ai_engine/training/train_stgcn.py \
-    --keypoints_dir ai_engine/data/keypoints \
-    --split_csv     split_result.csv \
-    --label_map     ai_engine/data/keypoints/label_map.txt \
-    --class_pickle  class_label.p \
-    --out_dir       weights/stgcn_baseline \
-    --epochs 100 --batch_size 256 --device cuda
-```
-
-3. **가중치 배포**
-
-```bash
-mkdir -p ai_engine/weights
-cp weights/stgcn_baseline/stgcn_best.pt ai_engine/weights/stgcn_best.pt
-```
-
-#### 서비스 실행 (터미널 3개)
+### 방법 2 — 로컬 직접 실행 (개발)
 
 **Terminal 1 — AI Engine**
 ```bash
@@ -119,29 +107,25 @@ cd backend
 AI_ENGINE_URL=http://localhost:8001 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-> `AI_ENGINE_URL` 환경변수 필수 — 기본값이 Docker 전용 `http://ai_engine:8001`
-
 **Terminal 3 — Frontend**
 ```bash
 cd frontend
 npm install
-npm run dev -- --host 0.0.0.0
+npm run dev
 ```
 
 접속: `http://localhost:5173`
 
 ---
 
-## 학습 결과 (현재 베이스라인)
+## 섹션 삽화 생성 (Imagen API 결제 후)
 
-| | 샘플 수 | Top-1 정확도 | Top-3 정확도 |
-|--|--------|------------|------------|
-| Train | 978 | 36.9% | 61.8% |
-| Val | 133 | 25.6% | 43.6% |
-| Test | 118 | 24.6% | 50.0% |
-
-- 학습 환경: NVIDIA RTX A5000, 100 epochs, batch_size=256
-- 클래스당 약 18개 샘플로 학습된 베이스라인 — 데이터 증가 시 정확도 개선 가능
+```bash
+# .env에 GEMINI_API_KEY 설정 후
+cd data_pipeline
+python generate_section_images.py
+# backend/static/images/sections/{tale_id}_{order}.png 저장
+```
 
 ---
 
@@ -149,42 +133,49 @@ npm run dev -- --host 0.0.0.0
 
 ```
 FairyTaleSL/
-├── ai_engine/
-│   ├── main.py                          # FastAPI (포트 8001)
-│   ├── models/stgcn.py                  # ST-GCN 모델 정의
-│   ├── routers/predict.py               # POST /predict (수어 추론)
-│   ├── training/
-│   │   ├── train_stgcn.py               # 학습 스크립트
-│   │   └── dataset.py                   # KSLKeypointDataset
-│   ├── pipelines/
-│   │   └── convert_holistic_to_flat.py  # 데이터 포맷 변환기
-│   ├── tsn/class_labels.json            # 67개 한국어 클래스 레이블
-│   └── weights/stgcn_best.pt            # 학습된 가중치 (gitignore)
 ├── backend/
-│   └── routers/recognition_ws.py        # WebSocket 프레임 버퍼 누적
+│   ├── routers/
+│   │   ├── ws.py                    # WebSocket 글로스 스트리밍 (pause/resume)
+│   │   ├── books.py                 # 동화 목록/상세 API
+│   │   └── qa.py                    # Gemini 질문 응답 API
+│   ├── services/gloss_service.py    # kiwipiepy KSL 어순 변환 + MotionClip 조립
+│   ├── models/book.py               # Book, BookSection (image_url 포함)
+│   ├── scripts/seed.py              # 13권 동화 + 글로스 모션 시딩
+│   ├── alembic/versions/            # DB 마이그레이션
+│   └── static/images/sections/     # 섹션 삽화 저장 위치
 ├── frontend/
 │   └── src/
-│       ├── components/webcam/WebcamCapture.tsx  # MediaPipe HandLandmarker
-│       ├── hooks/useRecognitionWS.ts            # WebSocket 훅
-│       └── pages/SignPracticePage.tsx           # 수어 따라하기 페이지
-└── weights/                             # 학습 가중치 (gitignore)
+│       ├── pages/BookReadPage.tsx          # 학습 시나리오 메인 페이지
+│       ├── components/avatar/AvatarScene.tsx  # VRM 아바타 + bone 구동
+│       ├── components/session/
+│       │   ├── ChildQuestionPanel.tsx      # 수어/키보드 질문 입력
+│       │   ├── FollowAlongPanel.tsx        # 따라해보기
+│       │   └── QuizPanel.tsx              # 퀴즈
+│       └── stores/scenarioStore.ts        # Zustand 학습 상태 머신
+├── ai_engine/
+│   ├── models/stgcn.py              # ST-GCN 모델 정의
+│   └── routers/predict.py           # POST /predict (수어 추론)
+└── data_pipeline/
+    ├── sign_generation/             # 글로스 추출 → 키포인트 → Motion DB 파이프라인
+    └── generate_section_images.py   # Imagen API 섹션 삽화 생성
 ```
 
 ---
 
-## gitignore 대상 (커밋 제외)
+## gitignore 대상
 
 | 항목 | 이유 |
 |------|------|
-| `weights/`, `*.pt` | 대용량 바이너리 |
-| `ai_engine/weights/` | 대용량 바이너리 |
+| `*.pt`, `weights/` | 대용량 모델 가중치 |
 | `ai_engine/data/` | 대용량 학습 데이터 |
+| `data_pipeline/raw_data/` | AI Hub 원본 영상 |
+| `data_pipeline/sign_generation/data/motion_db.sqlite` | 대용량 Motion DB |
 | `.env` | 시크릿 키 포함 |
 | `node_modules/` | 패키지 캐시 |
 
 ---
 
-## 컨테이너 종료 (Docker 사용 시)
+## 컨테이너 종료
 
 ```bash
 docker compose down
