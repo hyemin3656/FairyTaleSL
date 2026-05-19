@@ -118,17 +118,6 @@ npm run dev
 
 ---
 
-## 섹션 삽화 생성 (Imagen API 결제 후)
-
-```bash
-# .env에 GEMINI_API_KEY 설정 후
-cd data_pipeline
-python generate_section_images.py
-# backend/static/images/sections/{tale_id}_{order}.png 저장
-```
-
----
-
 ## 주요 파일 구조
 
 ```
