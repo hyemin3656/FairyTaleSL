@@ -21,8 +21,12 @@ _AI_ROOT = Path(__file__).resolve().parents[1]
 if str(_AI_ROOT) not in sys.path:
     sys.path.insert(0, str(_AI_ROOT))
 
-from recognizer import SignRecognizer  # noqa: E402
 from tsn.data.loading import load_frames_from_base64  # noqa: E402
+
+try:
+    from recognizer import SignRecognizer  # noqa: E402
+except Exception:
+    SignRecognizer = object  # type: ignore
 
 router = APIRouter(tags=["predict_tsn"])
 
