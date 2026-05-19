@@ -1,7 +1,9 @@
-# TSN Action Recognition Inference (MMAction2)
+# MMAction2 Action Recognition Training & Inference
 
-This repository provides **inference code for a Temporal Segment Network (TSN)** trained using MMAction2.  
-It is designed to be easily integrated into backend or application systems.
+This repository provides **training and inference code for action recognition models using MMAction2**.  
+It currently supports model training based on MMAction2 configurations and includes test/inference code for both **TSN** and **ST-GCN** models.
+
+The project is designed to be easily extended and integrated into backend or application systems.
 
 ---
 
@@ -37,7 +39,7 @@ pip install -r requirements.txt
 Clone and install MMAction2:
 
 ```bash
-git clone https://github.com/open-mmlab/mmaction2.git
+git clone -b experiment/fairytalesl https://github.com/hyemin3656/mmaction2.git #my forked repository
 cd mmaction2
 pip install -v -e .
 ```
@@ -56,45 +58,31 @@ git clone https://github.com/hyemin3656/FairyTaleSL.git
 
 Download your trained model and place it here:
 
-https://drive.google.com/file/d/1EG3CH4RL7f8yjyEi-wnRlO2zzgA6ioc7/view?usp=drive_link
+https://drive.google.com/drive/folders/1z9X_AbwOjSLq7-6pROKsCJxGwEZjj0k_?usp=sharing
 
+stgcn/baseline_exp is the best model so far
 ---
 
 ## Input Format
 
-The test code supports two input formats for inference:
+### key-point ndarry
 
-### 1. Base64-encoded Frames (Recommended)
-- Input: `List[str]` (e.g., `data:image/jpeg;base64,...`)
-- Suitable for real-time applications (e.g., webcam streaming)
-- Frames are decoded into RGB numpy arrays before inference
-- result = predictor.predict_frames("examples/frames")
+you can put any ndarry sample(ex.'08_00) into 'examples/' to test st-gcn's predict code
 
-### 2. Image Directory
-- Input: `str` (path to a directory containing images)
-- Supported formats: `.jpg`, `.jpeg`, `.png`, `.bmp`
-- Useful for offline testing and debugging
-- Frames are loaded from disk in sorted order
-
-### 3. Pre-loaded Frames (NumPy Arrays)
-- Input: `List[np.ndarray]`
-- Each frame should have shape `(H, W, 3)` in RGB format
-- Suitable for advanced usage where frames are already processed in memory
-
-> ⚠️ Note  
-> In `test_predictor.py`, update the argument of `predictor.predict_frames()` depending on the input type:
-> - Directory path (`str`)
-> - Base64 image list (`List[str]`)
-> - NumPy frame list (`List[np.ndarray]`)
+https://drive.google.com/drive/folders/1UvOW9TJA62yQBDEF2LGvyLRnajNHOGnm?usp=sharing
 
 ## 🚀 Usage
 
-Run inference on a single video:
+Run st-gcn inference on a single video:
 
 ```bash
-python test_predictor.py
+python test_stgcn.py
 ```
+Run tsn inference on a single video:
 
+```bash
+python test_tsn.py
+```
 ## 📁 Project Structure
 
 ```bash
@@ -106,4 +94,5 @@ workspace/
     ├── examples/
     ├── src/
     └── test_predictor.py
+
 ```
