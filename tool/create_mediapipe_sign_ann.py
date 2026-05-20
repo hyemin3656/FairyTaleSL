@@ -1,12 +1,16 @@
 import os
+import csv
+import ast
 import json
 import pickle
 from pathlib import Path
 
 import numpy as np
 
-ROOT_DIR = Path("../../runyourai/ksl/holistic_results")
-OUT_PKL = Path("../../runyourai/ksl/mediapipe_sign_3d.pkl")
+KSL_DIR = Path("/home/ubuntu/runyourai/ksl")
+ROOT_DIR = KSL_DIR / "content/gloss_sequences_splited"
+OUT_PKL = KSL_DIR / "mediapipe_sign_3d.pkl"
+TEMPLATE_CSV = KSL_DIR / "gloss_sequence_templates.csv"
 
 RANDOM_SEED = 42
 
@@ -20,6 +24,7 @@ NUM_HAND = 21
 NUM_NODE = 65       # 23 + 21 + 21
 NUM_PERSON = 1
 COORD_DIM = 3       # x, y, z
+
 
 
 def load_npy(path: Path):
@@ -112,12 +117,53 @@ def parse_subject_and_class(folder_name):
 
     subject, class_name = folder_name.rsplit("_", 1)
     subject = subject.lstrip("0") or "0"
-    class_name = class_name.lstrip("0")
-    remapped_class_label = remap_label(int(class_name))
-    return subject, remapped_class_label - 1 #0~66
+    class_name = class_name.lstrip("0") or "0"
+    #remapped_class_label = remap_label(int(class_name))
+    return subject, class_name  #0~
+
+def load_gloss_sequence_templates(csv_path=TEMPLATE_CSV):
+    """Load template_id -> class_id_sequence mapping from CSV."""
+    template_map = {}
+    with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            template_id = row["template_id"]
+            class_id_sequence = ast.literal_eval(row["class_id_sequence"])
+            if not isinstance(class_id_sequence, list):
+                raise ValueError(
+                    f"class_id_sequence must be list, got {type(class_id_sequence)} "
+                    f"for {template_id}"
+                )
+            template_map[template_id] = [int(x) for x in class_id_sequence]
+    return template_map
+
+
+def map_sequence_label(class_id, template_map=None):
+    """Return gloss id sequence for a sentence template class id.
+
+    Args:
+        class_id (int | str): Class id from annotation folder name. For
+            example, 12 maps to template_id ``tpl_0012``.
+        template_map (dict, optional): Preloaded template mapping. If omitted,
+            the CSV is read inside this function.
+
+    Returns:
+        list[int]: CTC target gloss id sequence, e.g. ``[0, 12]``.
+    """
+    class_id = int(class_id)
+    template_id = f"tpl_{class_id:04d}"
+    if template_map is None:
+        template_map = load_gloss_sequence_templates()
+
+    if template_id not in template_map:
+        raise KeyError(
+            f"Cannot find template_id={template_id} in {TEMPLATE_CSV}"
+        )
+    return template_map[template_id]
 
 
 def build_annotations():
+    template_map = load_gloss_sequence_templates()
     split_dirs = sorted([p for p in ROOT_DIR.iterdir() if p.is_dir()]) #train/val/test
 
     annotations = []
@@ -129,6 +175,8 @@ def build_annotations():
         for sample_dir in sample_dirs: #each sample directory
             frame_dir = sample_dir.name #{subject_id}_{class_id}
             subject, class_name = parse_subject_and_class(frame_dir)
+            class_id = int(class_name)
+            gt_gloss = map_sequence_label(class_id, template_map)
 
             pose = load_npy(sample_dir / POSE_FILE) 
             left = load_npy(sample_dir / LEFT_HAND_FILE)
@@ -172,7 +220,9 @@ def build_annotations():
             annotations.append(
                 {
                     "frame_dir": frame_dir,
-                    "label": class_name, # 0~66
+                    "class_id": class_id,
+                    "gt_gloss": gt_gloss,
+                    "label": gt_gloss,  # CTC target sequence, e.g. [0, 12]
                     "total_frames": T,
                     "keypoint": input_keypoint, 
                     "keypoint_score": input_keypoint_score
@@ -207,7 +257,8 @@ def main():
     first = annotations[0]
     print("Example:")
     print(" frame_dir:", first["frame_dir"])
-    print(" label:", first["label"])
+    print(" class_id:", first["class_id"])
+    print(" gt_gloss:", first["gt_gloss"])
     print(" total_frames:", first["total_frames"])
     print(" keypoint shape:", first["keypoint"].shape)
     print(" keypoint_score shape:", first["keypoint_score"].shape)
