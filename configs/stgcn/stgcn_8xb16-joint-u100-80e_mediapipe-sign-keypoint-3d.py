@@ -163,7 +163,7 @@ test_dataloader = dict(
         type=dataset_type,
         ann_file=ann_file,
         pipeline=test_pipeline,
-        split='val',
+        split='test',
         test_mode=True))
 
 val_evaluator = [dict(type='AccMetric')]
