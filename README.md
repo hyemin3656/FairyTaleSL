@@ -58,9 +58,10 @@ git clone https://github.com/hyemin3656/FairyTaleSL.git
 
 Download your trained model and place it here:
 
-https://drive.google.com/drive/folders/1z9X_AbwOjSLq7-6pROKsCJxGwEZjj0k_?usp=sharing
+[https://drive.google.com/drive/folders/1z9X_AbwOjSLq7-6pROKsCJxGwEZjj0k_?usp=sharing
+](https://drive.google.com/drive/folders/1h0-ojkDY26MUHfenemiv3XG6t_NkgIEZ?usp=drive_link)
 
-stgcn/baseline_exp is the best model so far
+stgcn_bilstm_ctc/sequence_level_baseline/best_wer_epoch_85.pth is the sequence level prediction model.
 
 ---
 
@@ -68,17 +69,24 @@ stgcn/baseline_exp is the best model so far
 
 ### key-point ndarry
 
-you can put any ndarry sample(ex.'08_00) into 'examples/' to test st-gcn's predict code
+you can put any ndarry sample(ex.'00_004) into 'examples/sequenced_key_points'.
 
-https://drive.google.com/drive/folders/1UvOW9TJA62yQBDEF2LGvyLRnajNHOGnm?usp=sharing
+[https://drive.google.com/drive/folders/1UvOW9TJA62yQBDEF2LGvyLRnajNHOGnm?usp=sharing
+](https://drive.google.com/file/d/1OiuxHetw91XUBeFvp3DhwN7Y4ChOr2vn/view?usp=drive_link)
 
 ## 🚀 Usage
 
+Run st-gcn inference on a squence-level video:
+
+```bash
+python test_stgcn_ctc.py --checkpoint [pth path] --keypoint-dir /home/ubuntu/FairyTaleSL/examples/sequenced_key_points/00_004
+```
 Run st-gcn inference on a single video:
 
 ```bash
 python test_stgcn.py
 ```
+
 Run tsn inference on a single video:
 
 ```bash
