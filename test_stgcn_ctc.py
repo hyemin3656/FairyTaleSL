@@ -12,6 +12,9 @@ from mmengine.dataset import Compose, pseudo_collate
 from mmaction.apis import init_recognizer
 from mmaction.utils import register_all_modules
 
+from tool.create_mediapipe_sign_ann import (
+    COORD_DIM, NUM_HAND, NUM_NODE, NUM_POSE, ensure_tvc, load_npy, nan_to_zero_with_score, pad_or_trim_time)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 WORKSPACE_ROOT = PROJECT_ROOT.parent
@@ -27,11 +30,6 @@ DEFAULT_LABEL_MAP = PROJECT_ROOT / "src/class_labels.json"
 POSE_FILE = "pose_33.npy"
 LEFT_HAND_FILE = "left_hand_21.npy"
 RIGHT_HAND_FILE = "right_hand_21.npy"
-
-NUM_POSE = 23
-NUM_HAND = 21
-NUM_NODE = 65
-COORD_DIM = 3
 
 
 def parse_args():
@@ -52,7 +50,10 @@ def parse_args():
             "Optional single keypoint npy file. Expected shape is "
             "[T, 65, 3] or [1, T, 65, 3]. If set, --keypoint-dir is ignored."))
     parser.add_argument("--label-map", default=str(DEFAULT_LABEL_MAP))
-    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument(
+        "--device",
+        default="auto",
+        help="Device to run inference on. Use 'auto' to prefer CUDA when available.")
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument(
@@ -62,52 +63,8 @@ def parse_args():
         help="Override config options, e.g. model.cls_head.dropout=0.0.")
     return parser.parse_args()
 
-
-def load_npy(path):
-    path = Path(path).expanduser()
-    if not path.exists():
-        return None
-    return np.load(path)
-
-
-def ensure_tvc(arr, expected_v, name):
-    arr = np.asarray(arr)
-    if arr.ndim != 3:
-        raise ValueError(f"{name} must have shape [T, V, C], got {arr.shape}")
-    if arr.shape[1] < expected_v:
-        raise ValueError(
-            f"{name} has too few keypoints: expected {expected_v}, "
-            f"got {arr.shape[1]}")
-    if arr.shape[2] < COORD_DIM:
-        raise ValueError(
-            f"{name} must have at least {COORD_DIM} coordinates, "
-            f"got {arr.shape[2]}")
-    return arr[:, :expected_v, :COORD_DIM].astype(np.float32)
-
-
-def pad_or_trim_time(arr, target_t):
-    t, v, c = arr.shape
-    if t == target_t:
-        return arr
-    if t > target_t:
-        return arr[:target_t]
-
-    padded = np.zeros((target_t, v, c), dtype=arr.dtype)
-    padded[:t] = arr
-    return padded
-
-
 def zero_hand(total_frames):
     return np.zeros((total_frames, NUM_HAND, COORD_DIM), dtype=np.float32)
-
-
-def nan_to_zero_with_score(arr):
-    invalid = np.isnan(arr).any(axis=-1)
-    score = (~invalid).astype(np.float32)
-
-    arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
-    arr[invalid] = 0.0
-    return arr.astype(np.float32), score.astype(np.float32)
 
 
 def build_keypoint_sample_from_dir(keypoint_dir):
@@ -206,6 +163,19 @@ def synchronize(device):
         torch.cuda.synchronize()
 
 
+def resolve_device(device):
+    if device == "auto":
+        return "cuda:0" if torch.cuda.is_available() else "cpu"
+
+    if str(device).startswith("cuda") and not torch.cuda.is_available():
+        print(
+            f"Warning: requested {device}, but this PyTorch install has no CUDA. "
+            "Falling back to cpu.")
+        return "cpu"
+
+    return device
+
+
 def build_data_batch(sample, pipeline):
     data = pipeline(copy.deepcopy(sample))
     return data, pseudo_collate([data])
@@ -252,6 +222,7 @@ def run_pipeline_prediction(model, sample, pipeline, device, warmup, repeat):
 def main():
     args = parse_args()
     register_all_modules(init_default_scope=True)
+    device = resolve_device(args.device)
 
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
@@ -260,10 +231,11 @@ def main():
     model = init_recognizer(
         cfg,
         checkpoint=str(Path(args.checkpoint).expanduser().resolve()),
-        device=args.device)
+        device=device)
 
     if args.keypoint_npy is not None:
-        sample = build_keypoint_sample_from_npy(args.keypoint_npy)
+        # If keypoints are concatenated into a single npy, use that directly. Otherwise, load from the directory of separate npy files.
+        sample = build_keypoint_sample_from_npy(args.keypoint_npy) 
         sample_path = Path(args.keypoint_npy).expanduser().resolve()
     else:
         sample = build_keypoint_sample_from_dir(args.keypoint_dir)
@@ -275,14 +247,14 @@ def main():
     model_result, model_latency = run_prediction(
         model=model,
         data_batch=data_batch,
-        device=args.device,
+        device=device,
         warmup=args.warmup,
         repeat=args.repeat)
     result, data, pipeline_latency = run_pipeline_prediction(
         model=model,
         sample=sample,
         pipeline=pipeline,
-        device=args.device,
+        device=device,
         warmup=args.warmup,
         repeat=args.repeat)
 
@@ -296,6 +268,7 @@ def main():
     gloss_labels = map_gloss_ids(gloss_ids, label_map)
 
     print("Sample:", sample_path)
+    print("Device:", device)
     print("Input shape:", tuple(data["inputs"].shape))
     print("Model prediction time: {:.3f} ms".format(model_latency * 1000))
     print(

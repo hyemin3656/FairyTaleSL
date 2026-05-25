@@ -18,10 +18,16 @@ from test_stgcn_ctc import (
     DEFAULT_CHECKPOINT,
     DEFAULT_CONFIG,
     DEFAULT_LABEL_MAP,
+    NUM_HAND,
+    NUM_POSE,
     build_data_batch,
     build_keypoint_sample,
+    ensure_tvc,
     load_label_map,
     map_gloss_ids,
+    nan_to_zero_with_score,
+    pad_or_trim_time,
+    resolve_device,
     synchronize,
     to_int_list,
 )
@@ -66,7 +72,10 @@ def parse_args():
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--checkpoint", default=str(DEFAULT_CHECKPOINT))
     parser.add_argument("--label-map", default=str(DEFAULT_LABEL_MAP))
-    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument(
+        "--device",
+        default="auto",
+        help="Device to run inference on. Use 'auto' to prefer CUDA when available.")
     parser.add_argument("--camera", type=int, default=0)
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     parser.add_argument("--sample-name", default=None)
@@ -80,6 +89,7 @@ def parse_args():
     parser.add_argument("--continuous", action="store_true")
     parser.add_argument("--max-frames", type=int, default=0)
     parser.add_argument("--min-cropped-frames", type=int, default=1)
+
     parser.add_argument(
         "--cfg-options",
         nargs="+",
@@ -180,6 +190,7 @@ def draw_hand_array(overlay, hand_arr, color, thickness=2, radius=2):
 @dataclass
 class ExtractedFrame:
     frame_idx: int
+    image_bgr: np.ndarray
     pose: np.ndarray
     left_hand: np.ndarray
     right_hand: np.ndarray
@@ -240,7 +251,10 @@ class MediaPipeKeypointExtractor:
 
         pose_arr = landmarks_to_array(pose_result.pose_landmarks, POSE_POINTS, w, h)
         pose_detected = pose_result.pose_landmarks is not None
-        mean_pose_visibility = np.nanmean(pose_arr[:, 3])
+        if pose_detected:
+            mean_pose_visibility = np.nanmean(pose_arr[:, 3])
+        else:
+            mean_pose_visibility = 0.0
 
         left_hand_arr = np.full((HAND_POINTS, 4), np.nan, dtype=np.float32)
         right_hand_arr = np.full((HAND_POINTS, 4), np.nan, dtype=np.float32)
@@ -336,6 +350,7 @@ class MediaPipeKeypointExtractor:
         elapsed_ms = (time.perf_counter() - start) * 1000
         extracted = ExtractedFrame(
             frame_idx=frame_idx,
+            image_bgr=image_bgr.copy(),
             pose=pose_arr,
             left_hand=left_hand_arr,
             right_hand=right_hand_arr,
@@ -477,9 +492,12 @@ class OnlineHandCropper:
         return None
 
 
-def save_segment(segment, output_root, sample_name):
+def save_segment(segment, output_root, sample_name, fps):
     sample_dir = Path(output_root).expanduser().resolve() / sample_name
     sample_dir.mkdir(parents=True, exist_ok=True)
+    frame_dir = sample_dir / "frames"
+    frame_dir.mkdir(parents=True, exist_ok=True)
+    video_path = sample_dir / "segment.mp4"
 
     pose_np = np.stack([f.pose for f in segment]).astype(np.float32)
     left_hand_np = np.stack([f.left_hand for f in segment]).astype(np.float32)
@@ -489,18 +507,46 @@ def save_segment(segment, output_root, sample_name):
     np.save(sample_dir / "left_hand_21.npy", left_hand_np)
     np.save(sample_dir / "right_hand_21.npy", right_hand_np)
 
+    frame_files = []
+    for item in segment:
+        frame_path = frame_dir / f"frame_{item.frame_idx:06d}.jpg"
+        if not cv2.imwrite(str(frame_path), item.image_bgr):
+            raise RuntimeError(f"Failed to save frame image: {frame_path}")
+        frame_files.append(frame_path.relative_to(sample_dir).as_posix())
+
+    first_frame = segment[0].image_bgr
+    frame_h, frame_w = first_frame.shape[:2]
+    writer = cv2.VideoWriter(
+        str(video_path),
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        float(fps),
+        (frame_w, frame_h),
+    )
+    if not writer.isOpened():
+        raise RuntimeError(f"Failed to create mp4 video: {video_path}")
+
+    try:
+        for item in segment:
+            frame = item.image_bgr
+            if frame.shape[:2] != (frame_h, frame_w):
+                frame = cv2.resize(frame, (frame_w, frame_h))
+            writer.write(frame)
+    finally:
+        writer.release()
+
     summary_path = sample_dir / "summary.csv"
     with summary_path.open("w", encoding="utf-8") as f:
         f.write(
-            "video,frame_idx,left_hand_detected,right_hand_detected,"
+            "video,frame_idx,frame_file,left_hand_detected,right_hand_detected,"
             "roi_rescued_count,mean_pose_visibility,mediapipe_ms\n")
-        for item in segment:
+        for item, frame_file in zip(segment, frame_files):
             f.write(
-                f"{sample_name},{item.frame_idx},{item.left_hand_detected},"
+                f"{sample_name},{item.frame_idx},{frame_file},"
+                f"{item.left_hand_detected},"
                 f"{item.right_hand_detected},{item.roi_rescued_count},"
                 f"{item.mean_pose_visibility},{item.elapsed_ms}\n")
 
-    return sample_dir, pose_np, left_hand_np, right_hand_np
+    return sample_dir, video_path, pose_np, left_hand_np, right_hand_np
 
 
 def predict_from_npys(
@@ -514,10 +560,19 @@ def predict_from_npys(
     sample_name,
 ):
     start = time.perf_counter()
-    keypoint = np.concatenate([pose_np, left_hand_np, right_hand_np], axis=1)
-    keypoint_score = (~np.isnan(keypoint[..., :2]).any(axis=-1)).astype(np.float32)
-    keypoint = np.nan_to_num(keypoint[:, :, :3], nan=0.0, posinf=0.0, neginf=0.0)
-    keypoint[keypoint_score == 0] = 0.0
+    pose = ensure_tvc(pose_np, NUM_POSE, "pose_np")
+    total_frames = pose.shape[0]
+    left = ensure_tvc(left_hand_np, NUM_HAND, "left_hand_np")
+    left = pad_or_trim_time(left, total_frames)
+    right = ensure_tvc(right_hand_np, NUM_HAND, "right_hand_np")
+    right = pad_or_trim_time(right, total_frames)
+
+    pose, pose_score = nan_to_zero_with_score(pose)
+    left, left_score = nan_to_zero_with_score(left)
+    right, right_score = nan_to_zero_with_score(right)
+
+    keypoint = np.concatenate([pose, left, right], axis=1)
+    keypoint_score = np.concatenate([pose_score, left_score, right_score], axis=1)
     sample = build_keypoint_sample(keypoint, keypoint_score, sample_name)
     build_ms = (time.perf_counter() - start) * 1000
 
@@ -555,13 +610,14 @@ def load_model(config_path, checkpoint_path, device, cfg_options=None):
 def main():
     args = parse_args()
     require_mediapipe()
+    device = resolve_device(args.device)
     window = args.window if args.window is not None else int(args.fps * 0.5)
     sample_base = args.sample_name or datetime.now().strftime("webcam_%Y%m%d_%H%M%S")
 
     model, pipeline = load_model(
         args.config,
         args.checkpoint,
-        args.device,
+        device,
         cfg_options=args.cfg_options,
     )
     label_map = load_label_map(args.label_map)
@@ -624,10 +680,11 @@ def main():
                     sample_name = f"{sample_base}_{prediction_count:03d}"
 
                 save_start = time.perf_counter()
-                sample_dir, pose_np, left_np, right_np = save_segment(
+                sample_dir, video_path, pose_np, left_np, right_np = save_segment(
                     segment,
                     args.output_dir,
                     sample_name,
+                    args.fps,
                 )
                 save_ms = (time.perf_counter() - save_start) * 1000
 
@@ -638,12 +695,15 @@ def main():
                     left_hand_np=left_np,
                     right_hand_np=right_np,
                     label_map=label_map,
-                    device=args.device,
+                    device=device,
                     sample_name=sample_name,
                 )
                 mediapipe_ms = sum(item.elapsed_ms for item in segment)
 
                 print("\nSegment saved:", sample_dir)
+                print("Frame jpg dir:", sample_dir / "frames")
+                print("Segment mp4:", video_path)
+                print("Device:", device)
                 print("Frames:", len(segment))
                 print("Input shape:", pred["input_shape"])
                 print("MediaPipe total: {:.3f} ms".format(mediapipe_ms))

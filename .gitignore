@@ -16,3 +16,6 @@ data/videos/
 *.mov
 
 .DS_Store
+
+local_client/captured_segments/
+realtime_outputs/
