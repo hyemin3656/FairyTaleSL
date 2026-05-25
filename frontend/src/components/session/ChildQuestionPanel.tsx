@@ -14,7 +14,7 @@
  *      → 부모는 useGlossWS.sendText(text)로 글로스 변환 + 아바타 재생
  *   2) 마치고 돌아가기 → onExit() → scenarioStore.exitChildQuestion()
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import WebcamCapture from "../webcam/WebcamCapture";
 import type { TsnPrediction } from "../webcam/WebcamCapture";
 import { askChildQuestion } from "../../api/qa";
@@ -34,32 +34,42 @@ type InputMode = "sign" | "keyboard";
 export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, answerGlossTokens = [] }: Props) {
   const [inputMode, setInputMode] = useState<InputMode>("sign");
   const [labels, setLabels] = useState<string[]>([]);
+  const [pendingLabel, setPendingLabel] = useState<string | null>(null);
+  const [pendingConf, setPendingConf] = useState<number>(0);
   const [typedText, setTypedText] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [answer, setAnswer] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
-  const lastAppendedRef = useRef<string>("");
 
-  const handlePrediction = useCallback((preds: TsnPrediction[]) => {
+  // 인식된 결과를 "후보(pending)"로만 보여주고, 사용자가 ✅ 추가하기를 눌러야 누적됨.
+  // 사용자가 같은 수어를 잠시 유지하면 confidence가 더 높은 prediction이 와도 같은 라벨이면 갱신만 함.
+  const handlePrediction = useCallback((pred: TsnPrediction) => {
     if (phase === "submitting") return;
     if (inputMode !== "sign") return;
-    if (preds.length === 0) return;
-    const m = new Map<string, number>();
-    preds.forEach((p) => m.set(p.label, (m.get(p.label) ?? 0) + p.score));
-    let topLabel = "", topScore = -Infinity;
-    m.forEach((score, label) => {
-      if (score > topScore) { topScore = score; topLabel = label; }
-    });
-    if (topScore < RECOGNITION_THRESHOLD) return;
-    if (topLabel === lastAppendedRef.current) return;
-    lastAppendedRef.current = topLabel;
-    setLabels((arr) => [...arr, topLabel]);
+    if (pred.is_dummy) return;
+    if (pred.confidence < RECOGNITION_THRESHOLD) return;
+    if (!pred.gloss) return;
+    setPendingLabel(pred.gloss);
+    setPendingConf(pred.confidence);
   }, [phase, inputMode]);
+
+  const handleConfirmPending = () => {
+    if (!pendingLabel) return;
+    setLabels((arr) => [...arr, pendingLabel]);
+    setPendingLabel(null);
+    setPendingConf(0);
+  };
+
+  const handleRejectPending = () => {
+    setPendingLabel(null);
+    setPendingConf(0);
+  };
 
   const handleClear = () => {
     if (inputMode === "sign") {
       setLabels([]);
-      lastAppendedRef.current = "";
+      setPendingLabel(null);
+      setPendingConf(0);
     } else {
       setTypedText("");
     }
@@ -132,17 +142,45 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
       {inputMode === "sign" ? (
         <>
           <WebcamCapture onPrediction={handlePrediction} mirrored />
+
+          {/* 후보(pending) — 인식된 수어가 의도한 단어가 맞으면 ✅ 추가하기 */}
+          <div className="cq-pending-card">
+            <div className="cq-pending-label">현재 인식된 수어</div>
+            {pendingLabel ? (
+              <>
+                <div className="cq-pending-row">
+                  <span className="cq-pending-word">{pendingLabel}</span>
+                  <span className="cq-pending-conf">정확도 {Math.round(pendingConf * 100)}%</span>
+                </div>
+                <div className="cq-pending-actions">
+                  <button className="btn-pending-add" onClick={handleConfirmPending}>
+                    ✅ 이 단어 추가
+                  </button>
+                  <button className="btn-pending-skip" onClick={handleRejectPending}>
+                    ✗ 다시 하기
+                  </button>
+                </div>
+                <p className="cq-pending-hint">
+                  맞으면 "추가", 아니면 "다시 하기"를 눌러 새로 수어를 보여줘요.
+                </p>
+              </>
+            ) : (
+              <p className="cq-placeholder">손으로 수어를 보여주면 여기에 단어가 나타나요.</p>
+            )}
+          </div>
+
+          {/* 누적된 단어들 (= 만들고 있는 문장) */}
           <div className="cq-input-card">
-            <div className="cq-input-label">인식된 질문 (수어)</div>
+            <div className="cq-input-label">만들어진 문장</div>
             <div className="cq-tokens">
               {labels.length === 0 ? (
-                <span className="cq-placeholder">수어를 해주세요</span>
+                <span className="cq-placeholder">아직 추가된 단어가 없어요.</span>
               ) : (
                 labels.map((l, i) => <span key={i} className="cq-token">{l}</span>)
               )}
             </div>
             {labels.length > 0 && (
-              <button className="btn-cq-clear" onClick={handleClear}>🗑 지우기</button>
+              <button className="btn-cq-clear" onClick={handleClear}>🗑 전부 지우기</button>
             )}
           </div>
         </>

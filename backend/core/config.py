@@ -12,7 +12,9 @@ class Settings(BaseSettings):
     # JWT
     SECRET_KEY: str = "changeme-32-bytes-secret-key-here"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    # 아이용 학습 앱이라 보안 민감도가 낮고, 1시간 만료 시 매번 재로그인이 불편해
+    # 30일(43200분)로 확장. 그 사이 사용자가 명시적으로 로그아웃하지 않으면 세션 유지.
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
 
     # LLM
     LLM_API_KEY: str = ""

@@ -565,6 +565,29 @@ a {
 }
 .btn-practice:hover { background: #059669; }
 
+/* ── btn-prev-section (이전 섹션) ── */
+.btn-prev-section {
+  background: white;
+  color: #475569;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1.5px solid #cbd5e1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-prev-section:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+.btn-prev-section-inline {
+  align-self: flex-start;
+  margin-bottom: 4px;
+}
+
 /* ── btn-skip-playback (빠르게 완료) ── */
 .btn-skip-playback {
   background: #ede9fe;
@@ -982,6 +1005,78 @@ a {
   transition: border-color 0.15s;
 }
 .cq-textarea:focus { outline: none; border-color: #6366f1; }
+
+/* 후보(pending) 카드 — 인식된 단어 확인 후 추가 */
+.cq-pending-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #fffbeb;
+  border: 1.5px dashed #fcd34d;
+  border-radius: 10px;
+}
+.cq-pending-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #92400e;
+  letter-spacing: 0.02em;
+}
+.cq-pending-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cq-pending-word {
+  font-size: 24px;
+  font-weight: 800;
+  color: #b45309;
+  padding: 4px 14px;
+  background: white;
+  border: 2px solid #f59e0b;
+  border-radius: 999px;
+}
+.cq-pending-conf {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+}
+.cq-pending-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn-pending-add {
+  background: #10b981;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-pending-add:hover { background: #059669; }
+.btn-pending-skip {
+  background: white;
+  color: #b45309;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 9px 16px;
+  border: 1.5px solid #fcd34d;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-pending-skip:hover { background: #fef3c7; }
+.cq-pending-hint {
+  font-size: 12px;
+  color: #92400e;
+  margin: 0;
+  font-style: italic;
+}
 
 /* 지우기 버튼 — 명확히 보이도록 */
 .btn-cq-clear {

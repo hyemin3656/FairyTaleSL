@@ -1,7 +1,35 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchMyPage, type MyPageResponse, type LearningSessionOut } from "../api/auth";
 import { useAuthContext } from "../context/AuthContext";
+
+// 같은 책에 대한 여러 세션을 하나로 합친다.
+//   - 완료(completed) 세션이 하나라도 있으면 그 책은 '완료'
+//   - 없으면 '진행 중'(가장 최근 세션 사용)
+//   - 점수는 표시되는 세션의 avg_recognition_accuracy 사용
+function dedupeByBook(sessions: LearningSessionOut[]): LearningSessionOut[] {
+  const map = new Map<string, LearningSessionOut>();
+  // 최근순 정렬 (started_at 내림차순) 후 처리하면 첫 등장이 가장 최근 세션
+  const sorted = [...sessions].sort(
+    (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+  );
+  for (const s of sorted) {
+    const key = s.book_id ?? `__title:${s.book_title ?? "unknown"}`;
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, s);
+      continue;
+    }
+    // 이미 있는데 새 세션이 completed면 그걸로 교체 (완료 우선)
+    if (s.status === "completed" && existing.status !== "completed") {
+      map.set(key, s);
+    }
+  }
+  // 표시 순서: 최근 활동(시작일) 내림차순
+  return [...map.values()].sort(
+    (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+  );
+}
 
 export default function MyPage() {
   const { user, logout } = useAuthContext();
@@ -22,6 +50,13 @@ export default function MyPage() {
     navigate("/");
   };
 
+  // ⚠️ 훅 호출은 항상 같은 순서로 — early return보다 먼저 선언.
+  // 책 단위로 합쳐서 한 동화책당 한 줄만 노출
+  const uniqueSessions = useMemo(
+    () => dedupeByBook(data?.sessions ?? []),
+    [data?.sessions],
+  );
+
   const scoreColor = (s: number) =>
     s >= 0.75 ? "#10b981" : s >= 0.5 ? "#f59e0b" : "#ef4444";
 
@@ -33,7 +68,7 @@ export default function MyPage() {
   if (loading) return <div className="page-loading">불러오는 중…</div>;
   if (!data) return <div className="page-error"><p>학습 기록을 불러오지 못했습니다.</p></div>;
 
-  const { sessions, total_sessions, completed_sessions, avg_score } = data;
+  const { total_sessions, completed_sessions, avg_score } = data;
   const nickname = data.user.nickname;
 
   return (
@@ -75,14 +110,14 @@ export default function MyPage() {
       {/* 학습 이력 */}
       <section className="history-section">
         <h2 className="history-title">학습 이력</h2>
-        {sessions.length === 0 ? (
+        {uniqueSessions.length === 0 ? (
           <div className="history-empty">
             <p>아직 학습 기록이 없어요.</p>
             <button className="btn-play" onClick={() => navigate("/books")}>동화책 읽기</button>
           </div>
         ) : (
           <ul className="history-list">
-            {sessions.map((s) => (
+            {uniqueSessions.map((s) => (
               <SessionItem
                 key={s.id}
                 session={s}

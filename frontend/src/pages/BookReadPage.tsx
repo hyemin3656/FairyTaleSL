@@ -63,6 +63,7 @@ export default function BookReadPage() {
   const finishQuiz          = useScenarioStore((s) => s.finishQuiz);
   const cancelQuizAction    = useScenarioStore((s) => s.cancelQuiz);
   const nextSectionAction   = useScenarioStore((s) => s.nextSection);
+  const prevSectionAction   = useScenarioStore((s) => s.prevSection);
   const resetStore          = useScenarioStore((s) => s.reset);
 
   const ws = useGlossWS();
@@ -219,6 +220,14 @@ export default function BookReadPage() {
     nextSectionAction();
   };
 
+  // 이전 섹션으로 돌아가기 — WS 토큰/클립 상태도 함께 초기화해야 새 섹션 본문이 깨끗이 재생됨
+  const handlePrevSection = () => {
+    if (sectionIdx <= 0) return;
+    ws.reset();
+    skipPendingRef.current = false;
+    prevSectionAction();
+  };
+
   // ── 파생 값 ───────────────────────────────────────────────────────────
   const currentResult = results.find((r) => r.sectionIdx === sectionIdx);
   const quizDoneForCurrent =
@@ -364,6 +373,16 @@ export default function BookReadPage() {
           {/* STORY_PLAYING: 수어로 보기 / 재생 중 / 일시정지 / 넘어가기 */}
           {mode === "STORY_PLAYING" && (
             <div className="read-controls">
+              {sectionIdx >= 1 && (
+                <button
+                  className="btn-prev-section"
+                  onClick={handlePrevSection}
+                  title="이전 섹션 내용으로 돌아가요."
+                >
+                  ← 이전 섹션
+                </button>
+              )}
+
               <button
                 className="btn-play"
                 onClick={handlePlay}
@@ -394,6 +413,15 @@ export default function BookReadPage() {
           {/* PAUSED: 재개 / 질문하기 / 넘어가기 */}
           {mode === "PAUSED" && (
             <div className="read-controls">
+              {sectionIdx >= 1 && (
+                <button
+                  className="btn-prev-section"
+                  onClick={handlePrevSection}
+                  title="이전 섹션 내용으로 돌아가요."
+                >
+                  ← 이전 섹션
+                </button>
+              )}
               <button className="btn-pause" onClick={handleResume}>▶ 재개</button>
               <button className="btn-practice" onClick={handleEnterChildQ}>
                 ❓ 질문하기
@@ -450,6 +478,16 @@ export default function BookReadPage() {
           {/* SECTION_DONE: 단계별 카드로 명확하게 구분 */}
           {mode === "SECTION_DONE" && (
             <div className="section-done">
+              {sectionIdx >= 1 && (
+                <button
+                  className="btn-prev-section btn-prev-section-inline"
+                  onClick={handlePrevSection}
+                  title="이전 섹션 내용으로 돌아가요."
+                >
+                  ← 이전 섹션으로
+                </button>
+              )}
+
               {/* 1단계 — 따라해보기 (선택) */}
               {!followDoneForCurrent && ws.tokens.length > 0 && (
                 <div className="step-card step-optional">

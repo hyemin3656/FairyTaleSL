@@ -77,6 +77,7 @@ interface ScenarioState {
   cancelQuiz: () => void;        // 결과 기록 없이 QUIZ → SECTION_DONE 복귀
 
   nextSection: () => void;
+  prevSection: () => void;       // 이전 섹션으로 되돌아가기 (sectionIdx ≥ 1일 때)
   complete: () => void;
   reset: () => void;
 }
@@ -86,7 +87,7 @@ const initial: Omit<ScenarioState,
   | "enterFollowAlong" | "passFollowAlong" | "skipFollowAlong"
   | "enterChildQuestion" | "exitChildQuestion"
   | "startQuiz" | "finishQuiz" | "cancelQuiz"
-  | "nextSection" | "complete" | "reset"
+  | "nextSection" | "prevSection" | "complete" | "reset"
 > = {
   mode: "IDLE",
   bookId: null,
@@ -234,6 +235,23 @@ export const useScenarioStore = create<ScenarioState>((set, get) => ({
     } else {
       set({ mode: "STORY_PLAYING", sectionIdx: nextIdx, pausedTokenIndex: null });
     }
+  },
+
+  // 이전 섹션으로 되돌아가기. 학습 흐름의 중간(STORY_PLAYING/PAUSED/SECTION_DONE)에서만
+  // 허용 — QUIZ/CHILD_QUESTION/FOLLOW_ALONG 중에는 그 모드를 먼저 종료해야 한다.
+  prevSection: () => {
+    const { mode, sectionIdx } = get();
+    if (mode !== "STORY_PLAYING" && mode !== "PAUSED" && mode !== "SECTION_DONE") {
+      return warnInvalid("prevSection", mode);
+    }
+    if (sectionIdx <= 0) return;   // 첫 섹션에선 무시
+    set({
+      mode: "STORY_PLAYING",
+      sectionIdx: sectionIdx - 1,
+      pausedTokenIndex: null,
+      followAlongTarget: null,
+      pendingQuiz: null,
+    });
   },
 
   complete: () => {

@@ -8,7 +8,7 @@
  * 기존 SignPracticePage 로직을 컴포넌트화. 페이지(스탠드얼론) 흐름과 시나리오
  * 내장 흐름에서 같은 UI를 재사용한다.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import WebcamCapture from "../webcam/WebcamCapture";
 import type { TsnPrediction } from "../webcam/WebcamCapture";
 
@@ -21,29 +21,18 @@ interface Props {
 }
 
 export default function FollowAlongPanel({ targetGloss, onPass, onSkip }: Props) {
-  const [preds, setPreds] = useState<TsnPrediction[]>([]);
+  const [latest, setLatest] = useState<TsnPrediction | null>(null);
   const passedRef = useRef(false);
 
-  const handlePrediction = useCallback((p: TsnPrediction[]) => {
-    setPreds(p);
+  const handlePrediction = useCallback((p: TsnPrediction) => {
+    if (p.is_dummy) return;
+    setLatest(p);
   }, []);
 
-  // 중복 라벨 합산 (class_labels.json에 같은 라벨이 두 class_id에 매핑된 경우)
-  const labelScores = useMemo(() => {
-    const m = new Map<string, number>();
-    preds.forEach((p) => m.set(p.label, (m.get(p.label) ?? 0) + p.score));
-    return m;
-  }, [preds]);
-
-  const topLabel = useMemo<{ label: string; score: number } | null>(() => {
-    let best: { label: string; score: number } | null = null;
-    labelScores.forEach((score, label) => {
-      if (!best || score > best.score) best = { label, score };
-    });
-    return best;
-  }, [labelScores]);
-
-  const targetScore = labelScores.get(targetGloss) ?? 0;
+  const topLabel = latest && latest.gloss
+    ? { label: latest.gloss, score: latest.confidence }
+    : null;
+  const targetScore = topLabel && topLabel.label === targetGloss ? topLabel.score : 0;
   const isMatch =
     !!topLabel && topLabel.label === targetGloss && targetScore >= SUCCESS_THRESHOLD;
 
