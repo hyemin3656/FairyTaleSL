@@ -74,7 +74,7 @@ model = dict(
 )
 
 dataset_type = 'PoseDataset'
-ann_file = '../runyourai/ksl/mediapipe_sign_3d.pkl'
+ann_file = '../dataset/gloss_sequences_splited/mediapipe_sign_3d.pkl'
 
 vis_backends = [
     dict(type='LocalVisBackend'),

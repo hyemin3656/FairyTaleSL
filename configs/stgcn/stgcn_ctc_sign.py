@@ -4,6 +4,11 @@ _base_ = './stgcn_8xb16-joint-u100-80e_mediapipe-sign-keypoint-3d.py'
 # STGCNCTCHead internally uses blank_idx = NUM_GLOSS.
 NUM_GLOSS = 67
 
+# GPU CTC loss backward is not deterministic in PyTorch, so this config must
+# keep deterministic algorithms disabled even if tools/train.py is called with
+# --deterministic. Set the seed only for ordinary run-to-run stability.
+randomness = dict(seed=0, diff_rank_seed=False, deterministic=False)
+
 # The base config already defines RecognizerGCN + STGCN backbone.
 # Only the classification head is replaced with the CTC head.
 model = dict(

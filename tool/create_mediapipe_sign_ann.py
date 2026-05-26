@@ -7,10 +7,11 @@ from pathlib import Path
 
 import numpy as np
 
-KSL_DIR = Path("/home/ubuntu/runyourai/ksl")
-ROOT_DIR = KSL_DIR / "content/gloss_sequences_splited"
-OUT_PKL = KSL_DIR / "mediapipe_sign_3d.pkl"
-TEMPLATE_CSV = KSL_DIR / "gloss_sequence_templates.csv"
+DATASET_DIR = Path("/home/ubuntu/dataset")
+ROOT_DIR = DATASET_DIR / "gloss_sequences_splited"
+OUT_PKL = ROOT_DIR / "mediapipe_sign_3d.pkl"
+TEMPLATE_CSV = DATASET_DIR / "gloss_sequence_templates.csv"
+TEMPLATE_CSV_ENCODINGS = ("utf-8-sig", "cp949", "euc-kr")
 
 RANDOM_SEED = 42
 
@@ -94,20 +95,20 @@ def nan_to_zero_with_score(arr):
 
     return arr.astype(np.float32), score.astype(np.float32)
 
-def remap_label(label):
-    #비어있는 클래스 제거한 클래스 label 반환
-    #label : 1~77
-    missing = [12, 19, 28, 33, 35, 45, 46, 53, 73, 75]
+# def remap_label(label):
+#     #비어있는 클래스 제거한 클래스 label 반환
+#     #label : 1~77
+#     missing = [12, 19, 28, 33, 35, 45, 46, 53, 73, 75]
 
-    # label보다 작은 missing 개수 세기
-    shift = sum(1 for m in missing if m < label)
+#     # label보다 작은 missing 개수 세기
+#     shift = sum(1 for m in missing if m < label)
 
-    return label - shift #1~67
+#     return label - shift #1~67
 
 def parse_subject_and_class(folder_name):
     """
     폴더명이 '피험자_클래스' 형태라고 가정.
-    ex. 19(00~19)_07(01~77)
+    ex. 19(00~19)_07(000~350)
     """
     if "_" not in folder_name:
         raise ValueError(
@@ -123,19 +124,29 @@ def parse_subject_and_class(folder_name):
 
 def load_gloss_sequence_templates(csv_path=TEMPLATE_CSV):
     """Load template_id -> class_id_sequence mapping from CSV."""
-    template_map = {}
-    with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            template_id = row["template_id"]
-            class_id_sequence = ast.literal_eval(row["class_id_sequence"])
-            if not isinstance(class_id_sequence, list):
-                raise ValueError(
-                    f"class_id_sequence must be list, got {type(class_id_sequence)} "
-                    f"for {template_id}"
-                )
-            template_map[template_id] = [int(x) for x in class_id_sequence]
-    return template_map
+    last_decode_error = None
+    for encoding in TEMPLATE_CSV_ENCODINGS:
+        try:
+            template_map = {}
+            with open(csv_path, "r", encoding=encoding, newline="") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    template_id = row["template_id"]
+                    class_id_sequence = ast.literal_eval(row["class_id_sequence"])
+                    if not isinstance(class_id_sequence, list):
+                        raise ValueError(
+                            f"class_id_sequence must be list, got {type(class_id_sequence)} "
+                            f"for {template_id}"
+                        )
+                    template_map[template_id] = [int(x) for x in class_id_sequence]
+            return template_map
+        except UnicodeDecodeError as exc:
+            last_decode_error = exc
+
+    raise ValueError(
+        f"Could not decode {csv_path} with any supported encoding: "
+        f"{', '.join(TEMPLATE_CSV_ENCODINGS)}"
+    ) from last_decode_error
 
 
 def map_sequence_label(class_id, template_map=None):
@@ -164,7 +175,7 @@ def map_sequence_label(class_id, template_map=None):
 
 def build_annotations():
     template_map = load_gloss_sequence_templates()
-    split_dirs = sorted([p for p in ROOT_DIR.iterdir() if p.is_dir()]) #train/val/test
+    split_dirs = sorted([p for p in ROOT_DIR.iterdir() if p.is_dir()]) #[train, val, test]
 
     annotations = []
     split = {}
@@ -194,13 +205,13 @@ def build_annotations():
                 left = make_zero_hand(T)
             else:
                 left = ensure_tvc(left, expected_v=NUM_HAND, name=f"{frame_dir}/left hand") #(T, NUM_HAND, COORD_DIM)
-                left = pad_or_trim_time(left, T) #pose의 프레임 개수 기준 (동적 crop 시 hand 기준으로 수정 필요)
+                left = pad_or_trim_time(left, T) #pose의 프레임 개수 기준 필요 시 trim
 
             if right is None:
                 right = make_zero_hand(T)
             else:
                 right = ensure_tvc(right, expected_v=NUM_HAND, name=f"{frame_dir}/right hand") #(T, NUM_HAND, COORD_DIM)
-                right = pad_or_trim_time(right, T) #pose의 프레임 개수 기준
+                right = pad_or_trim_time(right, T) #pose의 프레임 개수 기준 필요 시 trim
 
             pose, pose_score = nan_to_zero_with_score(pose)
             left, left_score = nan_to_zero_with_score(left)
