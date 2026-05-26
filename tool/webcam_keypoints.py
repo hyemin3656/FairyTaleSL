@@ -341,7 +341,7 @@ def draw_overlay(
                     else : wst = "R"
                     cv2.putText(
                         overlay,
-                        f"pose {i} wrist",
+                        f"pose {wst} wrist",
                         (lx + 8, ly - 8),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.5,
