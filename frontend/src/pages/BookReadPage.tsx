@@ -341,7 +341,7 @@ export default function BookReadPage() {
             currentIndex={ws.currentIndex}
             total={ws.total}
             tokens={ws.tokens}
-            frozen={mode === "PAUSED"}
+            frozen={mode !== "STORY_PLAYING"}
           />
           {wsError && (
             <div className="ws-error">
