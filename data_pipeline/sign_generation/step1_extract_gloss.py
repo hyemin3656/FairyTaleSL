@@ -145,13 +145,24 @@ def merge_with_existing(new_glosses: list[dict], existing_path: str) -> list[dic
     for g in new_glosses:
         word = g["gloss"]
         new_words.add(word)
-        if word in existing_map:
-            old = existing_map[word]
-            g["registered"]    = old.get("registered", False)
-            g["video_path"]    = old.get("video_path")
-            g["motion_path"]   = old.get("motion_path")
-            g["emotion_label"] = old.get("emotion_label")
-            g["keypoint_path"] = old.get("keypoint_path")
+        # 직접 매칭 우선, 미등록이면 사전형(어간+다)으로 재조회
+        direct = existing_map.get(word)
+        inf_form = existing_map.get(word + "다")
+        old = None
+        if direct and direct.get("registered"):
+            old = direct
+        elif inf_form and inf_form.get("registered"):
+            old = inf_form
+        elif direct:
+            old = direct
+        if old:
+            g["registered"]       = old.get("registered", False)
+            g["video_path"]       = old.get("video_path")
+            g["motion_path"]      = old.get("motion_path")
+            g["emotion_label"]    = old.get("emotion_label")
+            g["keypoint_path"]    = old.get("keypoint_path")
+            g["fallback_type"]    = old.get("fallback_type")
+            g["fallback_glosses"] = old.get("fallback_glosses", [])
 
     # 새 텍스트에 없지만 등록된 글로스는 freq=0으로 유지
     for word, old in existing_map.items():

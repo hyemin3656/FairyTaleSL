@@ -1,16 +1,18 @@
 [
   {
-    "gloss": "나무",
+    "gloss": "나무꾼",
     "pos": "Noun",
-    "freq": 21,
-    "registered": true,
-    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나무.mp4",
+    "freq": 17,
+    "registered": false,
+    "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": null,
     "keypoint_path": null,
-    "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "나무",
+      "남자"
+    ]
   },
   {
     "gloss": "호랑이",
@@ -22,8 +24,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 59
+    "fallback_glosses": []
   },
   {
     "gloss": "어머니",
@@ -35,8 +36,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 57
+    "fallback_glosses": []
   },
   {
     "gloss": "하늘",
@@ -48,8 +48,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 62
+    "fallback_glosses": []
   },
   {
     "gloss": "옛날",
@@ -61,8 +60,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 53
+    "fallback_glosses": []
   },
   {
     "gloss": "콩쥐",
@@ -73,8 +71,11 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "여자",
+      "착하다"
+    ]
   },
   {
     "gloss": "심청이",
@@ -85,19 +86,23 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "여자",
+      "부모",
+      "사랑"
+    ]
   },
   {
     "gloss": "흥부",
     "pos": "Noun",
     "freq": 7,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/흥부.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "행복"
     ]
@@ -106,12 +111,12 @@
     "gloss": "올라가",
     "pos": "Verb",
     "freq": 7,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/올라가.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
@@ -123,8 +128,11 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "형",
+      "욕심"
+    ]
   },
   {
     "gloss": "도끼",
@@ -135,8 +143,11 @@
     "motion_path": null,
     "emotion_label": "분노",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "나무",
+      "자르다"
+    ]
   },
   {
     "gloss": "환웅",
@@ -147,35 +158,23 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
-  },
-  {
-    "gloss": "욕심",
-    "pos": "Noun",
-    "freq": 5,
-    "registered": true,
-    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/욕심.mp4",
-    "motion_path": null,
-    "emotion_label": "분노",
-    "keypoint_path": null,
-    "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 47
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "왕",
+      "하늘"
+    ]
   },
   {
     "gloss": "착하",
     "pos": "Adjective",
     "freq": 5,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/착하다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "칭찬"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "아버지",
@@ -187,8 +186,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 54
+    "fallback_glosses": []
   },
   {
     "gloss": "산신령",
@@ -199,20 +197,11 @@
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
-  },
-  {
-    "gloss": "선녀",
-    "pos": "Noun",
-    "freq": 5,
-    "registered": false,
-    "video_path": null,
-    "motion_path": null,
-    "emotion_label": "중립",
-    "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "산",
+      "신"
+    ]
   },
   {
     "gloss": "오누이",
@@ -224,8 +213,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 52
+    "fallback_glosses": []
   },
   {
     "gloss": "동아줄",
@@ -236,8 +224,10 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "줄"
+    ]
   },
   {
     "gloss": "토끼",
@@ -249,8 +239,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 57
+    "fallback_glosses": []
   },
   {
     "gloss": "거북이",
@@ -265,6 +254,18 @@
     "fallback_glosses": []
   },
   {
+    "gloss": "욕심",
+    "pos": "Noun",
+    "freq": 4,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/욕심.mp4",
+    "motion_path": null,
+    "emotion_label": "분노",
+    "keypoint_path": null,
+    "fallback_type": null,
+    "fallback_glosses": []
+  },
+  {
     "gloss": "마음",
     "pos": "Noun",
     "freq": 4,
@@ -274,8 +275,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 55
+    "fallback_glosses": []
   },
   {
     "gloss": "팥쥐",
@@ -286,8 +286,11 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "여자",
+      "나쁘다"
+    ]
   },
   {
     "gloss": "잔치",
@@ -299,36 +302,31 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 55
+    "fallback_glosses": []
   },
   {
     "gloss": "나타나",
     "pos": "Verb",
     "freq": 4,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나타나다.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "중간"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "만나",
     "pos": "Verb",
     "freq": 4,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/만나다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "중간"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "결국",
@@ -340,35 +338,31 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 51
+    "fallback_glosses": []
   },
   {
-    "gloss": "사람",
+    "gloss": "나무",
     "pos": "Noun",
     "freq": 4,
     "registered": true,
-    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사람.mp4",
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나무.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 66
+    "fallback_glosses": []
   },
   {
     "gloss": "보이",
     "pos": "Verb",
     "freq": 4,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/보이다.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "소녀"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "세상",
@@ -380,22 +374,19 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 55
+    "fallback_glosses": []
   },
   {
     "gloss": "내려오",
     "pos": "Verb",
     "freq": 4,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/내려오다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "동안"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "사슴",
@@ -407,35 +398,31 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 49
+    "fallback_glosses": []
   },
   {
-    "gloss": "아이",
+    "gloss": "선녀",
     "pos": "Noun",
     "freq": 4,
     "registered": true,
-    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/아이.mp4",
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/선녀.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "나쁘",
     "pos": "Adjective",
     "freq": 3,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나쁘다.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "손해"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "제비",
@@ -447,8 +434,7 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 45
+    "fallback_glosses": []
   },
   {
     "gloss": "행복",
@@ -460,8 +446,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "모두",
@@ -473,8 +458,19 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
+  },
+  {
+    "gloss": "사람",
+    "pos": "Noun",
+    "freq": 3,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사람.mp4",
+    "motion_path": null,
+    "emotion_label": "기쁨",
+    "keypoint_path": null,
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "이야기",
@@ -486,8 +482,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 51
+    "fallback_glosses": []
   },
   {
     "gloss": "눈멀",
@@ -498,22 +493,22 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "장님"
+    ]
   },
   {
     "gloss": "그리워하",
     "pos": "Verb",
     "freq": 3,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/그리워하다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "후회"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "나라",
@@ -525,8 +520,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "단군왕검",
@@ -537,8 +531,11 @@
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "왕",
+      "나라"
+    ]
   },
   {
     "gloss": "날개옷",
@@ -551,7 +548,8 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "제비"
+      "날개",
+      "옷"
     ]
   },
   {
@@ -588,8 +586,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 49
+    "fallback_glosses": []
   },
   {
     "gloss": "다리",
@@ -601,22 +598,19 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 53
+    "fallback_glosses": []
   },
   {
     "gloss": "돌아오",
     "pos": "Verb",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/돌아오다.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "다시"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "쏟아지",
@@ -629,7 +623,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "마치"
+      "나오다"
     ]
   },
   {
@@ -642,22 +636,19 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 46
+    "fallback_glosses": []
   },
   {
     "gloss": "나오",
     "pos": "Verb",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나오다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "도착"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "함께",
@@ -669,47 +660,42 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "힘들",
     "pos": "Adjective",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/힘들다.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "결국"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "시키",
     "pos": "Verb",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/시키다.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "하다"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "지내",
     "pos": "Verb",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/지내.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "동안"
     ]
@@ -724,8 +710,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 74
+    "fallback_glosses": []
   },
   {
     "gloss": "빠뜨리",
@@ -738,7 +723,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "기적"
+      "떨어지다"
     ]
   },
   {
@@ -750,19 +735,22 @@
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "금",
+      "자르다"
+    ]
   },
   {
     "gloss": "거짓말",
     "pos": "Noun",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/거짓말.mp4",
     "motion_path": null,
     "emotion_label": "분노",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "정직"
     ]
@@ -776,61 +764,62 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "아버지",
+      "장님"
+    ]
   },
   {
     "gloss": "위하",
     "pos": "Verb",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/위하다.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "중간"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "공양미",
     "pos": "Noun",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/공양미.mp4",
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
     "gloss": "연꽃",
     "pos": "Noun",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/연꽃.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "낮잠"
     ]
   },
   {
-    "gloss": "임금",
+    "gloss": "임금님",
     "pos": "Noun",
     "freq": 2,
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": null,
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "왕비"
+      "왕"
     ]
   },
   {
@@ -843,8 +832,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 55
+    "fallback_glosses": []
   },
   {
     "gloss": "기적",
@@ -856,59 +844,54 @@
     "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 52
+    "fallback_glosses": []
   },
   {
     "gloss": "만들",
     "pos": "Verb",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/만들다.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "재산"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "환인",
     "pos": "Noun",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/환인.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
     "gloss": "다스리",
     "pos": "Verb",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/다스리다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "비결"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "웅녀",
     "pos": "Noun",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/웅녀.mp4",
     "motion_path": null,
     "emotion_label": "슬픔",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
@@ -922,7 +905,8 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "소녀"
+      "나라",
+      "한국"
     ]
   },
   {
@@ -938,6 +922,32 @@
     "fallback_glosses": []
   },
   {
+    "gloss": "아이",
+    "pos": "Noun",
+    "freq": 2,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/아이.mp4",
+    "motion_path": null,
+    "emotion_label": "중립",
+    "keypoint_path": null,
+    "fallback_type": null,
+    "fallback_glosses": []
+  },
+  {
+    "gloss": "아이들",
+    "pos": "Noun",
+    "freq": 2,
+    "registered": false,
+    "video_path": null,
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "아이"
+    ]
+  },
+  {
     "gloss": "두레박",
     "pos": "Noun",
     "freq": 2,
@@ -946,35 +956,62 @@
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "물",
+      "위"
+    ]
   },
   {
     "gloss": "떨어지",
     "pos": "Verb",
     "freq": 2,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/떨어지다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "결국"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "내밀",
     "pos": "Verb",
     "freq": 2,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/내밀다.mp4",
+    "motion_path": null,
+    "emotion_label": "중립",
+    "keypoint_path": null,
+    "fallback_type": null,
+    "fallback_glosses": []
+  },
+  {
+    "gloss": "해님",
+    "pos": "Noun",
+    "freq": 2,
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": null,
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "마을"
+      "해"
+    ]
+  },
+  {
+    "gloss": "달님",
+    "pos": "Noun",
+    "freq": 2,
+    "registered": false,
+    "video_path": null,
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "달"
     ]
   },
   {
@@ -987,8 +1024,7 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 70
+    "fallback_glosses": []
   },
   {
     "gloss": "시합",
@@ -1000,22 +1036,19 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 54
+    "fallback_glosses": []
   },
   {
     "gloss": "느리",
     "pos": "Adjective",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/느리다.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "느리다"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "포기",
@@ -1027,8 +1060,7 @@
     "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 47
+    "fallback_glosses": []
   },
   {
     "gloss": "중간",
@@ -1052,8 +1084,7 @@
     "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "결승선",
@@ -1077,33 +1108,30 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 52
+    "fallback_glosses": []
   },
   {
     "gloss": "이기",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/이기다.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "이기다"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "자만",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/자만.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "중간"
     ]
@@ -1130,8 +1158,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "동생",
@@ -1143,22 +1170,19 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 43
+    "fallback_glosses": []
   },
   {
     "gloss": "부러지",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/부러지다.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "결국"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "정성껏",
@@ -1178,12 +1202,12 @@
     "gloss": "고치",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/고치.mp4",
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
@@ -1197,7 +1221,8 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "재산"
+      "금",
+      "돈"
     ]
   },
   {
@@ -1210,19 +1235,18 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 49
+    "fallback_glosses": []
   },
   {
     "gloss": "부러뜨리",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/부러뜨리.mp4",
     "motion_path": null,
     "emotion_label": "분노",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
@@ -1235,8 +1259,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 51
+    "fallback_glosses": []
   },
   {
     "gloss": "오물",
@@ -1249,7 +1272,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "여자"
+      "더럽다"
     ]
   },
   {
@@ -1262,8 +1285,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 44
+    "fallback_glosses": []
   },
   {
     "gloss": "후회",
@@ -1275,8 +1297,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 42
+    "fallback_glosses": []
   },
   {
     "gloss": "용서",
@@ -1288,8 +1309,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 44
+    "fallback_glosses": []
   },
   {
     "gloss": "소녀",
@@ -1301,8 +1321,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 53
+    "fallback_glosses": []
   },
   {
     "gloss": "일찍",
@@ -1314,8 +1333,7 @@
     "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 63
+    "fallback_glosses": []
   },
   {
     "gloss": "돌아가시",
@@ -1326,19 +1344,21 @@
     "motion_path": null,
     "emotion_label": "슬픔",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "죽다"
+    ]
   },
   {
     "gloss": "데려오",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/데려오.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "도착"
     ]
@@ -1365,8 +1385,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 70
+    "fallback_glosses": []
   },
   {
     "gloss": "마을",
@@ -1378,19 +1397,18 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "열리",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/열리.mp4",
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "사랑"
     ]
@@ -1405,35 +1423,33 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 43
+    "fallback_glosses": []
   },
   {
     "gloss": "떠나",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/떠나다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "행복"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
-    "gloss": "동물",
+    "gloss": "동물들",
     "pos": "Noun",
     "freq": 1,
-    "registered": true,
-    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/동물.mp4",
+    "registered": false,
+    "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": null,
     "keypoint_path": null,
-    "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 71
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "동물"
+    ]
   },
   {
     "gloss": "마치",
@@ -1448,6 +1464,20 @@
     "fallback_glosses": []
   },
   {
+    "gloss": "원님",
+    "pos": "Noun",
+    "freq": 1,
+    "registered": false,
+    "video_path": null,
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "왕"
+    ]
+  },
+  {
     "gloss": "사랑",
     "pos": "Noun",
     "freq": 1,
@@ -1457,8 +1487,7 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 63
+    "fallback_glosses": []
   },
   {
     "gloss": "시기",
@@ -1470,8 +1499,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 65
+    "fallback_glosses": []
   },
   {
     "gloss": "가지",
@@ -1489,12 +1517,12 @@
     "gloss": "성실",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/성실.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "정직"
     ]
@@ -1515,15 +1543,13 @@
     "gloss": "슬프",
     "pos": "Adjective",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/슬프다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "행복"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "연못가",
@@ -1550,7 +1576,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "시기"
+      "때"
     ]
   },
   {
@@ -1563,8 +1589,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 57
+    "fallback_glosses": []
   },
   {
     "gloss": "마지막",
@@ -1576,8 +1601,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 51
+    "fallback_glosses": []
   },
   {
     "gloss": "쇠도끼",
@@ -1588,8 +1612,10 @@
     "motion_path": null,
     "emotion_label": "분노",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "자르다"
+    ]
   },
   {
     "gloss": "정직",
@@ -1601,8 +1627,7 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 43
+    "fallback_glosses": []
   },
   {
     "gloss": "칭찬",
@@ -1614,8 +1639,7 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "소식",
@@ -1627,8 +1651,21 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 57
+    "fallback_glosses": []
+  },
+  {
+    "gloss": "욕심쟁이",
+    "pos": "Noun",
+    "freq": 1,
+    "registered": false,
+    "video_path": null,
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "욕심"
+    ]
   },
   {
     "gloss": "손해",
@@ -1640,22 +1677,19 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 78
+    "fallback_glosses": []
   },
   {
     "gloss": "가져오",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/가져오다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "행복"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "교훈",
@@ -1668,35 +1702,35 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "소녀"
+      "배우다"
     ]
   },
   {
     "gloss": "바치",
     "pos": "Verb",
     "freq": 1,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/바치다.mp4",
+    "motion_path": null,
+    "emotion_label": "중립",
+    "keypoint_path": null,
+    "fallback_type": null,
+    "fallback_glosses": []
+  },
+  {
+    "gloss": "뱃사람들",
+    "pos": "Noun",
+    "freq": 1,
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": null,
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "희생"
+      "배",
+      "사람"
     ]
-  },
-  {
-    "gloss": "뱃사람",
-    "pos": "Noun",
-    "freq": 1,
-    "registered": true,
-    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/뱃사람.mp4",
-    "motion_path": null,
-    "emotion_label": "기쁨",
-    "keypoint_path": null,
-    "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 47
   },
   {
     "gloss": "인당수",
@@ -1707,8 +1741,10 @@
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "바다"
+    ]
   },
   {
     "gloss": "던지",
@@ -1733,7 +1769,8 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "감동"
+      "부모",
+      "사랑"
     ]
   },
   {
@@ -1746,8 +1783,7 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 56
+    "fallback_glosses": []
   },
   {
     "gloss": "용왕",
@@ -1760,7 +1796,8 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "왕비"
+      "왕",
+      "물"
     ]
   },
   {
@@ -1774,7 +1811,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "결국"
+      "보내다"
     ]
   },
   {
@@ -1787,8 +1824,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 70
+    "fallback_glosses": []
   },
   {
     "gloss": "떠다니",
@@ -1801,7 +1837,8 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "동안"
+      "물",
+      "위"
     ]
   },
   {
@@ -1814,22 +1851,33 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 45
+    "fallback_glosses": []
   },
   {
     "gloss": "전국",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/전국.mp4",
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "행복"
     ]
+  },
+  {
+    "gloss": "사람들",
+    "pos": "Noun",
+    "freq": 1,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사람들.mp4",
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "효도",
@@ -1842,7 +1890,8 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "소녀"
+      "부모",
+      "사랑"
     ]
   },
   {
@@ -1855,8 +1904,7 @@
     "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 58
+    "fallback_glosses": []
   },
   {
     "gloss": "아주",
@@ -1868,8 +1916,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 54
+    "fallback_glosses": []
   },
   {
     "gloss": "아들",
@@ -1881,8 +1928,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "인간",
@@ -1894,22 +1940,19 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "내리",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/내리다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "도착"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "무리",
@@ -1921,22 +1964,19 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 48
+    "fallback_glosses": []
   },
   {
     "gloss": "이끌",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/이끌다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "결국"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "태백산",
@@ -1947,8 +1987,10 @@
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "산"
+    ]
   },
   {
     "gloss": "꼭대기",
@@ -1961,31 +2003,32 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "중간"
+      "위",
+      "산"
     ]
   },
   {
     "gloss": "우사",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/우사.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
     "gloss": "운사",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/운사.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
@@ -1999,7 +2042,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "동안"
+      "이끌다"
     ]
   },
   {
@@ -2013,7 +2056,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "행복"
+      "오다"
     ]
   },
   {
@@ -2026,8 +2069,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 53
+    "fallback_glosses": []
   },
   {
     "gloss": "동안",
@@ -2039,8 +2081,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "여자",
@@ -2052,8 +2093,7 @@
     "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 45
+    "fallback_glosses": []
   },
   {
     "gloss": "사이",
@@ -2065,36 +2105,31 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "태어나",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/태어나다.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "연못"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "세우",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/세우다.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "도착"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "부르",
@@ -2119,7 +2154,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "동안"
+      "오래"
     ]
   },
   {
@@ -2132,8 +2167,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 48
+    "fallback_glosses": []
   },
   {
     "gloss": "우리나라",
@@ -2146,19 +2180,19 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "나라"
+      "한국"
     ]
   },
   {
     "gloss": "최초",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/최초.mp4",
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "시작"
     ]
@@ -2173,22 +2207,19 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 63
+    "fallback_glosses": []
   },
   {
-    "gloss": "사냥",
+    "gloss": "사냥꾼",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사냥꾼.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "사슴"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "쫓기",
@@ -2199,8 +2230,11 @@
     "motion_path": null,
     "emotion_label": "기쁨",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "달리다",
+      "도망치다"
+    ]
   },
   {
     "gloss": "구하",
@@ -2215,6 +2249,20 @@
     "fallback_glosses": []
   },
   {
+    "gloss": "선녀들",
+    "pos": "Noun",
+    "freq": 1,
+    "registered": false,
+    "video_path": null,
+    "motion_path": null,
+    "emotion_label": null,
+    "keypoint_path": null,
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "선녀"
+    ]
+  },
+  {
     "gloss": "목욕",
     "pos": "Noun",
     "freq": 1,
@@ -2224,19 +2272,18 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 56
+    "fallback_glosses": []
   },
   {
     "gloss": "날개",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/날개.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "제비"
     ]
@@ -2245,12 +2292,12 @@
     "gloss": "숨기",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/숨기.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "중간"
     ]
@@ -2265,36 +2312,31 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 54
+    "fallback_glosses": []
   },
   {
     "gloss": "돌려주",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/돌려주다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "용서"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "슬퍼하",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/슬퍼하다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "후회"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "비결",
@@ -2306,8 +2348,7 @@
     "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 65
+    "fallback_glosses": []
   },
   {
     "gloss": "가족",
@@ -2319,19 +2360,18 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 41
+    "fallback_glosses": []
   },
   {
     "gloss": "용마",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/용마.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
@@ -2344,19 +2384,18 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 53
+    "fallback_glosses": []
   },
   {
     "gloss": "지상",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/지상.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "세상"
     ]
@@ -2371,8 +2410,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 60
+    "fallback_glosses": []
   },
   {
     "gloss": "수탉",
@@ -2385,7 +2423,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "중간"
+      "닭"
     ]
   },
   {
@@ -2398,8 +2436,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 37
+    "fallback_glosses": []
   },
   {
     "gloss": "남매",
@@ -2411,19 +2448,18 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 52
+    "fallback_glosses": []
   },
   {
     "gloss": "나가",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나가.mp4",
     "motion_path": null,
     "emotion_label": "슬픔",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "결국"
     ]
@@ -2450,22 +2486,19 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 44
+    "fallback_glosses": []
   },
   {
     "gloss": "빼앗기",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/빼앗기다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "결국"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "잡아먹",
@@ -2476,19 +2509,21 @@
     "motion_path": null,
     "emotion_label": "분노",
     "keypoint_path": null,
-    "fallback_type": "text",
-    "fallback_glosses": []
+    "fallback_type": "decompose",
+    "fallback_glosses": [
+      "먹다"
+    ]
   },
   {
     "gloss": "변장",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/변장.mp4",
     "motion_path": null,
     "emotion_label": "분노",
     "keypoint_path": null,
-    "fallback_type": "decompose",
+    "fallback_type": null,
     "fallback_glosses": [
       "일부러"
     ]
@@ -2504,7 +2539,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "배우"
+      "가다"
     ]
   },
   {
@@ -2517,22 +2552,19 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 55
+    "fallback_glosses": []
   },
   {
     "gloss": "느끼",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/느끼다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "결승선"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "의심",
@@ -2544,8 +2576,7 @@
     "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 44
+    "fallback_glosses": []
   },
   {
     "gloss": "밀가루",
@@ -2558,7 +2589,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "소녀"
+      "가루"
     ]
   },
   {
@@ -2583,22 +2614,19 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 48
+    "fallback_glosses": []
   },
   {
     "gloss": "놀라",
     "pos": "Verb",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/놀라다.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "감동"
-    ]
+    "fallback_type": null,
+    "fallback_glosses": []
   },
   {
     "gloss": "도망치",
@@ -2622,8 +2650,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 44
+    "fallback_glosses": []
   },
   {
     "gloss": "끊어지",
@@ -2641,24 +2668,24 @@
     "gloss": "수수",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/수수.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
     "gloss": "수수대",
     "pos": "Noun",
     "freq": 1,
-    "registered": false,
-    "video_path": null,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/수수대.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
-    "fallback_type": "text",
+    "fallback_type": null,
     "fallback_glosses": []
   },
   {
@@ -2671,8 +2698,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 61
+    "fallback_glosses": []
   },
   {
     "gloss": "오빠",
@@ -2684,8 +2710,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 56
+    "fallback_glosses": []
   },
   {
     "gloss": "누이",
@@ -2697,8 +2722,7 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
-    "fallback_glosses": [],
-    "frame_count": 55
+    "fallback_glosses": []
   },
   {
     "gloss": "비추",
@@ -2723,7 +2747,7 @@
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
-      "동안"
+      "살다"
     ]
   },
   {
@@ -2736,8 +2760,33 @@
     "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
+    "fallback_glosses": []
+  },
+  {
+    "gloss": "동물",
+    "pos": "Noun",
+    "freq": 0,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/동물.mp4",
+    "motion_path": null,
+    "emotion_label": "기쁨",
+    "keypoint_path": null,
+    "fallback_type": null,
     "fallback_glosses": [],
-    "frame_count": 53
+    "frame_count": 71
+  },
+  {
+    "gloss": "뱃사람",
+    "pos": "Noun",
+    "freq": 0,
+    "registered": true,
+    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/뱃사람.mp4",
+    "motion_path": null,
+    "emotion_label": "기쁨",
+    "keypoint_path": null,
+    "fallback_type": null,
+    "fallback_glosses": [],
+    "frame_count": 47
   },
   {
     "gloss": "하다",
@@ -33398,18 +33447,6 @@
     "freq": 0,
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/내구.mp4",
-    "motion_path": null,
-    "emotion_label": "중립",
-    "keypoint_path": null,
-    "fallback_type": null,
-    "fallback_glosses": []
-  },
-  {
-    "gloss": "사냥꾼",
-    "pos": "Unknown",
-    "freq": 0,
-    "registered": true,
-    "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사냥꾼.mp4",
     "motion_path": null,
     "emotion_label": "중립",
     "keypoint_path": null,
@@ -76885,47 +76922,5 @@
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
-  },
-  {
-    "gloss": "올라가다",
-    "pos": "VV",
-    "freq": 0,
-    "registered": false,
-    "video_path": null,
-    "motion_path": null,
-    "emotion_label": null,
-    "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "오르다"
-    ]
-  },
-  {
-    "gloss": "따다",
-    "pos": "VV",
-    "freq": 0,
-    "registered": false,
-    "video_path": null,
-    "motion_path": null,
-    "emotion_label": null,
-    "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "따르다"
-    ]
-  },
-  {
-    "gloss": "풀리다",
-    "pos": "VV",
-    "freq": 0,
-    "registered": false,
-    "video_path": null,
-    "motion_path": null,
-    "emotion_label": null,
-    "keypoint_path": null,
-    "fallback_type": "decompose",
-    "fallback_glosses": [
-      "풀다"
-    ]
   }
 ]
