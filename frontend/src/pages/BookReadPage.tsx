@@ -353,20 +353,16 @@ export default function BookReadPage() {
 
         {/* 텍스트 + 컨트롤 + 모드별 패널 */}
         <section className="text-section">
-          <div className="section-image-wrap">
-            {currentSection?.image_url ? (
+          {/* 삽화는 image_url이 있을 때만 노출 — placeholder는 표시하지 않음 */}
+          {currentSection?.image_url && (
+            <div className="section-image-wrap">
               <img
                 className="section-image"
                 src={currentSection.image_url}
                 alt={currentSection.title ?? "섹션 삽화"}
               />
-            ) : (
-              <div className="section-image-placeholder">
-                <span>🖼</span>
-                <span>삽화 준비 중</span>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
           {currentSection?.title && <h2 className="section-title">{currentSection.title}</h2>}
           <p className="section-text">{currentSection?.text}</p>
 

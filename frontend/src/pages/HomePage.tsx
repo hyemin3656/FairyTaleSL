@@ -7,6 +7,11 @@ export default function HomePage() {
 
   return (
     <div style={pageStyle}>
+      {/* 좌상단 로고 */}
+      <div style={logoStyle} onClick={() => navigate("/")}>
+        <span style={logoTextStyle}>FairyTaleSL</span>
+      </div>
+
       {/* 우상단 네비 */}
       <div style={navStyle}>
         {user ? (
@@ -29,7 +34,7 @@ export default function HomePage() {
 
       <main style={mainStyle}>
         <section style={heroStyle}>
-          <span style={badgeStyle}>수어 학습 · 전래동화</span>
+          <span style={badgeStyle}>수어 학습 · 전래동화 · AI 도우미</span>
           <h1 style={titleStyle}>FairyTaleSL</h1>
           {user ? (
             <>
@@ -71,40 +76,129 @@ export default function HomePage() {
           )}
         </section>
 
-        <section style={featuresStyle}>
-          {FEATURES.map((f) => (
-            <div key={f.title} style={featureCardStyle}>
-              <div style={featureIconStyle}>{f.icon}</div>
-              <h3 style={featureTitleStyle}>{f.title}</h3>
-              <p style={featureDescStyle}>{f.desc}</p>
+        {/* 학습 흐름 — 4 step */}
+        <section style={stepsWrapStyle}>
+          <div style={sectionHeaderStyle}>
+            <span style={sectionEyebrowStyle}>HOW IT WORKS</span>
+            <h2 style={sectionTitleStyle}>이렇게 학습해요</h2>
+            <p style={sectionLeadStyle}>
+              읽고 · 따라하고 · 물어보고 · 확인하는 네 단계로 자연스럽게 익혀요.
+            </p>
+          </div>
+          <div style={stepsGridStyle}>
+            {STEPS.map((s, i) => (
+              <div key={s.title} style={stepCardStyle}>
+                <div style={stepNumStyle}>{String(i + 1).padStart(2, "0")}</div>
+                <div style={stepIconStyle}>{s.icon}</div>
+                <h3 style={stepTitleStyle}>{s.title}</h3>
+                <p style={stepDescStyle}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 주요 기능 — 6 cards */}
+        <section style={{ width: "100%" }}>
+          <div style={sectionHeaderStyle}>
+            <span style={sectionEyebrowStyle}>FEATURES</span>
+            <h2 style={sectionTitleStyle}>이런 걸 할 수 있어요</h2>
+          </div>
+          <div style={featuresStyle}>
+            {FEATURES.map((f) => (
+              <div key={f.title} style={featureCardStyle}>
+                <div style={{ ...featureIconStyle, color: f.accent }}>{f.icon}</div>
+                <h3 style={featureTitleStyle}>{f.title}</h3>
+                <p style={featureDescStyle}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 통계 미니 배너 */}
+        <section style={statsRowStyle}>
+          {STATS.map((s) => (
+            <div key={s.label} style={statCellStyle}>
+              <div style={statValueStyle}>{s.value}</div>
+              <div style={statLabelStyle}>{s.label}</div>
             </div>
           ))}
         </section>
 
         <footer style={footerStyle}>
-          © 2026 FairyTaleSL
+          © 2026 FairyTaleSL · 수어로 만나는 따뜻한 동화 시간
         </footer>
       </main>
     </div>
   );
 }
 
-const FEATURES: { icon: string; title: string; desc: string }[] = [
+const STEPS: { icon: string; title: string; desc: string }[] = [
   {
     icon: "📖",
-    title: "전래동화 13권",
-    desc: "토끼와 거북이부터 별을 찾아서까지, 친숙한 이야기들을 모았습니다.",
+    title: "동화 읽기",
+    desc: "아바타가 동화 본문을 한 섹션씩 수어로 보여줘요.",
   },
   {
     icon: "🤟",
-    title: "문장별 수어 영상",
-    desc: "한 문장씩 따라 읽으며 수어 단어와 표현을 자연스럽게 익힙니다.",
+    title: "따라해보기",
+    desc: "방금 본 수어를 직접 따라하며 손에 익혀요.",
   },
   {
-    icon: "🌱",
-    title: "어린이 눈높이",
-    desc: "5–12세 연령대에 맞춘 짧은 단락과 부드러운 화면 구성을 제공합니다.",
+    icon: "❓",
+    title: "궁금증 묻기",
+    desc: "수어나 글로 자유롭게 물어보면 AI가 답해줘요.",
   },
+  {
+    icon: "🧠",
+    title: "퀴즈로 마무리",
+    desc: "짧은 단답형 퀴즈로 이야기를 한 번 더 정리해요.",
+  },
+];
+
+const FEATURES: { icon: string; title: string; desc: string; accent: string }[] = [
+  {
+    icon: "📖",
+    title: "전래동화 13권",
+    desc: "토끼와 거북이부터 별을 찾아서까지, 친숙한 이야기들을 모았어요.",
+    accent: "#7c3aed",
+  },
+  {
+    icon: "🤟",
+    title: "문장별 수어 아바타",
+    desc: "한 문장씩 따라 읽으며 수어 단어와 표현을 자연스럽게 익혀요.",
+    accent: "#4f46e5",
+  },
+  {
+    icon: "🎥",
+    title: "실시간 수어 인식",
+    desc: "웹캠으로 보여준 수어를 즉시 인식해서 단어로 알려줘요.",
+    accent: "#0891b2",
+  },
+  {
+    icon: "🤖",
+    title: "AI 도우미",
+    desc: "동화 속 인물·사건이 궁금하면 수어·키보드로 자유롭게 물어볼 수 있어요.",
+    accent: "#db2777",
+  },
+  {
+    icon: "🧠",
+    title: "섹션별 퀴즈",
+    desc: "본문에서 곧장 찾을 수 있는 단답형 문제로 이해를 가볍게 점검해요.",
+    accent: "#f59e0b",
+  },
+  {
+    icon: "📊",
+    title: "학습 이력 저장",
+    desc: "어디까지 읽었는지, 어떤 답을 했는지 마이페이지에 기록돼요.",
+    accent: "#10b981",
+  },
+];
+
+const STATS: { value: string; label: string }[] = [
+  { value: "13", label: "수록 동화" },
+  { value: "39", label: "사전 생성 퀴즈" },
+  { value: "6,000+", label: "수어 모션 단어" },
+  { value: "5–12세", label: "권장 연령" },
 ];
 
 const pageStyle: React.CSSProperties = {
@@ -113,6 +207,26 @@ const pageStyle: React.CSSProperties = {
   position: "relative",
   display: "flex",
   justifyContent: "center",
+};
+const logoStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 20,
+  left: 24,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  cursor: "pointer",
+  userSelect: "none",
+};
+const logoIconStyle: React.CSSProperties = {
+  fontSize: 22,
+  lineHeight: 1,
+};
+const logoTextStyle: React.CSSProperties = {
+  fontSize: 17,
+  fontWeight: 800,
+  color: "#4f46e5",
+  letterSpacing: "-0.3px",
 };
 const navStyle: React.CSSProperties = {
   position: "absolute",
@@ -217,6 +331,79 @@ const linkStyle: React.CSSProperties = {
   cursor: "pointer",
   textDecoration: "underline",
 };
+const sectionHeaderStyle: React.CSSProperties = {
+  textAlign: "center",
+  marginBottom: 28,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 8,
+};
+const sectionEyebrowStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  color: "#7c3aed",
+  letterSpacing: "1.4px",
+};
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: 24,
+  fontWeight: 800,
+  color: "#1e293b",
+  margin: 0,
+  letterSpacing: "-0.4px",
+};
+const sectionLeadStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: "#64748b",
+  margin: 0,
+};
+
+const stepsWrapStyle: React.CSSProperties = {
+  width: "100%",
+};
+const stepsGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+  gap: 12,
+};
+const stepCardStyle: React.CSSProperties = {
+  position: "relative",
+  background: "#fff",
+  border: "1px solid #e2e8f0",
+  borderRadius: 14,
+  padding: "20px 18px 18px",
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
+};
+const stepNumStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 12,
+  right: 14,
+  fontSize: 12,
+  fontWeight: 800,
+  color: "#c7d2fe",
+  letterSpacing: 1,
+};
+const stepIconStyle: React.CSSProperties = {
+  fontSize: 28,
+  lineHeight: 1,
+  marginBottom: 4,
+};
+const stepTitleStyle: React.CSSProperties = {
+  fontSize: 15,
+  fontWeight: 800,
+  color: "#1e293b",
+  margin: 0,
+};
+const stepDescStyle: React.CSSProperties = {
+  fontSize: 12.5,
+  color: "#64748b",
+  lineHeight: 1.6,
+  margin: 0,
+};
+
 const featuresStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
@@ -231,13 +418,16 @@ const featureCardStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 8,
+  transition: "transform 0.15s, box-shadow 0.15s",
+  boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
 };
 const featureIconStyle: React.CSSProperties = {
-  fontSize: 26,
+  fontSize: 28,
+  lineHeight: 1,
 };
 const featureTitleStyle: React.CSSProperties = {
   fontSize: 15,
-  fontWeight: 700,
+  fontWeight: 800,
   color: "#1e293b",
   margin: 0,
 };
@@ -247,6 +437,35 @@ const featureDescStyle: React.CSSProperties = {
   lineHeight: 1.6,
   margin: 0,
 };
+
+const statsRowStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+  gap: 12,
+  width: "100%",
+  padding: "22px 18px",
+  background: "linear-gradient(135deg, #eef2ff 0%, #fdf4ff 100%)",
+  border: "1px solid #e9d5ff",
+  borderRadius: 16,
+};
+const statCellStyle: React.CSSProperties = {
+  textAlign: "center",
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+};
+const statValueStyle: React.CSSProperties = {
+  fontSize: 26,
+  fontWeight: 800,
+  color: "#4f46e5",
+  letterSpacing: "-0.5px",
+};
+const statLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: "#64748b",
+  fontWeight: 600,
+};
+
 const footerStyle: React.CSSProperties = {
   fontSize: 12,
   color: "#94a3b8",
