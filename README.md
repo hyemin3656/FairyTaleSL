@@ -1,9 +1,7 @@
-# MMAction2 Action Recognition Training & Inference
+# TSN Action Recognition Inference (MMAction2)
 
-This repository provides **training and inference code for action recognition models using MMAction2**.  
-It currently supports model training based on MMAction2 configurations and includes test/inference code for both **TSN** and **ST-GCN** models.
-
-The project is designed to be easily extended and integrated into backend or application systems.
+This repository provides **inference code for a Temporal Segment Network (TSN)** trained using MMAction2.  
+It is designed to be easily integrated into backend or application systems.
 
 ---
 
@@ -39,7 +37,7 @@ pip install -r requirements.txt
 Clone and install MMAction2:
 
 ```bash
-git clone -b experiment/fairytalesl https://github.com/hyemin3656/mmaction2.git #my forked repository
+git clone https://github.com/open-mmlab/mmaction2.git
 cd mmaction2
 pip install -v -e .
 ```
@@ -58,40 +56,45 @@ git clone https://github.com/hyemin3656/FairyTaleSL.git
 
 Download your trained model and place it here:
 
-[https://drive.google.com/drive/folders/1z9X_AbwOjSLq7-6pROKsCJxGwEZjj0k_?usp=sharing
-](https://drive.google.com/drive/folders/1h0-ojkDY26MUHfenemiv3XG6t_NkgIEZ?usp=drive_link)
-
-stgcn_bilstm_ctc/sequence_level_baseline/best_wer_epoch_85.pth is the sequence level prediction model.
+https://drive.google.com/file/d/1EG3CH4RL7f8yjyEi-wnRlO2zzgA6ioc7/view?usp=drive_link
 
 ---
 
 ## Input Format
 
-### key-point ndarry
+The test code supports two input formats for inference:
 
-you can put any ndarry sample(ex.'00_004) into 'examples/sequenced_key_points'.
+### 1. Base64-encoded Frames (Recommended)
+- Input: `List[str]` (e.g., `data:image/jpeg;base64,...`)
+- Suitable for real-time applications (e.g., webcam streaming)
+- Frames are decoded into RGB numpy arrays before inference
+- result = predictor.predict_frames("examples/frames")
 
-[https://drive.google.com/drive/folders/1UvOW9TJA62yQBDEF2LGvyLRnajNHOGnm?usp=sharing
-](https://drive.google.com/file/d/1OiuxHetw91XUBeFvp3DhwN7Y4ChOr2vn/view?usp=drive_link)
+### 2. Image Directory
+- Input: `str` (path to a directory containing images)
+- Supported formats: `.jpg`, `.jpeg`, `.png`, `.bmp`
+- Useful for offline testing and debugging
+- Frames are loaded from disk in sorted order
+
+### 3. Pre-loaded Frames (NumPy Arrays)
+- Input: `List[np.ndarray]`
+- Each frame should have shape `(H, W, 3)` in RGB format
+- Suitable for advanced usage where frames are already processed in memory
+
+> ⚠️ Note  
+> In `test_predictor.py`, update the argument of `predictor.predict_frames()` depending on the input type:
+> - Directory path (`str`)
+> - Base64 image list (`List[str]`)
+> - NumPy frame list (`List[np.ndarray]`)
 
 ## 🚀 Usage
 
-Run st-gcn inference on a squence-level video:
+Run inference on a single video:
 
 ```bash
-python test_stgcn_ctc.py --checkpoint [pth path] --keypoint-dir /home/ubuntu/FairyTaleSL/examples/sequenced_key_points/00_004
-```
-Run st-gcn inference on a single video:
-
-```bash
-python test_stgcn.py
+python test_predictor.py
 ```
 
-Run tsn inference on a single video:
-
-```bash
-python test_tsn.py
-```
 ## 📁 Project Structure
 
 ```bash
@@ -103,5 +106,4 @@ workspace/
     ├── examples/
     ├── src/
     └── test_predictor.py
-
 ```

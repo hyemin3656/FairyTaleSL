@@ -8,7 +8,7 @@ import cv2
 from mmaction.apis import init_recognizer, inference_recognizer
 from mmaction.utils import register_all_modules
 
-from src.data.loading_frames import load_frames_from_dir, load_frames_from_base64
+from src.data.loading import load_frames_from_dir, load_frames_from_base64
 from src.data.pipeline import build_frame_pipeline, build_frame_data
 
 class TSNPredictor:

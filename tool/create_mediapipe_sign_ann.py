@@ -1,17 +1,12 @@
 import os
-import csv
-import ast
 import json
 import pickle
 from pathlib import Path
 
 import numpy as np
 
-DATASET_DIR = Path("/home/ubuntu/dataset")
-ROOT_DIR = DATASET_DIR / "gloss_sequences_splited"
-OUT_PKL = ROOT_DIR / "mediapipe_sign_3d.pkl"
-TEMPLATE_CSV = DATASET_DIR / "gloss_sequence_templates.csv"
-TEMPLATE_CSV_ENCODINGS = ("utf-8-sig", "cp949", "euc-kr")
+ROOT_DIR = Path("../../runyourai/ksl/holistic_results")
+OUT_PKL = Path("../../runyourai/ksl/mediapipe_sign_3d.pkl")
 
 RANDOM_SEED = 42
 
@@ -25,7 +20,6 @@ NUM_HAND = 21
 NUM_NODE = 65       # 23 + 21 + 21
 NUM_PERSON = 1
 COORD_DIM = 3       # x, y, z
-
 
 
 def load_npy(path: Path):
@@ -95,20 +89,20 @@ def nan_to_zero_with_score(arr):
 
     return arr.astype(np.float32), score.astype(np.float32)
 
-# def remap_label(label):
-#     #비어있는 클래스 제거한 클래스 label 반환
-#     #label : 1~77
-#     missing = [12, 19, 28, 33, 35, 45, 46, 53, 73, 75]
+def remap_label(label):
+    #비어있는 클래스 제거한 클래스 label 반환
+    #label : 1~77
+    missing = [12, 19, 28, 33, 35, 45, 46, 53, 73, 75]
 
-#     # label보다 작은 missing 개수 세기
-#     shift = sum(1 for m in missing if m < label)
+    # label보다 작은 missing 개수 세기
+    shift = sum(1 for m in missing if m < label)
 
-#     return label - shift #1~67
+    return label - shift #1~67
 
 def parse_subject_and_class(folder_name):
     """
     폴더명이 '피험자_클래스' 형태라고 가정.
-    ex. 19(00~19)_07(000~350)
+    ex. 19(00~19)_07(01~77)
     """
     if "_" not in folder_name:
         raise ValueError(
@@ -118,64 +112,13 @@ def parse_subject_and_class(folder_name):
 
     subject, class_name = folder_name.rsplit("_", 1)
     subject = subject.lstrip("0") or "0"
-    class_name = class_name.lstrip("0") or "0"
-    #remapped_class_label = remap_label(int(class_name))
-    return subject, class_name  #0~
-
-def load_gloss_sequence_templates(csv_path=TEMPLATE_CSV):
-    """Load template_id -> class_id_sequence mapping from CSV."""
-    last_decode_error = None
-    for encoding in TEMPLATE_CSV_ENCODINGS:
-        try:
-            template_map = {}
-            with open(csv_path, "r", encoding=encoding, newline="") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    template_id = row["template_id"]
-                    class_id_sequence = ast.literal_eval(row["class_id_sequence"])
-                    if not isinstance(class_id_sequence, list):
-                        raise ValueError(
-                            f"class_id_sequence must be list, got {type(class_id_sequence)} "
-                            f"for {template_id}"
-                        )
-                    template_map[template_id] = [int(x) for x in class_id_sequence]
-            return template_map
-        except UnicodeDecodeError as exc:
-            last_decode_error = exc
-
-    raise ValueError(
-        f"Could not decode {csv_path} with any supported encoding: "
-        f"{', '.join(TEMPLATE_CSV_ENCODINGS)}"
-    ) from last_decode_error
-
-
-def map_sequence_label(class_id, template_map=None):
-    """Return gloss id sequence for a sentence template class id.
-
-    Args:
-        class_id (int | str): Class id from annotation folder name. For
-            example, 12 maps to template_id ``tpl_0012``.
-        template_map (dict, optional): Preloaded template mapping. If omitted,
-            the CSV is read inside this function.
-
-    Returns:
-        list[int]: CTC target gloss id sequence, e.g. ``[0, 12]``.
-    """
-    class_id = int(class_id)
-    template_id = f"tpl_{class_id:04d}"
-    if template_map is None:
-        template_map = load_gloss_sequence_templates()
-
-    if template_id not in template_map:
-        raise KeyError(
-            f"Cannot find template_id={template_id} in {TEMPLATE_CSV}"
-        )
-    return template_map[template_id]
+    class_name = class_name.lstrip("0")
+    remapped_class_label = remap_label(int(class_name))
+    return subject, remapped_class_label - 1 #0~66
 
 
 def build_annotations():
-    template_map = load_gloss_sequence_templates()
-    split_dirs = sorted([p for p in ROOT_DIR.iterdir() if p.is_dir()]) #[train, val, test]
+    split_dirs = sorted([p for p in ROOT_DIR.iterdir() if p.is_dir()]) #train/val/test
 
     annotations = []
     split = {}
@@ -186,8 +129,6 @@ def build_annotations():
         for sample_dir in sample_dirs: #each sample directory
             frame_dir = sample_dir.name #{subject_id}_{class_id}
             subject, class_name = parse_subject_and_class(frame_dir)
-            class_id = int(class_name)
-            gt_gloss = map_sequence_label(class_id, template_map)
 
             pose = load_npy(sample_dir / POSE_FILE) 
             left = load_npy(sample_dir / LEFT_HAND_FILE)
@@ -205,13 +146,13 @@ def build_annotations():
                 left = make_zero_hand(T)
             else:
                 left = ensure_tvc(left, expected_v=NUM_HAND, name=f"{frame_dir}/left hand") #(T, NUM_HAND, COORD_DIM)
-                left = pad_or_trim_time(left, T) #pose의 프레임 개수 기준 필요 시 trim
+                left = pad_or_trim_time(left, T) #pose의 프레임 개수 기준 (동적 crop 시 hand 기준으로 수정 필요)
 
             if right is None:
                 right = make_zero_hand(T)
             else:
                 right = ensure_tvc(right, expected_v=NUM_HAND, name=f"{frame_dir}/right hand") #(T, NUM_HAND, COORD_DIM)
-                right = pad_or_trim_time(right, T) #pose의 프레임 개수 기준 필요 시 trim
+                right = pad_or_trim_time(right, T) #pose의 프레임 개수 기준
 
             pose, pose_score = nan_to_zero_with_score(pose)
             left, left_score = nan_to_zero_with_score(left)
@@ -231,9 +172,7 @@ def build_annotations():
             annotations.append(
                 {
                     "frame_dir": frame_dir,
-                    "class_id": class_id,
-                    "gt_gloss": gt_gloss,
-                    "label": gt_gloss,  # CTC target sequence, e.g. [0, 12]
+                    "label": class_name, # 0~66
                     "total_frames": T,
                     "keypoint": input_keypoint, 
                     "keypoint_score": input_keypoint_score
@@ -268,8 +207,7 @@ def main():
     first = annotations[0]
     print("Example:")
     print(" frame_dir:", first["frame_dir"])
-    print(" class_id:", first["class_id"])
-    print(" gt_gloss:", first["gt_gloss"])
+    print(" label:", first["label"])
     print(" total_frames:", first["total_frames"])
     print(" keypoint shape:", first["keypoint"].shape)
     print(" keypoint_score shape:", first["keypoint_score"].shape)
