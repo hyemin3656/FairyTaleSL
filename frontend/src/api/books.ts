@@ -18,6 +18,8 @@ export interface BookSection {
   title: string | null;
   text: string;
   image_url: string | null;
+  image_urls: string[] | null;
+  image_triggers: (string | null)[] | null;
 }
 
 export interface BookDetail extends BookListItem {

@@ -7,6 +7,7 @@ import SignPracticePage from "./pages/SignPracticePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import MyPage from "./pages/MyPage";
+import AvatarSelectPage from "./pages/AvatarSelectPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthContext();
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="/books" element={<BookSelectPage />} />
       <Route path="/books/:bookId" element={<BookReadPage />} />
       <Route path="/practice" element={<SignPracticePage />} />
+      <Route path="/avatar-select" element={<AvatarSelectPage />} />
       <Route
         path="/mypage"
         element={

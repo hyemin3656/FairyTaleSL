@@ -89,6 +89,114 @@ a {
   overflow: hidden;
 }
 
+/* ── 좌측 컬럼: 이미지 패널 + 글로스 바 ── */
+.left-col {
+  flex: 1.3;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gloss-bar {
+  flex: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 44px;
+}
+
+/* ── avatar-section: 이미지 + 아바타 오버레이 ── */
+.avatar-section {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 3 / 2;
+  position: relative;
+  overflow: hidden;
+  background: #0f0e1a;
+  border-radius: var(--radius);
+}
+
+.section-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* 하단 그라데이션 — 아바타가 자연스럽게 이미지 위에 떠있는 효과 */
+.avatar-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70%;
+  background: linear-gradient(
+    to top,
+    rgba(15, 14, 26, 0.92) 0%,
+    rgba(15, 14, 26, 0.5) 45%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 아바타 — 하단 중앙, 팔이 안 잘리도록 충분한 너비 */
+.avatar-overlay-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 65%;
+  height: 80%;
+  z-index: 2;
+}
+
+.avatar-overlay-wrap .avatar-scene-wrap {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* WS 오류 배너 */
+.avatar-ws-error {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 3;
+}
+
+/* ── text-section ── */
+.text-section {
+  flex: 0 0 520px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
 /* ── AvatarPlayer ── */
 .avatar-player {
   display: flex;
@@ -184,68 +292,7 @@ a {
 }
 .token.fallback { border-style: dashed; }
 
-/* ── avatar-section ── */
-.avatar-section {
-  flex: 1.3;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
 
-/* ── text-section ── */
-.text-section {
-  flex: 0 0 520px;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 20px;
-  background: var(--color-surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow);
-}
-
-.section-image-wrap {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  flex-shrink: 0;
-  border-radius: calc(var(--radius) - 4px);
-  overflow: hidden;
-  background: #1a1a2e;
-}
-
-.section-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.section-image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: #aaa;
-  font-size: 14px;
-}
-
-.section-image-placeholder span:first-child {
-  font-size: 36px;
-}
-
-.section-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-primary);
-}
 
 .section-text {
   font-size: 17px;
@@ -318,14 +365,15 @@ a {
   flex: 1 !important;
   width: 100% !important;
   min-height: 0 !important;
-  border-radius: var(--radius);
+  border-radius: 0;
 }
 
 @media (max-width: 768px) {
   .read-body { flex-direction: column; overflow-y: auto; }
-  .avatar-section { flex: none; height: 50vh; }
+  .left-col { flex: none; }
+  .avatar-section { flex: none; aspect-ratio: 3 / 2; }
+  .avatar-overlay-wrap { width: 80%; height: 75%; }
   .text-section { flex: none; }
-  .avatar-scene-wrap canvas { flex: 1 !important; }
 }
 
 /* 글로스 오버레이 — 캔버스 아래, 토큰 위 */
@@ -1798,4 +1846,150 @@ a {
   min-height: 60vh;
   gap: 16px;
   color: var(--color-text-muted);
+}
+
+/* ── 아바타 선택 페이지 ── */
+.avatar-select-page {
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.avatar-select-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.avatar-select-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.avatar-select-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding: 40px 48px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.avatar-card {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.avatar-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.15);
+  transform: translateY(-2px);
+}
+
+.avatar-card.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.avatar-card-preview {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: #0f0e1a;
+  overflow: hidden;
+}
+
+.avatar-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.avatar-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 8px;
+}
+
+.avatar-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.avatar-card-desc {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.avatar-card-btn {
+  margin: 8px 16px 16px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.avatar-card-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.avatar-card-btn.selected {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .avatar-select-grid {
+    grid-template-columns: 1fr;
+    padding: 24px 16px;
+  }
+}
+
+.btn-avatar-change {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-avatar-change:hover {
+  background: var(--color-primary);
+  color: #fff;
 }

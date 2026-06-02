@@ -94,7 +94,8 @@ function drivePoseBones(kp: number[], hum: VRM["humanoid"], sp: number) {
     const d = sub(lEl, lSh);
     // d.y: +0.25≈팔 자연하강, 0≈T포즈, -0.2≈팔 올림 → VRM rz: 1.5=아래, 0=T포즈, -1.5=위
     const targetZ = THREE.MathUtils.clamp(d.y * 6.0, -1.5, 1.5);
-    const targetY = THREE.MathUtils.clamp(d.z * 5.0, -1.5, 0.8);
+    // Y: 팔 전방 회전 — 음수 방향이 몸통 안으로 파고드므로 하한을 -0.4로 제한
+    const targetY = THREE.MathUtils.clamp(d.z * 5.0, -0.4, 0.8);
     const targetX = THREE.MathUtils.clamp(d.x * 3.0, -1.0, 0.8);
 
     lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, targetX, sp);
@@ -104,7 +105,8 @@ function drivePoseBones(kp: number[], hum: VRM["humanoid"], sp: number) {
   if (hasR && rArm) {
     const d = sub(rEl, rSh);
     const targetZ = THREE.MathUtils.clamp(-d.y * 6.0, -1.5, 1.5);
-    const targetY = THREE.MathUtils.clamp(-d.z * 5.0, -0.8, 1.5);
+    // Y: 팔 전방 회전 — 양수 방향이 몸통 안으로 파고드므로 상한을 0.4로 제한
+    const targetY = THREE.MathUtils.clamp(-d.z * 5.0, -0.8, 0.4);
     const targetX = THREE.MathUtils.clamp(-d.x * 3.0, -0.8, 1.0);
 
     rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, targetX, sp);
@@ -114,13 +116,14 @@ function drivePoseBones(kp: number[], hum: VRM["humanoid"], sp: number) {
 
   // ── 전완: 어깨→팔꿈치와 팔꿈치→손목의 각도 = 팔꿈치 굽힘 ───
   if (hasL && lFore) {
-    const bend = THREE.MathUtils.clamp(angle(sub(lEl, lSh), sub(lWr, lEl)), 0, 1.9);
+    // 전완 Y회전도 몸통 관통 방지를 위해 하한 제한
+    const bend = THREE.MathUtils.clamp(angle(sub(lEl, lSh), sub(lWr, lEl)), 0, 1.6);
     lFore.rotation.x = THREE.MathUtils.lerp(lFore.rotation.x, 0, sp);
     lFore.rotation.y = THREE.MathUtils.lerp(lFore.rotation.y, -bend, sp);
     lFore.rotation.z = THREE.MathUtils.lerp(lFore.rotation.z, 0, sp);
   }
   if (hasR && rFore) {
-    const bend = THREE.MathUtils.clamp(angle(sub(rEl, rSh), sub(rWr, rEl)), 0, 1.9);
+    const bend = THREE.MathUtils.clamp(angle(sub(rEl, rSh), sub(rWr, rEl)), 0, 1.6);
     rFore.rotation.x = THREE.MathUtils.lerp(rFore.rotation.x, 0, sp);
     rFore.rotation.y = THREE.MathUtils.lerp(rFore.rotation.y, bend, sp);
     rFore.rotation.z = THREE.MathUtils.lerp(rFore.rotation.z, 0, sp);
@@ -258,6 +261,12 @@ const FINGER_ANIM_MAP: Record<string, VRMHumanBoneName> = (() => {
   return map;
 })();
 
+// 상완 Y 회전 클램프: 몸통 관통 방지 (drivePoseBones와 동일 기준 적용)
+const ARM_Y_CLAMP: Record<string, [number, number]> = {
+  lArm: [-0.4, 0.8],
+  rArm: [-0.8, 0.4],
+};
+
 function driveAnimData(anim: AnimData, elapsed: number, hum: VRM["humanoid"], sp: number) {
   const { fps, n, bones } = anim;
   const framePos = (elapsed * fps) % n;
@@ -273,9 +282,18 @@ function driveAnimData(anim: AnimData, elapsed: number, hum: VRM["humanoid"], sp
     if (!bone) continue;
     const fr0 = frames[Math.min(f0, frames.length - 1)];
     const fr1 = frames[Math.min(f1, frames.length - 1)];
-    bone.rotation.x = THREE.MathUtils.lerp(bone.rotation.x, fr0[0] + (fr1[0] - fr0[0]) * t, sp);
-    bone.rotation.y = THREE.MathUtils.lerp(bone.rotation.y, fr0[1] + (fr1[1] - fr0[1]) * t, sp);
-    bone.rotation.z = THREE.MathUtils.lerp(bone.rotation.z, fr0[2] + (fr1[2] - fr0[2]) * t, sp);
+
+    const rx = fr0[0] + (fr1[0] - fr0[0]) * t;
+    let   ry = fr0[1] + (fr1[1] - fr0[1]) * t;
+    const rz = fr0[2] + (fr1[2] - fr0[2]) * t;
+
+    // 상완 Y 클램프: keypoint 노이즈로 인한 팔 몸통 관통 방지
+    const yClamp = ARM_Y_CLAMP[key];
+    if (yClamp) ry = THREE.MathUtils.clamp(ry, yClamp[0], yClamp[1]);
+
+    bone.rotation.x = THREE.MathUtils.lerp(bone.rotation.x, rx, sp);
+    bone.rotation.y = THREE.MathUtils.lerp(bone.rotation.y, ry, sp);
+    bone.rotation.z = THREE.MathUtils.lerp(bone.rotation.z, rz, sp);
   }
 
   // 손가락 curl (스칼라 리스트)
@@ -318,9 +336,10 @@ interface VRMAvatarProps {
   clip: MotionClip | null;
   playing: boolean;
   frozen: boolean;
+  avatarUrl: string;
 }
 
-function VRMAvatar({ clip, playing, frozen }: VRMAvatarProps) {
+function VRMAvatar({ clip, playing, frozen, avatarUrl }: VRMAvatarProps) {
   const [vrm, setVrm] = useState<VRM | null>(null);
   const elapsedRef   = useRef(0);
   const prevGlossRef = useRef<string | null>(null);
@@ -332,9 +351,10 @@ function VRMAvatar({ clip, playing, frozen }: VRMAvatarProps) {
   clipRef.current    = clip;
 
   useEffect(() => {
+    setVrm(null);
     const loader = new GLTFLoader();
     loader.register(parser => new VRMLoaderPlugin(parser));
-    loader.load("/avatar.glb", gltf => {
+    loader.load(avatarUrl, gltf => {
       const v = gltf.userData.vrm as VRM | undefined;
       if (!v) return;
       VRMUtils.removeUnnecessaryVertices(v.scene);
@@ -342,7 +362,7 @@ function VRMAvatar({ clip, playing, frozen }: VRMAvatarProps) {
       v.scene.traverse(obj => { obj.frustumCulled = false; });
       setVrm(v);
     });
-  }, []);
+  }, [avatarUrl]);
 
   useFrame((_, delta) => {
     if (!vrm) return;
@@ -451,8 +471,8 @@ interface AvatarSceneProps {
   status: string;
   currentIndex: number;
   total: number;
-  tokens: string[];
   frozen?: boolean;
+  avatarUrl?: string;
 }
 
 export default function AvatarScene({
@@ -460,54 +480,37 @@ export default function AvatarScene({
   status,
   currentIndex,
   total,
-  tokens,
   frozen = false,
+  avatarUrl = "/avatar.glb",
 }: AvatarSceneProps) {
   const playing = status === "streaming";
 
   return (
     <div className="avatar-scene-wrap">
       <Canvas
-        camera={{ position: [0, 0.2, 1.3], fov: 50 }}
+        camera={{ position: [0, 0.15, 1.1], fov: 55 }}
         shadows
-        style={{ background: "#0f0e1a", borderRadius: 12, flex: 1 }}
+        gl={{ alpha: true }}
+        onCreated={({ gl, scene }) => {
+          gl.setClearColor(0x000000, 0);
+          scene.background = null;
+        }}
+        style={{ width: "100%", height: "100%" }}
       >
         <ambientLight intensity={0.8} />
         <directionalLight position={[1, 3, 2]} intensity={1.4} castShadow />
         <pointLight position={[-1, 2, 2]} intensity={0.5} color="#c4b5fd" />
 
-        <VRMAvatar clip={clip} playing={playing} frozen={frozen} />
+        <VRMAvatar clip={clip} playing={playing} frozen={frozen} avatarUrl={avatarUrl} />
         <Environment preset="city" />
 
         <OrbitControls
           enablePan={false}
-          minDistance={1.2}
-          maxDistance={3}
-          minPolarAngle={Math.PI / 4}
-          maxPolarAngle={Math.PI / 1.8}
-          target={[0, 0.25, 0]}
+          enableRotate={false}
+          enableZoom={false}
+          target={[0, 0.15, 0]}
         />
       </Canvas>
-
-      <GlossOverlay
-        clip={clip}
-        status={status}
-        currentIndex={currentIndex}
-        total={total}
-      />
-
-      {tokens.length > 0 && (
-        <div className="gloss-tokens">
-          {tokens.map((t, i) => (
-            <span
-              key={i}
-              className={`token ${i === currentIndex && playing ? "active" : ""}`}
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

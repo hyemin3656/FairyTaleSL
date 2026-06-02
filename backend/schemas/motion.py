@@ -29,7 +29,7 @@ class MotionClip(BaseModel):
     blendshape_params: dict
     duration_sec: float
     is_fallback: bool = False
-    fallback_type: str | None = None  # "decompose" | "text" | None
+    fallback_type: str | None = None  # "synonym" | "decompose" | "text" | None
     text_display: str | None = None
     # N×225 keypoint 시퀀스 (15fps): lhand(63) + rhand(63) + pose(99)
     keypoints: list[list[float]] | None = None

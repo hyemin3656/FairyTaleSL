@@ -116,6 +116,22 @@ _STOPWORDS = {
     "나", "너", "우리", "그", "이", "저",
 }
 
+# 국립국어원 KSL DB에 없는 글로스 → DB에 있는 최적 유의어로 교체
+# 화면 표시(tokens)는 원본 유지, 수어 재생만 교체됨
+_SYNONYM_MAP: dict[str, str | list[str]] = {
+    "나무꾼":   ["나무", "사람"],   # 나무 베는 사람 → 두 글로스로 분해
+    "달님":     "달",
+    "동물들":   "동물",
+    "뱃사람들": "선원",
+    "사람들":   "사람",
+    "선녀들":   "선녀",
+    "아이들":   "아이",
+    "욕심쟁이": "욕심",
+    "원님":     "관리",
+    "임금님":   "임금",
+    "해님":     "해",
+}
+
 # KSL 어순 분류용 키워드
 _TIME_KEYWORDS = {
     "옛날", "어느날", "봄", "여름", "가을", "겨울",
@@ -162,11 +178,22 @@ def tokenize_text(text: str) -> list[str]:
     return ordered
 
 
+def _synonym_glosses(token: str) -> list[str]:
+    """토큰의 유의어 글로스 리스트 반환. 매핑 없으면 빈 리스트."""
+    val = _SYNONYM_MAP.get(token)
+    if val is None:
+        return []
+    return val if isinstance(val, list) else [val]
+
+
 async def _fetch_motion_map(
     db: AsyncSession, glosses: list[str]
 ) -> dict[str, GlossMotion]:
-    """glosses + FALLBACK 을 한 번의 쿼리로 조회하여 {gloss: GlossMotion} 반환"""
-    lookup = set(glosses) | {FALLBACK_GLOSS}
+    """glosses + FALLBACK + synonym 글로스를 한 번의 쿼리로 조회하여 {gloss: GlossMotion} 반환"""
+    synonym_glosses: set[str] = set()
+    for token in glosses:
+        synonym_glosses.update(_synonym_glosses(token))
+    lookup = set(glosses) | synonym_glosses | {FALLBACK_GLOSS}
     stmt = select(GlossMotion).where(GlossMotion.gloss.in_(lookup))
     result = await db.execute(stmt)
     return {row.gloss: row for row in result.scalars().all()}
@@ -192,9 +219,10 @@ async def resolve_motions(
 
     우선순위:
     1. DB에 해당 글로스가 있으면 해당 클립 반환
-    2. decompose fallback: 등록된 대체 글로스 클립으로 교체
-    3. text fallback: gltf_clip_url 없이 text_display만 설정
-    4. 기본 FALLBACK 클립 사용
+    2. synonym 교체: _SYNONYM_MAP에 등록된 유의어 클립으로 재생
+    3. decompose fallback: 등록된 대체 글로스 클립으로 교체
+    4. text fallback: gltf_clip_url 없이 text_display만 설정
+    5. 기본 FALLBACK 클립 사용
     """
     expanded = _expand_tokens(tokens)
     motion_map = await _fetch_motion_map(db, expanded)
@@ -221,7 +249,40 @@ async def resolve_motions(
                 animation_data=anim_data,
             ))
 
-        # 2. decompose fallback
+        # 2. synonym 교체 — 국립국어원 DB에 없는 단어를 유의어로 대체
+        elif _synonym_glosses(token):
+            syn_added = False
+            for syn in _synonym_glosses(token):
+                syn_motion = motion_map.get(syn)
+                if syn_motion:
+                    syn_kp, syn_anim = _load_anim(syn_motion.gloss, syn_motion.keypoint_path)
+                    syn_dur = len(syn_kp) / KEYPOINT_FPS if syn_kp else syn_motion.duration_sec
+                    clips.append(MotionClip(
+                        gloss=token,
+                        gltf_clip_url=syn_motion.gltf_clip_url,
+                        emotion_label=syn_motion.emotion_label,
+                        blendshape_params=syn_motion.blendshape_params or {},
+                        duration_sec=syn_dur,
+                        is_fallback=True,
+                        fallback_type="synonym",
+                        keypoints=syn_kp,
+                        fps=KEYPOINT_FPS,
+                        animation_data=syn_anim,
+                    ))
+                    syn_added = True
+            if not syn_added:
+                # synonym도 DB에 없으면 기본 FALLBACK 사용
+                clips.append(MotionClip(
+                    gloss=token,
+                    gltf_clip_url=fallback.gltf_clip_url if fallback else FALLBACK_URL,
+                    emotion_label=fallback.emotion_label if fallback else "neutral",
+                    blendshape_params=fallback.blendshape_params or {} if fallback else {},
+                    duration_sec=fallback.duration_sec if fallback else FALLBACK_DURATION,
+                    is_fallback=True,
+                    fallback_type=None,
+                ))
+
+        # 3. decompose fallback
         elif fb and fb["type"] == "decompose":
             for alt_gloss in fb["glosses"]:
                 alt_motion = motion_map.get(alt_gloss)
@@ -241,7 +302,7 @@ async def resolve_motions(
                         animation_data=alt_anim,
                     ))
 
-        # 3. text fallback
+        # 4. text fallback
         elif fb and fb["type"] == "text":
             clips.append(MotionClip(
                 gloss=token,
@@ -254,7 +315,7 @@ async def resolve_motions(
                 text_display=token,
             ))
 
-        # 4. 기본 FALLBACK
+        # 5. 기본 FALLBACK
         else:
             clips.append(MotionClip(
                 gloss=token,

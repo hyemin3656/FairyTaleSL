@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON, Uuid
 
@@ -56,6 +57,8 @@ class BookSection(Base):
     title: Mapped[str | None] = mapped_column(String(200), nullable=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)  # 원문 텍스트
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    image_urls: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    image_triggers: Mapped[list[str | None] | None] = mapped_column(ARRAY(Text), nullable=True)
 
     book: Mapped["Book"] = relationship(back_populates="sections")
 

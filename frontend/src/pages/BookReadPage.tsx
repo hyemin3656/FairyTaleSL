@@ -26,6 +26,7 @@ import {
 } from "../api/auth";
 import { useGlossWS } from "../hooks/useGlossWS";
 import { useScenarioStore } from "../stores/scenarioStore";
+import { useAvatarStore } from "../stores/avatarStore";
 
 import AvatarScene from "../components/avatar/AvatarScene";
 import FollowAlongPanel from "../components/session/FollowAlongPanel";
@@ -35,6 +36,7 @@ import QuizPanel from "../components/session/QuizPanel";
 export default function BookReadPage() {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const avatarUrl = useAvatarStore((s) => s.selectedAvatar().url);
 
   const [book, setBook] = useState<BookDetail | null>(null);
   const [fetchError, setFetchError] = useState("");
@@ -100,6 +102,30 @@ export default function BookReadPage() {
   }, [bookId, startSessionStore, resetStore]);
 
   const currentSection = book?.sections[sectionIdx];
+
+  // ── 이미지 트리거: 글로스 재생 시점에 맞춰 이미지 인덱스 전환 ──────────────
+  const [imgIdx, setImgIdx] = useState(0);
+
+  useEffect(() => {
+    setImgIdx(0);
+  }, [sectionIdx]);
+
+  useEffect(() => {
+    if (!currentSection?.image_triggers || !ws.currentClip) return;
+    const triggers = currentSection.image_triggers;
+    for (let i = 1; i < triggers.length; i++) {
+      if (triggers[i] && ws.currentClip.gloss === triggers[i]) {
+        setImgIdx(i);
+        break;
+      }
+    }
+  }, [ws.currentClip, currentSection]);
+
+  const activeImageUrl = (() => {
+    const urls = currentSection?.image_urls;
+    if (urls && urls.length > 0) return urls[imgIdx] ?? urls[0];
+    return currentSection?.image_url ?? null;
+  })();
 
   // ── ws.done → store.sectionEnd 자동 전이 ────────────────────────────────
   useEffect(() => {
@@ -311,6 +337,7 @@ export default function BookReadPage() {
         <button className="btn-back" onClick={() => navigate("/books")}>← 목록</button>
         <h1 className="read-title">{book.title}</h1>
         <span className="section-counter">{sectionIdx + 1} / {book.sections.length}</span>
+        <button className="btn-avatar-change" onClick={() => navigate("/avatar-select")}>아바타 변경</button>
       </header>
 
       {/* 진행 점 */}
@@ -333,36 +360,76 @@ export default function BookReadPage() {
       </div>
 
       <div className="read-body">
-        {/* 3D 아바타 */}
-        <section className="avatar-section">
-          <AvatarScene
-            clip={ws.currentClip}
-            status={ws.status}
-            currentIndex={ws.currentIndex}
-            total={ws.total}
-            tokens={ws.tokens}
-            frozen={mode !== "STORY_PLAYING"}
-          />
-          {wsError && (
-            <div className="ws-error">
-              <span>⚠ {ws.errorMsg || "WS 오류"}</span>
-              <button onClick={ws.reconnect}>재연결</button>
+        {/* 좌측 컬럼: 이미지+아바타 패널 + 글로스 바 */}
+        <div className="left-col">
+          <section className="avatar-section">
+            {/* 동화 이미지 */}
+            {activeImageUrl && (
+              <img className="section-image" src={activeImageUrl} alt="" aria-hidden />
+            )}
+
+            {/* 하단 그라데이션 오버레이 */}
+            <div className="avatar-gradient" />
+
+            {/* 아바타 — 하단 중앙 */}
+            <div className="avatar-overlay-wrap">
+              <div className="avatar-scene-wrap">
+                <AvatarScene
+                  clip={ws.currentClip}
+                  status={ws.status}
+                  currentIndex={ws.currentIndex}
+                  total={ws.total}
+                  frozen={mode !== "STORY_PLAYING"}
+                  avatarUrl={avatarUrl}
+                />
+              </div>
             </div>
-          )}
-        </section>
+
+            {wsError && (
+              <div className="ws-error avatar-ws-error">
+                <span>⚠ {ws.errorMsg || "WS 오류"}</span>
+                <button onClick={ws.reconnect}>재연결</button>
+              </div>
+            )}
+          </section>
+
+          {/* 글로스 바 — 이미지 아래 */}
+          <div className="gloss-bar">
+            <div className="gloss-overlay">
+              {ws.status === "connecting" && (
+                <span className="overlay-tag connecting">연결 중…</span>
+              )}
+              {ws.status === "streaming" && ws.currentClip && (
+                <>
+                  <span className={`overlay-tag ${ws.currentClip.is_fallback ? "fallback" : "matched"}`}>
+                    {ws.currentClip.gloss}
+                  </span>
+                  <span className="overlay-progress">
+                    {ws.currentIndex + 1} / {ws.total}
+                  </span>
+                </>
+              )}
+              {ws.status === "done" && (
+                <span className="overlay-tag done">완료</span>
+              )}
+            </div>
+            {ws.tokens.length > 0 && (
+              <div className="gloss-tokens">
+                {ws.tokens.map((t, i) => (
+                  <span
+                    key={i}
+                    className={`token ${i === ws.currentIndex && ws.status === "streaming" ? "active" : ""}`}
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* 텍스트 + 컨트롤 + 모드별 패널 */}
         <section className="text-section">
-          {/* 삽화는 image_url이 있을 때만 노출 — placeholder는 표시하지 않음 */}
-          {currentSection?.image_url && (
-            <div className="section-image-wrap">
-              <img
-                className="section-image"
-                src={currentSection.image_url}
-                alt={currentSection.title ?? "섹션 삽화"}
-              />
-            </div>
-          )}
           {currentSection?.title && <h2 className="section-title">{currentSection.title}</h2>}
           <p className="section-text">{currentSection?.text}</p>
 
@@ -432,9 +499,7 @@ export default function BookReadPage() {
             </div>
           )}
 
-          {/* CHILD_QUESTION 패널 — Gemini에 책 전체 본문을 컨텍스트로 전달
-              (책 한 권 약 1.5K~3K 토큰 수준이라 무료 한도 부담은 적고,
-               "직녀가 누구야"처럼 다른 섹션에 등장하는 인물·정보도 답할 수 있게 됨) */}
+          {/* CHILD_QUESTION 패널 */}
           {mode === "CHILD_QUESTION" && currentSection && (
             <ChildQuestionPanel
               storyContext={book.sections.map((s, i) => {

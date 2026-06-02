@@ -12,6 +12,8 @@ class BookSectionOut(BaseModel):
     title: str | None
     text: str
     image_url: str | None = None
+    image_urls: list[str] | None = None
+    image_triggers: list[str | None] | None = None
 
 
 class BookListItem(BaseModel):
