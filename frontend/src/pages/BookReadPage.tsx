@@ -49,6 +49,7 @@ export default function BookReadPage() {
   const followAlongTarget= useScenarioStore((s) => s.followAlongTarget);
   const pendingQuiz      = useScenarioStore((s) => s.pendingQuiz);
   const results          = useScenarioStore((s) => s.results);
+  const pausedTokenIndex = useScenarioStore((s) => s.pausedTokenIndex);
 
   const sessionId           = useScenarioStore((s) => s.sessionId);
   const startSessionStore   = useScenarioStore((s) => s.startSession);
@@ -134,6 +135,9 @@ export default function BookReadPage() {
     }
   }, [mode, ws.status, sectionEndAction]);
 
+  // 질문 답변이 아바타로 재생됐는지 플래그 — 재개 시 동화 본문을 다시 보내야 함을 판단
+  const answerPlayedRef = useRef(false);
+
   // ── "빠르게 완료" 대기: 토큰이 도착하면 즉시 SECTION_DONE 전이 ─────────────
   // 따라해보기 기능은 ws.tokens가 있어야 가능하므로, sendText 직후 tokens 도착을 대기한다.
   const skipPendingRef = useRef(false);
@@ -160,6 +164,7 @@ export default function BookReadPage() {
   // ── 핸들러 ────────────────────────────────────────────────────────────
   const handlePlay = () => {
     if (!currentSection) return;
+    answerPlayedRef.current = false;
     if (ws.status === "closed" || ws.status === "error") ws.reconnect();
     ws.sendText(currentSection.text);
   };
@@ -169,8 +174,17 @@ export default function BookReadPage() {
     pauseAction(ws.currentIndex);
   };
 
+  // 재개: 질문 답변이 재생됐다면 WS 상에 동화 본문이 없으므로 일시정지 지점부터 다시 보낸다.
+  // 그렇지 않으면(정말 단순 일시정지였다면) ws.resume()으로 같은 스트림 이어 재생.
   const handleResume = () => {
-    ws.resume();
+    if (answerPlayedRef.current && currentSection) {
+      answerPlayedRef.current = false;
+      const startIdx = pausedTokenIndex ?? 0;
+      if (ws.status === "closed" || ws.status === "error") ws.reconnect();
+      ws.sendText(currentSection.text, startIdx);
+    } else {
+      ws.resume();
+    }
     resumeAction();
   };
 
@@ -221,7 +235,10 @@ export default function BookReadPage() {
   const handleEnterChildQ = () => enterChildQuestion();
 
   const handleChildAnswer = (answer: string) => {
-    // 답변 텍스트를 글로스로 변환해 아바타가 재생
+    // 답변 텍스트를 글로스로 변환해 아바타가 재생.
+    // 이때 동화 본문 스트림은 서버에서 취소되므로, 재개 시 본문을 다시 보내야 한다는
+    // 플래그를 세워둔다 (handleResume 참조).
+    answerPlayedRef.current = true;
     ws.sendText(answer);
   };
 

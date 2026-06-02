@@ -2,13 +2,13 @@
 WebSocket — 글로스 스트리밍 엔드포인트
 
 메시지 프로토콜 (클라이언트→서버):
-  {"text": "..."}            텍스트 전송 (스트리밍 시작)
-  {"type": "pause"}          일시정지
-  {"type": "resume"}         재개
+  {"text": "...", "start_index"?: N}   텍스트 전송 (start_index부터 스트리밍, 기본 0)
+  {"type": "pause"}                    일시정지
+  {"type": "resume"}                   재개
 
 메시지 프로토콜 (서버→클라이언트):
   {"type": "start",  "total": N, "tokens": [...]}
-  {"type": "clip",   "index": i, "clip": MotionClip}
+  {"type": "clip",   "index": i, "clip": MotionClip}   ← i는 전체 토큰 기준 절대 인덱스
   {"type": "done"}
   {"type": "paused"}
   {"type": "resumed"}
@@ -33,12 +33,13 @@ async def gloss_ws(websocket: WebSocket):
     pause_event.set()          # set = 재생 중, clear = 일시정지
     stream_task: asyncio.Task | None = None
 
-    async def do_stream(clips):
-        """클립을 순서대로 전송. pause_event 대기로 일시정지 지원."""
+    async def do_stream(clips, start_index: int = 0):
+        """clips를 순서대로 전송. pause_event 대기로 일시정지 지원.
+        index는 전체 토큰 기준 절대값(start_index + i)으로 전송."""
         try:
             for i, clip in enumerate(clips):
                 await websocket.send_json(
-                    {"type": "clip", "index": i, "clip": clip.model_dump()}
+                    {"type": "clip", "index": start_index + i, "clip": clip.model_dump()}
                 )
                 # duration_sec 동안 대기 (0.05s 단위로 pause 체크)
                 remaining = clip.duration_sec
@@ -84,6 +85,12 @@ async def gloss_ws(websocket: WebSocket):
                 )
                 continue
 
+            # start_index: 동화 본문을 일시정지 시점부터 다시 재생할 때 사용 (기본 0)
+            try:
+                start_index = max(0, int(msg.get("start_index", 0) or 0))
+            except (TypeError, ValueError):
+                start_index = 0
+
             # 진행 중인 스트림 취소
             if stream_task and not stream_task.done():
                 stream_task.cancel()
@@ -96,10 +103,16 @@ async def gloss_ws(websocket: WebSocket):
             async with AsyncSessionLocal() as db:
                 clips = await resolve_motions(db, tokens)
 
+            # start_index가 토큰 수를 넘으면 0으로 클램프
+            if start_index >= len(clips):
+                start_index = 0
+
             await websocket.send_json(
                 {"type": "start", "total": len(clips), "tokens": tokens}
             )
-            stream_task = asyncio.create_task(do_stream(clips))
+            stream_task = asyncio.create_task(
+                do_stream(clips[start_index:], start_index=start_index)
+            )
 
     except WebSocketDisconnect:
         pass

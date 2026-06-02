@@ -89,7 +89,8 @@ export function useGlossWS() {
     return () => { wsRef.current?.close(); };
   }, [connect]);
 
-  const sendText = useCallback((text: string) => {
+  // startIndex: 동화 본문을 일시정지 위치부터 재개할 때 사용. 기본 0(처음부터).
+  const sendText = useCallback((text: string, startIndex?: number) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       setState((s) => ({ ...s, status: "error", errorMsg: "WS 연결 안됨" }));
@@ -104,7 +105,9 @@ export function useGlossWS() {
       errorMsg: "",
       paused: false,
     }));
-    ws.send(JSON.stringify({ text }));
+    const payload: { text: string; start_index?: number } = { text };
+    if (startIndex != null && startIndex > 0) payload.start_index = startIndex;
+    ws.send(JSON.stringify(payload));
   }, []);
 
   const pause = useCallback(() => {
