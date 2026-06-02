@@ -13,6 +13,14 @@ import imgPatjuk      from "../../imgs/팥죽 할머니와 호랑이.png";
 import imgSun         from "../../imgs/해님 달님.png";
 import imgHumpback    from "../../imgs/혹부리 영감.jpg";
 import imgHeungbu     from "../../imgs/흥부와 놀부.png";
+// 신규 7권
+import imgCinderella  from "../../imgs/신데렐라.jpeg";
+import imgRedHood     from "../../imgs/빨간 모자.jpeg";
+import imgAntGrass    from "../../imgs/개미와 베짱이.jpeg";
+import imgThreePigs   from "../../imgs/아기 돼지 삼형제.jpeg";
+import imgMermaid     from "../../imgs/인어공주.jpeg";
+import imgNakedKing   from "../../imgs/벌거벗은 임금님.jpeg";
+import imgFourSeasons from "../../imgs/사계절 친구들.jpeg";
 
 interface Props {
   book: BookListItem;
@@ -32,6 +40,14 @@ const COVER_MAP: [string[], string][] = [
   [["해님", "달님"],            imgSun],
   [["혹부리"],                  imgHumpback],
   [["흥부", "놀부"],            imgHeungbu],
+  // 신규 7권
+  [["신데렐라"],                imgCinderella],
+  [["빨간 모자", "빨간모자"],   imgRedHood],
+  [["개미", "베짱이"],          imgAntGrass],
+  [["아기 돼지", "삼형제"],     imgThreePigs],
+  [["인어공주", "인어 공주"],   imgMermaid],
+  [["벌거벗은", "임금님"],      imgNakedKing],
+  [["사계절"],                  imgFourSeasons],
 ];
 
 function pickLocalCover(title: string): string | null {

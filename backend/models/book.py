@@ -57,19 +57,37 @@ class BookSection(Base):
     title: Mapped[str | None] = mapped_column(String(200), nullable=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)  # 원문 텍스트
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    image_urls: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    image_triggers: Mapped[list[str | None] | None] = mapped_column(ARRAY(Text), nullable=True)
+    # Postgres에선 JSONB, SQLite에선 TEXT(JSON 문자열)로 자동 매핑 — 포터블한 sa.JSON 사용
+    image_urls: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    image_triggers: Mapped[list[str | None] | None] = mapped_column(JSON, nullable=True)
 
     book: Mapped["Book"] = relationship(back_populates="sections")
 
 
 # 카테고리 상수 — API 응답·필터에 사용
 class BookCategory:
-    ANIMAL = "동물"
-    DAILY = "일상"
+    # 한국 고전
     FOLKTALE = "전래민담"
+    FOLK_TALE = "전래동화"
+    MYTH = "신화"
+    # 세계 고전
+    WORLD_CLASSIC = "세계명작"
+    FABLE = "우화"
+    SATIRE = "풍자"
+    # 창작/현대
+    ORIGINAL = "창작동화"
+    # 주제
+    ANIMAL = "동물"
     FANTASY = "판타지"
+    NATURE = "자연"
     SCIENCE = "과학"
+    LESSON = "교훈"
     FRIENDSHIP = "우정"
+    DAILY = "일상"
 
-    ALL = [ANIMAL, DAILY, FOLKTALE, FANTASY, SCIENCE, FRIENDSHIP]
+    ALL = [
+        FOLKTALE, FOLK_TALE, MYTH,
+        WORLD_CLASSIC, FABLE, SATIRE,
+        ORIGINAL,
+        ANIMAL, FANTASY, NATURE, SCIENCE, LESSON, FRIENDSHIP, DAILY,
+    ]

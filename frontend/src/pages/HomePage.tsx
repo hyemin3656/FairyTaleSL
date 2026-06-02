@@ -34,7 +34,7 @@ export default function HomePage() {
 
       <main style={mainStyle}>
         <section style={heroStyle}>
-          <span style={badgeStyle}>수어 학습 · 전래동화 · AI 도우미</span>
+          <span style={badgeStyle}>수어 학습 · 전래동화 · 세계명작 · AI 도우미</span>
           <h1 style={titleStyle}>FairyTaleSL</h1>
           {user ? (
             <>
@@ -59,7 +59,7 @@ export default function HomePage() {
             <>
               <p style={subtitleStyle}>수어로 함께 읽는 동화책 플랫폼</p>
               <p style={leadStyle}>
-                전래동화를 수어와 함께 읽어 보세요.
+                전래동화부터 세계명작까지, 20권의 이야기를 수어와 함께 읽어 보세요.
                 <br />
                 아이와 가족이 손끝으로 이야기를 나누는 가장 따뜻한 방법입니다.
               </p>
@@ -145,7 +145,7 @@ const STEPS: { icon: string; title: string; desc: string }[] = [
   },
   {
     icon: "❓",
-    title: "궁금증 묻기",
+    title: "질문하기",
     desc: "수어나 글로 자유롭게 물어보면 AI가 답해줘요.",
   },
   {
@@ -158,8 +158,8 @@ const STEPS: { icon: string; title: string; desc: string }[] = [
 const FEATURES: { icon: string; title: string; desc: string; accent: string }[] = [
   {
     icon: "📖",
-    title: "전래동화 13권",
-    desc: "토끼와 거북이부터 별을 찾아서까지, 친숙한 이야기들을 모았어요.",
+    title: "동화책 20권",
+    desc: "한국 전래동화부터 신데렐라 · 인어공주까지, 다양한 장르의 동화를 모았어요.",
     accent: "#7c3aed",
   },
   {
@@ -195,10 +195,10 @@ const FEATURES: { icon: string; title: string; desc: string; accent: string }[] 
 ];
 
 const STATS: { value: string; label: string }[] = [
-  { value: "13", label: "수록 동화" },
-  { value: "39", label: "사전 생성 퀴즈" },
+  { value: "20", label: "수록 동화" },
+  { value: "12", label: "장르 카테고리" },
   { value: "6,000+", label: "수어 모션 단어" },
-  { value: "5–12세", label: "권장 연령" },
+  { value: "4–12세", label: "권장 연령" },
 ];
 
 const pageStyle: React.CSSProperties = {
