@@ -152,11 +152,11 @@ a {
 /* 아바타 — 하단 중앙, 팔이 안 잘리도록 충분한 너비 */
 .avatar-overlay-wrap {
   position: absolute;
-  bottom: 0;
+  bottom: -5%;
   left: 50%;
   transform: translateX(-50%);
-  width: 65%;
-  height: 80%;
+  width: 80%;
+  height: 95%;
   z-index: 2;
 }
 

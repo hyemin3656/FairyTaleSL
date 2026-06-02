@@ -360,6 +360,25 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl }: VRMAvatarProps) {
       VRMUtils.removeUnnecessaryVertices(v.scene);
       VRMUtils.combineSkeletons(v.scene);
       v.scene.traverse(obj => { obj.frustumCulled = false; });
+
+      // head bone 기준으로 Y 오프셋 계산 (키 무관하게 상반신만 표시)
+      v.scene.updateWorldMatrix(true, true);
+      const headNode = v.humanoid.getRawBoneNode(VRMHumanBoneName.Head);
+      if (headNode) {
+        const headPos = new THREE.Vector3();
+        headNode.getWorldPosition(headPos);
+        v.scene.position.y = 0.5 - headPos.y;
+      } else {
+        const box = new THREE.Box3().setFromObject(v.scene);
+        v.scene.position.y = 0.5 - box.max.y;
+      }
+      // chibi 모델처럼 실제 머리 메시가 head bone보다 큰 경우 카메라 상한(y≈0.7) 보정
+      v.scene.updateWorldMatrix(true, true);
+      const box = new THREE.Box3().setFromObject(v.scene);
+      if (box.max.y > 0.7) {
+        v.scene.position.y -= (box.max.y - 0.7);
+      }
+
       setVrm(v);
     });
   }, [avatarUrl]);
@@ -428,40 +447,8 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl }: VRMAvatarProps) {
   return (
     <primitive
       object={vrm.scene}
-      position={[0, -1.2, 0]}
       rotation={[0, Math.PI, 0]}
     />
-  );
-}
-
-// ── 글로스 오버레이 ───────────────────────────────────────────
-interface GlossOverlayProps {
-  clip: MotionClip | null;
-  status: string;
-  currentIndex: number;
-  total: number;
-}
-
-function GlossOverlay({ clip, status, currentIndex, total }: GlossOverlayProps) {
-  return (
-    <div className="gloss-overlay">
-      {status === "connecting" && (
-        <span className="overlay-tag connecting">연결 중…</span>
-      )}
-      {status === "streaming" && clip && (
-        <>
-          <span className={`overlay-tag ${clip.is_fallback ? "fallback" : "matched"}`}>
-            {clip.gloss}
-          </span>
-          <span className="overlay-progress">
-            {currentIndex + 1} / {total}
-          </span>
-        </>
-      )}
-      {status === "done" && (
-        <span className="overlay-tag done">완료</span>
-      )}
-    </div>
   );
 }
 
@@ -469,8 +456,8 @@ function GlossOverlay({ clip, status, currentIndex, total }: GlossOverlayProps) 
 interface AvatarSceneProps {
   clip: MotionClip | null;
   status: string;
-  currentIndex: number;
-  total: number;
+  currentIndex?: number;
+  total?: number;
   frozen?: boolean;
   avatarUrl?: string;
 }
@@ -478,8 +465,6 @@ interface AvatarSceneProps {
 export default function AvatarScene({
   clip,
   status,
-  currentIndex,
-  total,
   frozen = false,
   avatarUrl = "/avatar.glb",
 }: AvatarSceneProps) {
@@ -488,7 +473,7 @@ export default function AvatarScene({
   return (
     <div className="avatar-scene-wrap">
       <Canvas
-        camera={{ position: [0, 0.15, 1.1], fov: 55 }}
+        camera={{ position: [0, 0.2, 0.95], fov: 58 }}
         shadows
         gl={{ alpha: true }}
         onCreated={({ gl, scene }) => {

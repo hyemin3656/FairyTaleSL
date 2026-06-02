@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { AVATAR_OPTIONS, useAvatarStore } from "../stores/avatarStore";
+import AvatarPreview from "../components/avatar/AvatarPreview";
 
 export default function AvatarSelectPage() {
   const navigate = useNavigate();
@@ -27,13 +28,7 @@ export default function AvatarSelectPage() {
               onClick={() => handleSelect(avatar.id)}
             >
               <div className="avatar-card-preview">
-                <img
-                  src={avatar.preview}
-                  alt={avatar.name}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/avatar-placeholder.png";
-                  }}
-                />
+                <AvatarPreview url={avatar.url} />
                 {isSelected && <div className="avatar-card-badge">✓ 선택됨</div>}
               </div>
               <div className="avatar-card-info">

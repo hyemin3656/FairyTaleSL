@@ -12,24 +12,24 @@ export interface AvatarOption {
 export const AVATAR_OPTIONS: AvatarOption[] = [
   {
     id: "default",
-    name: "하루",
+    name: "성준",
     url: "/avatar.glb",
     preview: "/avatars/preview_default.png",
-    description: "차분하고 친근한 기본 아바타",
+    description: "씩씩하고 용감한 남자 아바타",
   },
   {
     id: "avatar2",
-    name: "소이",
+    name: "동순",
     url: "/avatar2.glb",
     preview: "/avatars/preview2.png",
     description: "밝고 활발한 여자 아바타",
   },
   {
     id: "avatar3",
-    name: "도훈",
+    name: "혜미",
     url: "/avatar3.glb",
     preview: "/avatars/preview3.png",
-    description: "씩씩하고 용감한 남자 아바타",
+    description: "차분하고 친근한 여자 아바타",
   },
 ];
 
