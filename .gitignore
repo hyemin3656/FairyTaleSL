@@ -16,3 +16,5 @@ data/videos/
 *.mov
 
 .DS_Store
+
+realtime_outputs/
