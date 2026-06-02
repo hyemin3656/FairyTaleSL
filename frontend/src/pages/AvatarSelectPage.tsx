@@ -28,7 +28,7 @@ export default function AvatarSelectPage() {
               onClick={() => handleSelect(avatar.id)}
             >
               <div className="avatar-card-preview">
-                <AvatarPreview url={avatar.url} />
+                <AvatarPreview url={avatar.url} scale={avatar.sceneScale} />
                 {isSelected && <div className="avatar-card-badge">✓ 선택됨</div>}
               </div>
               <div className="avatar-card-info">

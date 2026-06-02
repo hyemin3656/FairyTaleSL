@@ -6,7 +6,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -21,7 +21,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/호랑이.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -33,7 +33,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/어머니.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -45,7 +45,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/하늘.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -69,7 +69,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -84,7 +84,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -100,7 +100,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/흥부.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -114,7 +114,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/올라가.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -126,7 +126,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -141,7 +141,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -171,7 +171,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/착하다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -210,7 +210,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/오누이.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -222,7 +222,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -248,7 +248,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -284,7 +284,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -311,7 +311,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나타나다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -323,7 +323,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/만나다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -335,7 +335,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/결국.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -359,7 +359,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/보이다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -395,7 +395,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사슴.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -407,7 +407,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/선녀.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -419,7 +419,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나쁘다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -443,7 +443,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/행복.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -455,7 +455,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/모두.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -479,7 +479,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/이야기.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -505,7 +505,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/그리워하다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -517,7 +517,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나라.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -544,7 +544,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -559,7 +559,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -607,7 +607,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/돌아오다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -645,7 +645,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나오다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -657,7 +657,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/함께.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -669,7 +669,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/힘들다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -681,7 +681,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/시키다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -693,7 +693,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/지내.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -707,7 +707,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/연못.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -719,7 +719,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -733,7 +733,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -777,7 +777,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/위하다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -789,7 +789,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/공양미.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -801,7 +801,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/연꽃.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -815,7 +815,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -829,7 +829,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/왕비.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -841,7 +841,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/기적.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -853,7 +853,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/만들다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -889,7 +889,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/웅녀.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -901,7 +901,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -916,7 +916,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -940,7 +940,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -954,7 +954,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -969,7 +969,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/떨어지다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -981,7 +981,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/내밀다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -993,7 +993,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1007,7 +1007,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1021,7 +1021,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/달리기.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1033,7 +1033,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/시합.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1045,7 +1045,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/느리다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1057,7 +1057,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/포기.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1069,7 +1069,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1081,7 +1081,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/낮잠.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1117,7 +1117,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/이기다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1129,7 +1129,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/자만.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -1143,7 +1143,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/배우.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1179,7 +1179,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/부러지다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1232,7 +1232,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/부자.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1256,7 +1256,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/도깨비.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1268,7 +1268,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1282,7 +1282,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/재산.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1294,7 +1294,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/후회.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1306,7 +1306,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/용서.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1318,7 +1318,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/소녀.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1382,7 +1382,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/상황.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1394,7 +1394,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/마을.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1406,7 +1406,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/열리.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -1420,7 +1420,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/가능.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1432,7 +1432,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/떠나다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1444,7 +1444,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1470,7 +1470,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1508,7 +1508,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/가지.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1520,7 +1520,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/성실.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -1534,7 +1534,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1546,7 +1546,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/슬프다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1558,7 +1558,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1572,7 +1572,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1586,7 +1586,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/자신.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1598,7 +1598,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/마지막.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1610,7 +1610,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1660,7 +1660,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1712,7 +1712,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/바치다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1724,7 +1724,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1739,7 +1739,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1753,7 +1753,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1792,7 +1792,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1807,7 +1807,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1848,7 +1848,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/발견.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1874,7 +1874,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사람들.mp4",
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -1886,7 +1886,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -1901,7 +1901,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/희생.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2052,7 +2052,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -2066,7 +2066,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/마늘.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2078,7 +2078,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/동안.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2090,7 +2090,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/여자.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2114,7 +2114,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/태어나다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2126,7 +2126,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/세우다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2138,7 +2138,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2150,7 +2150,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -2164,7 +2164,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/백성.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2216,7 +2216,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사냥꾼.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2255,7 +2255,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": null,
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -2269,7 +2269,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/목욕.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2281,7 +2281,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/날개.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -2295,7 +2295,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/숨기.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -2309,7 +2309,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/결혼.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2333,7 +2333,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/슬퍼하다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2345,7 +2345,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/비결.mp4",
     "motion_path": null,
-    "emotion_label": "기쁨",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2357,7 +2357,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/가족.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2369,7 +2369,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/용마.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2381,7 +2381,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/잠시.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2393,7 +2393,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/지상.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -2407,7 +2407,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/실수.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2419,7 +2419,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -2457,7 +2457,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나가.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -2471,7 +2471,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2495,7 +2495,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/빼앗기다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2507,7 +2507,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -2521,7 +2521,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/변장.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [
@@ -2535,7 +2535,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -2549,7 +2549,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/이상.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2561,7 +2561,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/느끼다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2573,7 +2573,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/의심.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2585,7 +2585,7 @@
     "registered": false,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": "decompose",
     "fallback_glosses": [
@@ -2599,7 +2599,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2611,7 +2611,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/다시.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2623,7 +2623,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/놀라다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2635,7 +2635,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2647,7 +2647,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/기도.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2659,7 +2659,7 @@
     "registered": true,
     "video_path": null,
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2671,7 +2671,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/수수.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2707,7 +2707,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/오빠.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2719,7 +2719,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/누이.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -2757,7 +2757,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/믿음.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -3544,7 +3544,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사라지다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -5324,7 +5324,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/무너지다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -5396,7 +5396,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/보이다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -5769,7 +5769,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/벌.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -6683,7 +6683,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/용기.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -7163,7 +7163,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/따르다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -7525,7 +7525,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/작별.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -7609,7 +7609,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/멍청하다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -7717,7 +7717,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/뛰다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -8330,7 +8330,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/영원.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -8679,7 +8679,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/만나다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -10229,7 +10229,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/구두.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -10649,7 +10649,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/비.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -10770,7 +10770,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/할머니.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -10879,7 +10879,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/혼자.mp4",
     "motion_path": null,
-    "emotion_label": "슬픔",
+    "emotion_label": "중립",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -11133,7 +11133,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/책임.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -12370,7 +12370,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/침대.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -12600,7 +12600,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나누다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -12830,7 +12830,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/위기.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -13648,7 +13648,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/꽃.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -14020,7 +14020,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/진실.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -14873,7 +14873,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/숲.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -15137,7 +15137,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/비밀.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -15486,7 +15486,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/새어머니.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -17108,7 +17108,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/길.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -17337,7 +17337,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/밝히다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -17458,7 +17458,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/외치다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -17494,7 +17494,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/소리치다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -17842,7 +17842,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/걷다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -18274,7 +18274,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/안전.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -18780,7 +18780,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/다음.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -19176,7 +19176,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/벽돌.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -19260,7 +19260,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/노래.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -19885,7 +19885,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/배고프다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -20499,7 +20499,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/달리다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -21892,7 +21892,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/구하다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -23670,7 +23670,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/아가씨.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -24439,7 +24439,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/힘.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -27386,7 +27386,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/깨닫다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -28095,7 +28095,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/기억.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -28515,7 +28515,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/만들다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -28684,7 +28684,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/왕자.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -29080,7 +29080,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/구박.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -29298,7 +29298,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/말.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -29431,7 +29431,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/아름답다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -30175,7 +30175,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/빛나다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -30585,7 +30585,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/개구리.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -30729,7 +30729,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/빠지다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -31200,7 +31200,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/부르다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -31635,7 +31635,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나타나다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -35826,7 +35826,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/인사.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -36678,7 +36678,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/약속.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -38364,7 +38364,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/언니.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -39073,7 +39073,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/목소리.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -40298,7 +40298,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/누명.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -40311,7 +40311,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/늑대.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -41116,7 +41116,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/파티.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -42403,7 +42403,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/물고기.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -42523,7 +42523,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/눈치.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -43364,7 +43364,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/일.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -44782,7 +44782,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/놀다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "분노",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -45828,7 +45828,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/돌아가다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -47463,7 +47463,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/나쁘다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -47620,7 +47620,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/집.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -49220,7 +49220,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/친구.mp4",
     "motion_path": null,
-    "emotion_label": "분노",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -49906,7 +49906,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/사기꾼.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -50002,7 +50002,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/변하다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -50074,7 +50074,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/시내.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -52705,7 +52705,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/도망가다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -52717,7 +52717,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/도망치다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -53078,7 +53078,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/밤.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -55710,7 +55710,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/잡다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -56131,7 +56131,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/쫓아내다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -60375,7 +60375,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/기쁘다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -61291,7 +61291,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/춤.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -61339,7 +61339,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/춤추다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -62805,7 +62805,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/궁금하다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -63129,7 +63129,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/곤충.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -63874,7 +63874,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/놓다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -64536,7 +64536,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/보다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -66349,7 +66349,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/자정.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -68358,7 +68358,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/봄.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -68947,7 +68947,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/주다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -70164,7 +70164,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/없다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -70380,7 +70380,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/추위.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "슬픔",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -70993,7 +70993,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/속이다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -71077,7 +71077,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/유리.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -72649,7 +72649,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/수영.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -73611,7 +73611,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/얻다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -73947,7 +73947,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/입다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -74067,7 +74067,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/행렬.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []
@@ -75510,7 +75510,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/태어나다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -75799,7 +75799,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/잃다.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "놀람",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": [],
@@ -75836,7 +75836,7 @@
     "registered": true,
     "video_path": "/Users/SJ/PSYcho/FairyTaleSL/data_pipeline/sign_generation/data/videos/할아버지.mp4",
     "motion_path": null,
-    "emotion_label": "중립",
+    "emotion_label": "기쁨",
     "keypoint_path": null,
     "fallback_type": null,
     "fallback_glosses": []

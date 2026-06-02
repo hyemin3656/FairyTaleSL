@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { VRM, VRMLoaderPlugin, VRMUtils, VRMHumanBoneName } from "@pixiv/three-vrm";
 
-function PreviewModel({ url }: { url: string }) {
+function PreviewModel({ url, scale = 1.0 }: { url: string; scale?: number }) {
   const [vrm, setVrm] = useState<VRM | null>(null);
 
   useEffect(() => {
@@ -18,7 +18,10 @@ function PreviewModel({ url }: { url: string }) {
       VRMUtils.combineSkeletons(v.scene);
       v.scene.traverse((o) => { o.frustumCulled = false; });
 
-      // head bone 기준으로 Y 오프셋 계산 (키 무관하게 상반신만 표시)
+      // 모델별 스케일 적용
+      v.scene.scale.setScalar(scale);
+
+      // head bone 기준으로 Y 오프셋 계산
       v.scene.updateWorldMatrix(true, true);
       const headNode = v.humanoid.getRawBoneNode(VRMHumanBoneName.Head);
       if (headNode) {
@@ -29,16 +32,17 @@ function PreviewModel({ url }: { url: string }) {
         const box = new THREE.Box3().setFromObject(v.scene);
         v.scene.position.y = 0.1 - box.max.y;
       }
-      // spring bone 물리 여유분 포함하여 bounding box 상단 0.35 이하로 보정
+      // head bone 위로 메시가 지나치게 크면 추가 보정
       v.scene.updateWorldMatrix(true, true);
       const previewBox = new THREE.Box3().setFromObject(v.scene);
-      if (previewBox.max.y > 0.35) {
-        v.scene.position.y -= (previewBox.max.y - 0.35);
+      const MAX_ABOVE_HEAD = 0.12;
+      if (previewBox.max.y > 0.1 + MAX_ABOVE_HEAD) {
+        v.scene.position.y -= (previewBox.max.y - (0.1 + MAX_ABOVE_HEAD));
       }
 
       setVrm(v);
     });
-  }, [url]);
+  }, [url, scale]);
 
   useFrame((_, delta) => {
     if (!vrm) return;
@@ -57,7 +61,7 @@ function PreviewModel({ url }: { url: string }) {
   return <primitive object={vrm.scene} rotation={[0, Math.PI, 0]} />;
 }
 
-export default function AvatarPreview({ url }: { url: string }) {
+export default function AvatarPreview({ url, scale }: { url: string; scale?: number }) {
   return (
     <Canvas
       camera={{ position: [0, 0.2, 0.85], fov: 50 }}
@@ -70,7 +74,7 @@ export default function AvatarPreview({ url }: { url: string }) {
     >
       <ambientLight intensity={0.9} />
       <directionalLight position={[1, 3, 2]} intensity={1.4} />
-      <PreviewModel url={url} />
+      <PreviewModel url={url} scale={scale} />
     </Canvas>
   );
 }

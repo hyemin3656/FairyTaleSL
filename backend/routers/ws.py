@@ -108,7 +108,7 @@ async def gloss_ws(websocket: WebSocket):
                 start_index = 0
 
             await websocket.send_json(
-                {"type": "start", "total": len(clips), "tokens": tokens}
+                {"type": "start", "total": len(clips), "tokens": [c.gloss for c in clips]}
             )
             stream_task = asyncio.create_task(
                 do_stream(clips[start_index:], start_index=start_index)

@@ -153,7 +153,7 @@ a {
 .avatar-overlay-wrap {
   position: absolute;
   bottom: -8%;
-  right: 2%;
+  right: -3%;
   width: 55%;
   height: 105%;
   z-index: 2;

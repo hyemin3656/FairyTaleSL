@@ -348,9 +348,11 @@ interface VRMAvatarProps {
   playing: boolean;
   frozen: boolean;
   avatarUrl: string;
+  sceneScale?: number;
+  sceneOffsetY?: number;
 }
 
-function VRMAvatar({ clip, playing, frozen, avatarUrl }: VRMAvatarProps) {
+function VRMAvatar({ clip, playing, frozen, avatarUrl, sceneScale = 1.0, sceneOffsetY = 0 }: VRMAvatarProps) {
   const [vrm, setVrm] = useState<VRM | null>(null);
   const elapsedRef   = useRef(0);
   const prevGlossRef = useRef<string | null>(null);
@@ -372,23 +374,25 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl }: VRMAvatarProps) {
       VRMUtils.combineSkeletons(v.scene);
       v.scene.traverse(obj => { obj.frustumCulled = false; });
 
+      // 모델별 스케일 적용
+      v.scene.scale.setScalar(sceneScale);
+
       // head bone 기준으로 Y 오프셋 계산 (키 무관하게 상반신만 표시)
       v.scene.updateWorldMatrix(true, true);
       const headNode = v.humanoid.getRawBoneNode(VRMHumanBoneName.Head);
       if (headNode) {
         const headPos = new THREE.Vector3();
         headNode.getWorldPosition(headPos);
-        v.scene.position.y = 0.25 - headPos.y;
+        v.scene.position.y = 0.15 - headPos.y + sceneOffsetY;
       } else {
         const box = new THREE.Box3().setFromObject(v.scene);
-        v.scene.position.y = 0.25 - box.max.y;
+        v.scene.position.y = 0.15 - box.max.y + sceneOffsetY;
       }
-      // bounding box 상단이 0.45 초과 시 하향 보정
-      // (spring bone 물리로 머리카락이 T-pose보다 올라올 수 있어 여유 확보)
+      // bounding box 상단이 0.35 초과 시 하향 보정
       v.scene.updateWorldMatrix(true, true);
       const box = new THREE.Box3().setFromObject(v.scene);
-      if (box.max.y > 0.45) {
-        v.scene.position.y -= (box.max.y - 0.45);
+      if (box.max.y > 0.35) {
+        v.scene.position.y -= (box.max.y - 0.35);
       }
 
       setVrm(v);
@@ -472,6 +476,8 @@ interface AvatarSceneProps {
   total?: number;
   frozen?: boolean;
   avatarUrl?: string;
+  sceneScale?: number;
+  sceneOffsetY?: number;
 }
 
 export default function AvatarScene({
@@ -479,13 +485,15 @@ export default function AvatarScene({
   status,
   frozen = false,
   avatarUrl = "/avatar.glb",
+  sceneScale = 1.0,
+  sceneOffsetY = 0,
 }: AvatarSceneProps) {
   const playing = status === "streaming";
 
   return (
     <div className="avatar-scene-wrap">
       <Canvas
-        camera={{ position: [0, 0.2, 0.95], fov: 58 }}
+        camera={{ position: [0, 0.0, 0.95], fov: 58 }}
         shadows
         gl={{ alpha: true }}
         onCreated={({ gl, scene }) => {
@@ -498,14 +506,14 @@ export default function AvatarScene({
         <directionalLight position={[1, 3, 2]} intensity={1.4} castShadow />
         <pointLight position={[-1, 2, 2]} intensity={0.5} color="#c4b5fd" />
 
-        <VRMAvatar clip={clip} playing={playing} frozen={frozen} avatarUrl={avatarUrl} />
+        <VRMAvatar clip={clip} playing={playing} frozen={frozen} avatarUrl={avatarUrl} sceneScale={sceneScale} sceneOffsetY={sceneOffsetY} />
         <Environment preset="city" />
 
         <OrbitControls
           enablePan={false}
           enableRotate={false}
           enableZoom={false}
-          target={[0, -0.05, 0]}
+          target={[0, 0.0, 0]}
         />
       </Canvas>
     </div>

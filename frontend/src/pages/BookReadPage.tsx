@@ -36,7 +36,8 @@ import QuizPanel from "../components/session/QuizPanel";
 export default function BookReadPage() {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
-  const avatarUrl = useAvatarStore((s) => s.selectedAvatar().url);
+  const selectedAvatar = useAvatarStore((s) => s.selectedAvatar());
+  const avatarUrl = selectedAvatar.url;
 
   const [book, setBook] = useState<BookDetail | null>(null);
   const [fetchError, setFetchError] = useState("");
@@ -398,6 +399,8 @@ export default function BookReadPage() {
                   total={ws.total}
                   frozen={mode !== "STORY_PLAYING"}
                   avatarUrl={avatarUrl}
+                  sceneScale={selectedAvatar.sceneScale}
+                  sceneOffsetY={selectedAvatar.sceneOffsetY}
                 />
               </div>
             </div>
