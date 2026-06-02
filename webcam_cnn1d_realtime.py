@@ -13,10 +13,10 @@ import torch
 from mmengine.config import Config, DictAction
 from mmengine.dataset import Compose, pseudo_collate
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent
 WORKSPACE_ROOT = PROJECT_ROOT.parent
 MMACTION_ROOT = WORKSPACE_ROOT / "mmaction2"
+CHECKPOINT_ROOT = WORKSPACE_ROOT / "checkpoints"
 
 if str(MMACTION_ROOT) not in sys.path:
     sys.path.insert(0, str(MMACTION_ROOT))
@@ -31,9 +31,8 @@ DEFAULT_CONFIG = (
     / "cnn1d_8xb16-joint-u100-50e_mediapipe-sign-keypoint-3d_without_face.py"
 )
 DEFAULT_CHECKPOINT = (
-    MMACTION_ROOT
-    / "work_dirs/cnn1d_8xb16-joint-u100-50e_mediapipe-sign-keypoint-3d_without_face/"
-    / "20260602_193745/best_acc_top1_epoch_36.pth"
+    CHECKPOINT_ROOT
+    / "best_acc_top1_epoch_36.pth"
 )
 DEFAULT_LABEL_MAP = PROJECT_ROOT / "src/class_labels.json"
 
@@ -55,12 +54,12 @@ def landmarks_to_array(landmarks, num_points):
         arr[i, 1] = lm.y
         arr[i, 2] = lm.z
         arr[i, 3] = lm.visibility if hasattr(lm, "visibility") else 1.0
-        if arr[i, 3] == 0:
-            arr[i, 3] = 1.0
     return arr
 
 
 def interpolate_short_gaps(arr, frame_level_detection, max_gap=5):
+    # 검출되지 않은 프레임이 max_gap 이하로 이어지는 경우 선형 보간으로 채우고, 보간된 프레임의 score는 0.5로 설정
+    # arr: [T, V, C], frame_level_detection: [T], max_gap: int
     out = arr.copy()
     detected = np.asarray(frame_level_detection, dtype=bool)
     if out.shape[0] != detected.shape[0]:
@@ -73,23 +72,23 @@ def interpolate_short_gaps(arr, frame_level_detection, max_gap=5):
 
     frame_detected_mask = detected.copy()
     for j in range(out.shape[1]):
-        detected_for_val = out[:, j, 3] > 0
+        detected_for_val = out[:, j, 3] > 0 # (T,)
         if not np.array_equal(detected_for_val, detected):
             detected_for_val = detected
 
         if detected_for_val.all() or not detected_for_val.any():
             continue
 
-        for c in range(3):
+        for c in range(3): # x, y, z
             series = pd.Series(out[:, j, c])
             series[~detected_for_val] = np.nan
             interp = series.interpolate(
                 method="linear",
-                limit=max_gap,
-                limit_direction="both",
-                limit_area="inside",
+                limit=max_gap, #연속된 NaN이 limit 이하일 때만 해당 구간 보간
+                limit_direction="both", #앞쪽/뒤쪽 양방향으로 보간을 허용
+                limit_area="inside", #앞뒤에 정상값이 모두 있는 내부 구간만 보간
             )
-            out[:, j, c] = interp.fillna(0).values
+            out[:, j, c] = interp.fillna(0).values #보간 불가능한 구간은 0으로 채움
 
         interpolated = (~detected_for_val) & ((out[:, j, :3] != 0).any(axis=1))
         frame_detected_mask[interpolated] = True
@@ -99,6 +98,8 @@ def interpolate_short_gaps(arr, frame_level_detection, max_gap=5):
 
 
 class MediaPipeWebcamExtractor:
+    # 웹캠 프레임에서 MediaPipe Holistic 모델을 사용해 포즈와 양손 keypoint를 추출하는 클래스
+    # 모델 초기화, 프레임 처리, 키포인트 array 변환
     def __init__(
         self,
         model_complexity=1,
@@ -122,7 +123,9 @@ class MediaPipeWebcamExtractor:
     def process(self, frame):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rgb.flags.writeable = False
+        started = time.perf_counter()
         results = self.holistic.process(rgb)
+        keypoint_ms = (time.perf_counter() - started) * 1000
 
         pose_detected = results.pose_landmarks is not None
         left_detected = results.left_hand_landmarks is not None
@@ -136,10 +139,11 @@ class MediaPipeWebcamExtractor:
             "left_hand_detected": left_detected,
             "right_hand_detected": right_detected,
             "any_hand_detected": left_detected or right_detected,
-        }
+        }, keypoint_ms
 
 
 class RealtimeSegmenter:
+    # 웹캠 스트림에서 시작구간과 종료구간을 찾아 모델에 입력할 구간을 반환
     def __init__(self, window, start_ratio, end_ratio, max_record_frames, min_frames):
         self.window = window
         self.start_ratio = start_ratio
@@ -159,6 +163,8 @@ class RealtimeSegmenter:
 
         if self.state == "waiting":
             self.pre_start.append(frame_data)
+            # ===== 시작 시점 찾기 =====
+            # window 크기만큼 최근 프레임을 모은 뒤, 손이 감지된 프레임의 비율이 start_ratio 이상이면 window내의 첫 detected 프레임 부터 기록 시작
             if len(self.pre_start) == self.window:
                 ratio = np.mean([item["any_hand_detected"] for item in self.pre_start])
                 if ratio >= self.start_ratio:
@@ -167,7 +173,11 @@ class RealtimeSegmenter:
                         i for i, item in enumerate(buffered) if item["any_hand_detected"]
                     )
                     self.current = buffered[first_detected:]
-                    self.last_detected_pos = len(self.current) - 1
+                    self.last_detected_pos = max(
+                        i
+                        for i, item in enumerate(self.current)
+                        if item["any_hand_detected"]
+                    )
                     self.state = "recording"
                     return None, "started"
             return None, "waiting"
@@ -177,6 +187,8 @@ class RealtimeSegmenter:
             self.last_detected_pos = len(self.current) - 1
 
         recent = self.current[-self.window:]
+        # ===== 종료 시점 찾기 =====
+        # window 크기만큼 최근 프레임을 모은 뒤, 손이 감지되지 않은 프레임의 비율이 end_ratio 이상이면 recording 종료, 기록된 프레임 중 마지막 detected 프레임까지 segment로 반환
         if len(recent) == self.window:
             undetected_ratio = np.mean(
                 [not item["any_hand_detected"] for item in recent]
@@ -227,11 +239,13 @@ class CNN1DRealtimeRecognizer:
             return json.load(f)
 
     def predict_segment(self, segment):
+        started = time.perf_counter()
         sample = build_mmaction_sample(segment, max_gap=self.max_gap)
+        data_build_ms = (time.perf_counter() - started) * 1000
         started = time.perf_counter()
         data = self.pipeline(sample)
         data_batch = pseudo_collate([data])
-        preprocess_ms = (time.perf_counter() - started) * 1000
+        pipeline_ms = (time.perf_counter() - started) * 1000
 
         with torch.no_grad():
             if str(self.device).startswith("cuda") and torch.cuda.is_available():
@@ -245,7 +259,8 @@ class CNN1DRealtimeRecognizer:
         return {
             "predictions": self._format_predictions(result.pred_score),
             "input_shape": tuple(data["inputs"].shape),
-            "preprocess_ms": preprocess_ms,
+            "data_build_ms": data_build_ms,
+            "pipeline_ms": pipeline_ms,
             "inference_ms": infer_ms,
             "frames": len(segment),
         }
@@ -298,12 +313,16 @@ def build_mmaction_sample(segment, max_gap=5):
         axis=1,
     )
 
-    keypoint = np.nan_to_num(keypoint, nan=0.0, posinf=0.0, neginf=0.0)
-    keypoint_score = np.nan_to_num(keypoint_score, nan=0.0, posinf=0.0, neginf=0.0)
+    if np.isnan(keypoint).any() or np.isnan(keypoint_score).any():
+        raise ValueError("NaN values found in keypoint or keypoint_score arrays")
+    # keypoint = np.nan_to_num(keypoint, nan=0.0, posinf=0.0, neginf=0.0)
+    # keypoint_score = np.nan_to_num(keypoint_score, nan=0.0, posinf=0.0, neginf=0.0)
 
     total_frames = keypoint.shape[0]
     if keypoint.shape != (total_frames, NUM_NODE, COORD_DIM):
         raise ValueError(f"Unexpected keypoint shape: {keypoint.shape}")
+    if keypoint_score.shape != (total_frames, NUM_NODE):
+        raise ValueError(f"Unexpected keypoint_score shape: {keypoint_score.shape}")
 
     return {
         "frame_dir": "webcam",
@@ -397,7 +416,7 @@ def main():
     cap.set(cv2.CAP_PROP_FPS, args.fps)
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
-    window = max(1, int(round(args.fps * args.window_sec)))
+    window = max(1, int(round(args.fps * args.window_sec))) 
     max_record_frames = max(window, int(round(args.fps * args.max_record_sec)))
 
     extractor = MediaPipeWebcamExtractor(model_complexity=args.model_complexity)
@@ -423,15 +442,19 @@ def main():
     print("Press q to quit. Waiting for hand motion...")
 
     try:
+        keypoint_ms = []
         while True:
             loop_started = time.perf_counter()
             ret, frame = cap.read()
+            captured_at = time.perf_counter()
             if not ret:
                 continue
             if args.mirror:
                 frame = cv2.flip(frame, 1)
 
-            frame_data = extractor.process(frame)
+            frame_data, keypoint_ms_per_frame = extractor.process(frame)
+            frame_data["captured_at"] = captured_at
+            keypoint_ms.append(keypoint_ms_per_frame)
             segment, event = segmenter.update(frame_data)
 
             if event == "started":
@@ -441,12 +464,20 @@ def main():
                     print("Segment ignored: too short or no valid hand detection.")
                 else:
                     latest_result = recognizer.predict_segment(segment)
+                    prediction_returned_at = time.perf_counter()
+                    last_detected_capture_to_infer_end_ms = (
+                        prediction_returned_at - segment[-1]["captured_at"]
+                    ) * 1000
                     best = latest_result["predictions"][0]
                     print(
                         f"{event}: frames={latest_result['frames']} "
                         f"input={latest_result['input_shape']} "
-                        f"pre={latest_result['preprocess_ms']:.2f}ms "
+                        f"keypoint={np.mean(keypoint_ms):.2f}ms "
+                        f"data_build={latest_result['data_build_ms']:.2f}ms "
+                        f"pipeline={latest_result['pipeline_ms']:.2f}ms "
                         f"infer={latest_result['inference_ms']:.2f}ms "
+                        f"last_detected_capture_to_infer_end="
+                        f"{last_detected_capture_to_infer_end_ms:.2f}ms "
                         f"top1={best['label']}({best['class_id']}) "
                         f"score={best['score']:.4f}"
                     )
