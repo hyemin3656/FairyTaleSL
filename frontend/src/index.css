@@ -128,7 +128,7 @@ a {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 
@@ -149,14 +149,13 @@ a {
   z-index: 1;
 }
 
-/* 아바타 — 하단 중앙, 팔이 안 잘리도록 충분한 너비 */
+/* 아바타 — 우측 배치, 손까지 보이도록 크기 조정 */
 .avatar-overlay-wrap {
   position: absolute;
-  bottom: -5%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 95%;
+  bottom: -8%;
+  right: 2%;
+  width: 55%;
+  height: 105%;
   z-index: 2;
 }
 

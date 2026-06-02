@@ -24,16 +24,16 @@ function PreviewModel({ url }: { url: string }) {
       if (headNode) {
         const headPos = new THREE.Vector3();
         headNode.getWorldPosition(headPos);
-        v.scene.position.y = 0.2 - headPos.y;
+        v.scene.position.y = 0.1 - headPos.y;
       } else {
         const box = new THREE.Box3().setFromObject(v.scene);
-        v.scene.position.y = 0.2 - box.max.y;
+        v.scene.position.y = 0.1 - box.max.y;
       }
-      // chibi 모델처럼 실제 머리 메시가 head bone보다 큰 경우 카메라 상한(y≈0.5) 보정
+      // spring bone 물리 여유분 포함하여 bounding box 상단 0.35 이하로 보정
       v.scene.updateWorldMatrix(true, true);
       const previewBox = new THREE.Box3().setFromObject(v.scene);
-      if (previewBox.max.y > 0.5) {
-        v.scene.position.y -= (previewBox.max.y - 0.5);
+      if (previewBox.max.y > 0.35) {
+        v.scene.position.y -= (previewBox.max.y - 0.35);
       }
 
       setVrm(v);

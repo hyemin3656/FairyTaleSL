@@ -93,7 +93,7 @@ function drivePoseBones(kp: number[], hum: VRM["humanoid"], sp: number) {
   if (hasL && lArm) {
     const d = sub(lEl, lSh);
     // d.y: +0.25≈팔 자연하강, 0≈T포즈, -0.2≈팔 올림 → VRM rz: 1.5=아래, 0=T포즈, -1.5=위
-    const targetZ = THREE.MathUtils.clamp(d.y * 6.0, -1.5, 1.5);
+    const targetZ = THREE.MathUtils.clamp(d.y * 6.0, -0.9, 1.5);
     // Y: 팔 전방 회전 — 음수 방향이 몸통 안으로 파고드므로 하한을 -0.4로 제한
     const targetY = THREE.MathUtils.clamp(d.z * 5.0, -0.4, 0.8);
     const targetX = THREE.MathUtils.clamp(d.x * 3.0, -1.0, 0.8);
@@ -104,7 +104,7 @@ function drivePoseBones(kp: number[], hum: VRM["humanoid"], sp: number) {
   }
   if (hasR && rArm) {
     const d = sub(rEl, rSh);
-    const targetZ = THREE.MathUtils.clamp(-d.y * 6.0, -1.5, 1.5);
+    const targetZ = THREE.MathUtils.clamp(-d.y * 6.0, -1.5, 0.9);
     // Y: 팔 전방 회전 — 양수 방향이 몸통 안으로 파고드므로 상한을 0.4로 제한
     const targetY = THREE.MathUtils.clamp(-d.z * 5.0, -0.8, 0.4);
     const targetX = THREE.MathUtils.clamp(-d.x * 3.0, -0.8, 1.0);
@@ -267,6 +267,13 @@ const ARM_Y_CLAMP: Record<string, [number, number]> = {
   rArm: [-0.8, 0.4],
 };
 
+// 상완 Z 회전 클램프: 팔이 머리 위로 지나치게 올라가는 것 방지
+// lArm z: 양수=팔 내림, 음수=팔 올림 / rArm은 반대
+const ARM_Z_CLAMP: Record<string, [number, number]> = {
+  lArm: [-0.9, 1.6],
+  rArm: [-1.6, 0.9],
+};
+
 function driveAnimData(anim: AnimData, elapsed: number, hum: VRM["humanoid"], sp: number) {
   const { fps, n, bones } = anim;
   const framePos = (elapsed * fps) % n;
@@ -285,11 +292,15 @@ function driveAnimData(anim: AnimData, elapsed: number, hum: VRM["humanoid"], sp
 
     const rx = fr0[0] + (fr1[0] - fr0[0]) * t;
     let   ry = fr0[1] + (fr1[1] - fr0[1]) * t;
-    const rz = fr0[2] + (fr1[2] - fr0[2]) * t;
+    let   rz = fr0[2] + (fr1[2] - fr0[2]) * t;
 
     // 상완 Y 클램프: keypoint 노이즈로 인한 팔 몸통 관통 방지
     const yClamp = ARM_Y_CLAMP[key];
     if (yClamp) ry = THREE.MathUtils.clamp(ry, yClamp[0], yClamp[1]);
+
+    // 상완 Z 클램프: 팔이 머리 위로 지나치게 올라가는 것 방지
+    const zClamp = ARM_Z_CLAMP[key];
+    if (zClamp) rz = THREE.MathUtils.clamp(rz, zClamp[0], zClamp[1]);
 
     bone.rotation.x = THREE.MathUtils.lerp(bone.rotation.x, rx, sp);
     bone.rotation.y = THREE.MathUtils.lerp(bone.rotation.y, ry, sp);
@@ -367,16 +378,17 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl }: VRMAvatarProps) {
       if (headNode) {
         const headPos = new THREE.Vector3();
         headNode.getWorldPosition(headPos);
-        v.scene.position.y = 0.5 - headPos.y;
+        v.scene.position.y = 0.25 - headPos.y;
       } else {
         const box = new THREE.Box3().setFromObject(v.scene);
-        v.scene.position.y = 0.5 - box.max.y;
+        v.scene.position.y = 0.25 - box.max.y;
       }
-      // chibi 모델처럼 실제 머리 메시가 head bone보다 큰 경우 카메라 상한(y≈0.7) 보정
+      // bounding box 상단이 0.45 초과 시 하향 보정
+      // (spring bone 물리로 머리카락이 T-pose보다 올라올 수 있어 여유 확보)
       v.scene.updateWorldMatrix(true, true);
       const box = new THREE.Box3().setFromObject(v.scene);
-      if (box.max.y > 0.7) {
-        v.scene.position.y -= (box.max.y - 0.7);
+      if (box.max.y > 0.45) {
+        v.scene.position.y -= (box.max.y - 0.45);
       }
 
       setVrm(v);
@@ -493,7 +505,7 @@ export default function AvatarScene({
           enablePan={false}
           enableRotate={false}
           enableZoom={false}
-          target={[0, 0.15, 0]}
+          target={[0, -0.05, 0]}
         />
       </Canvas>
     </div>
