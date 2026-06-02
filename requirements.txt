@@ -1,5 +1,9 @@
+numpy
 torch
 torchvision
 openmim
 mmengine
 mmcv==2.1.0
+opencv-python
+mediapipe==0.10.13
+pandas

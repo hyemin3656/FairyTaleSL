@@ -5,8 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT_DIR = Path("../dataset/cropped_holistic_results")
-OUT_PKL = Path("../dataset/cropped_holistic_results/mediapipe_sign_3d.pkl")
+ROOT_DIR = Path("../dataset/cropped_holistic_results_interpolated_remapped_direct")
+OUT_PKL = Path("../dataset/cropped_holistic_results_interpolated_remapped_direct/mediapipe_sign_3d_without_face_pose_score_1.pkl")
 
 RANDOM_SEED = 42
 
@@ -14,7 +14,7 @@ RANDOM_SEED = 42
 NUM_POSE = 23       # pose 0~22
 NUM_FACE = 468
 NUM_HAND = 21
-NUM_NODE = 533       # 23 + 21 + 21 + 468
+NUM_NODE = 65 #533       # 23 + 21 + 21 + 468
 NUM_PERSON = 1
 COORD_DIM = 3       # x, y, z
 
@@ -158,13 +158,15 @@ def build_annotations():
             for name, arr in arrays.items():
                 keypoints[name] = arr[..., :-1]  # (T, V, C-1)
                 scores[name] = arr[..., -1]      # (T, V)
+            
+            scores["pose"] = np.ones(scores["pose"].shape, dtype=np.float32)
 
             # [T, 533, 3]
-            keypoint = np.concatenate([keypoints['pose'], keypoints['face'], keypoints['left_hand'], keypoints['right_hand']], axis=1)
+            keypoint = np.concatenate([keypoints['pose'], keypoints['left_hand'], keypoints['right_hand']], axis=1) # keypoints['face']
             input_keypoint = keypoint[None, ...].astype(np.float32) # [M, T, V, C]
 
             # [T, 533]
-            keypoint_score = np.concatenate([scores['pose'], scores['face'], scores['left_hand'], scores['right_hand']], axis=1)
+            keypoint_score = np.concatenate([scores['pose'], scores['left_hand'], scores['right_hand']], axis=1) # scores['face']
             input_keypoint_score = keypoint_score[None, ...].astype(np.float32)  # [M, T, V]
 
             assert keypoint.shape == (T, NUM_NODE, COORD_DIM), keypoint.shape
