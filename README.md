@@ -44,6 +44,7 @@ pip install -v -e .
 ## Checkpoint
 
 학습된 모델 checkpoint를 다운로드한 뒤 `checkpoints/` 아래에 둡니다.
+https://drive.google.com/drive/folders/1BbG9qgVRGopb30TJpJwAm83V4egM8br_?usp=drive_link
 
 기본 checkpoint 경로:
 
