@@ -1,9 +1,19 @@
 import argparse
 import json
+import logging
+import os
+import queue
 import sys
+import threading
 import time
+import warnings
 from collections import deque
 from pathlib import Path
+
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+os.environ.setdefault("GLOG_minloglevel", "2")
+warnings.filterwarnings("ignore")
+logging.disable(logging.WARNING)
 
 import cv2
 import mediapipe as mp
@@ -24,6 +34,20 @@ if str(MMACTION_ROOT) not in sys.path:
 from mmaction.apis import init_recognizer  # noqa: E402
 from mmaction.utils import register_all_modules  # noqa: E402
 
+try:
+    from absl import logging as absl_logging
+
+    absl_logging.set_verbosity(absl_logging.ERROR)
+except ImportError:
+    pass
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError:
+    Image = None
+    ImageDraw = None
+    ImageFont = None
+
 
 DEFAULT_CONFIG = (
     MMACTION_ROOT
@@ -35,6 +59,7 @@ DEFAULT_CHECKPOINT = (
     / "best_acc_top1_epoch_36.pth"
 )
 DEFAULT_LABEL_MAP = PROJECT_ROOT / "src/class_labels.json"
+DEFAULT_SAVE_IMAGES_DIR = PROJECT_ROOT / "saved_inference_windows"
 
 NUM_POSE_FULL = 33
 NUM_POSE_USED = 23
@@ -42,6 +67,15 @@ NUM_HAND = 21
 NUM_NODE = NUM_POSE_USED + NUM_HAND + NUM_HAND
 COORD_DIM = 2
 MP_COORD_DIM = 4
+TOP1_SCORE_THRESHOLD = 0.5
+KOREAN_FONT_CANDIDATES = [
+    Path("C:/Windows/Fonts/malgun.ttf"),
+    Path("C:/Windows/Fonts/malgunbd.ttf"),
+    Path("/usr/share/fonts/truetype/nanum/NanumGothic.ttf"),
+    Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+    Path("/System/Library/Fonts/AppleSDGothicNeo.ttc"),
+]
+_DISPLAY_FONT = None
 
 
 def landmarks_to_array(landmarks, num_points):
@@ -144,12 +178,25 @@ class MediaPipeWebcamExtractor:
 
 class RealtimeSegmenter:
     # 웹캠 스트림에서 시작구간과 종료구간을 찾아 모델에 입력할 구간을 반환
-    def __init__(self, window, start_ratio, end_ratio, max_record_frames, min_frames):
+    def __init__(
+        self,
+        window,
+        start_ratio,
+        end_ratio,
+        max_record_frames,
+        min_frames,
+        sequence_level_detection=False,
+        sequence_window_frames=90,
+        sequence_stride_frames=20,
+    ):
         self.window = window
         self.start_ratio = start_ratio
         self.end_ratio = end_ratio
         self.max_record_frames = max_record_frames
         self.min_frames = min_frames
+        self.sequence_level_detection = sequence_level_detection
+        self.sequence_window_frames = sequence_window_frames
+        self.sequence_stride_frames = sequence_stride_frames
         self.reset()
 
     def reset(self):
@@ -157,6 +204,8 @@ class RealtimeSegmenter:
         self.pre_start = deque(maxlen=self.window)
         self.current = []
         self.last_detected_pos = None
+        self.next_sequence_start = 0
+        self.sequence_window_count = 0
 
     def update(self, frame_data):
         detected = frame_data["any_hand_detected"]
@@ -179,6 +228,8 @@ class RealtimeSegmenter:
                         if item["any_hand_detected"]
                     )
                     self.state = "recording"
+                    if self.sequence_level_detection:
+                        return self._next_sequence_windows(), "started"
                     return None, "started"
             return None, "waiting"
 
@@ -194,11 +245,21 @@ class RealtimeSegmenter:
                 [not item["any_hand_detected"] for item in recent]
             )
             if undetected_ratio >= self.end_ratio:
+                if self.sequence_level_detection:
+                    windows = self._next_sequence_windows(final=True)
+                    self.reset()
+                    return windows, "finished"
                 return self._finish(), "finished"
 
         if len(self.current) >= self.max_record_frames:
+            if self.sequence_level_detection:
+                windows = self._next_sequence_windows(final=True)
+                self.reset()
+                return windows, "timeout"
             return self._finish(), "timeout"
 
+        if self.sequence_level_detection:
+            return self._next_sequence_windows(), "recording"
         return None, "recording"
 
     def _finish(self):
@@ -211,6 +272,39 @@ class RealtimeSegmenter:
         if len(segment) < self.min_frames:
             return None
         return segment
+
+    def _build_sequence_window(self, start, window_type="regular"):
+        end = start + self.sequence_window_frames
+        return {
+            "index": self.sequence_window_count,
+            "start": start,
+            "end": end - 1,
+            "segment": self.current[start:end],
+            "window_type": window_type,
+        }
+
+    def _next_sequence_windows(self, final=False):
+        if self.last_detected_pos is None:
+            return []
+
+        windows = []
+        valid_frame_count = self.last_detected_pos + 1
+        while self.next_sequence_start + self.sequence_window_frames <= valid_frame_count:
+            start = self.next_sequence_start
+            windows.append(self._build_sequence_window(start))
+            self.sequence_window_count += 1
+            self.next_sequence_start += self.sequence_stride_frames
+
+        if final and valid_frame_count >= self.sequence_window_frames:
+            final_start = valid_frame_count - self.sequence_window_frames
+            if final_start >= self.next_sequence_start:
+                windows.append(
+                    self._build_sequence_window(final_start, window_type="final")
+                )
+                self.sequence_window_count += 1
+                self.next_sequence_start = final_start + self.sequence_stride_frames
+
+        return windows
 
 
 class CNN1DRealtimeRecognizer:
@@ -333,6 +427,168 @@ def build_mmaction_sample(segment, max_gap=5):
     }
 
 
+def _landmark_to_pixel(landmark, width, height, min_score=0.0):
+    x, y = float(landmark[0]), float(landmark[1])
+    score = float(landmark[3]) if landmark.shape[0] > 3 else 1.0
+    if min_score is not None and score <= min_score:
+        return None
+    if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
+        return None
+    return int(round(x * (width - 1))), int(round(y * (height - 1)))
+
+
+def draw_landmark_group(frame, landmarks, connections, color, min_score=0.0):
+    height, width = frame.shape[:2]
+    points = [
+        _landmark_to_pixel(landmark, width, height, min_score=min_score)
+        for landmark in landmarks
+    ]
+
+    for start, end in connections:
+        if start >= len(points) or end >= len(points):
+            continue
+        if points[start] is not None and points[end] is not None:
+            cv2.line(frame, points[start], points[end], color, 2, cv2.LINE_AA)
+
+    for point in points:
+        if point is not None:
+            cv2.circle(frame, point, 3, color, -1, cv2.LINE_AA)
+
+
+def draw_keypoints(frame, frame_data):
+    if frame_data["pose_detected"]:
+        draw_landmark_group(
+            frame,
+            frame_data["pose"],
+            mp.solutions.pose.POSE_CONNECTIONS,
+            (255, 0, 0),
+            min_score=0.0,
+        )
+    if frame_data["left_hand_detected"]:
+        draw_landmark_group(
+            frame,
+            frame_data["left_hand"],
+            mp.solutions.hands.HAND_CONNECTIONS,
+            (0, 255, 0),
+            min_score=None,
+        )
+    if frame_data["right_hand_detected"]:
+        draw_landmark_group(
+            frame,
+            frame_data["right_hand"],
+            mp.solutions.hands.HAND_CONNECTIONS,
+            (0, 0, 255),
+            min_score=None,
+        )
+    return frame
+
+
+def postprocess_sequence_top1(top1_results):
+    gloss_sequence = []
+    previous_label = None
+
+    for result in top1_results:
+        label = result["label"] if isinstance(result, dict) else str(result)
+        if label == previous_label:
+            continue
+        gloss_sequence.append(label)
+        previous_label = label
+
+    return gloss_sequence
+
+
+def save_window_images(item):
+    save_dir = item.get("save_images_dir")
+    if save_dir is None:
+        return
+
+    window_dir = (
+        Path(save_dir)
+        / f"sequence_{item['sequence_id']:04d}"
+        / f"window_{item['index']:04d}"
+    )
+    window_dir.mkdir(parents=True, exist_ok=True)
+
+    for offset, frame_data in enumerate(item["segment"]):
+        image = frame_data.get("image")
+        if image is None:
+            continue
+        frame_index = frame_data.get("frame_index", offset)
+        cv2.imwrite(str(window_dir / f"frame_{frame_index:06d}.jpg"), image)
+
+
+def prediction_worker(recognizer, request_queue, result_queue):
+    while True:
+        item = request_queue.get()
+        try:
+            if item is None:
+                return
+
+            result = recognizer.predict_segment(item["segment"])
+            best = result["predictions"][0]
+            if best["score"] > TOP1_SCORE_THRESHOLD:
+                save_window_images(item)
+            result_queue.put(
+                {
+                    "ok": True,
+                    "item": item,
+                    "result": result,
+                    "prediction_returned_at": time.perf_counter(),
+                }
+            )
+        except Exception as exc:
+            result_queue.put({"ok": False, "item": item, "error": exc})
+        finally:
+            request_queue.task_done()
+
+
+def drain_queue(items_queue):
+    items = []
+    while True:
+        try:
+            items.append(items_queue.get_nowait())
+        except queue.Empty:
+            return items
+
+
+def get_display_font(size=22):
+    global _DISPLAY_FONT
+    if _DISPLAY_FONT is not None:
+        return _DISPLAY_FONT
+    if ImageFont is None:
+        return None
+
+    for font_path in KOREAN_FONT_CANDIDATES:
+        if font_path.exists():
+            _DISPLAY_FONT = ImageFont.truetype(str(font_path), size)
+            return _DISPLAY_FONT
+
+    return None
+
+
+def draw_unicode_text(frame, text, position, color, font_size=22):
+    font = get_display_font(font_size)
+    if Image is None or ImageDraw is None or font is None:
+        cv2.putText(
+            frame,
+            text,
+            position,
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            color,
+            2,
+            cv2.LINE_AA,
+        )
+        return frame
+
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(rgb)
+    draw = ImageDraw.Draw(image)
+    draw.text(position, text, font=font, fill=(color[2], color[1], color[0]))
+    frame[:, :] = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
+    return frame
+
+
 def draw_status(frame, state, fps, latest_result):
     color = (0, 220, 0) if state == "recording" else (255, 255, 255)
     cv2.putText(
@@ -349,15 +605,12 @@ def draw_status(frame, state, fps, latest_result):
         y = 64
         for rank, pred in enumerate(latest_result["predictions"][:3], start=1):
             text = f"top{rank} {pred['label']} {pred['score']:.3f}"
-            cv2.putText(
+            draw_unicode_text(
                 frame,
                 text,
                 (16, y),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
                 (0, 255, 255),
-                2,
-                cv2.LINE_AA,
+                font_size=22,
             )
             y += 28
     return frame
@@ -381,8 +634,35 @@ def parse_args():
     parser.add_argument("--end-ratio", type=float, default=0.8)
     parser.add_argument("--max-gap", type=int, default=5)
     parser.add_argument("--min-frames", type=int, default=8)
-    parser.add_argument("--max-record-sec", type=float, default=5.0)
+    parser.add_argument("--max-record-sec", type=float, default=10.0)
     parser.add_argument("--model-complexity", type=int, default=1)
+    parser.add_argument(
+        "--sequence-level-detection",
+        action="store_true",
+        help="Run sliding-window recognition while recording instead of one recognition after the segment ends.",
+    )
+    parser.add_argument(
+        "--sequence-window-frames",
+        type=int,
+        default=90,
+        help="Number of frames per sliding-window model input.",
+    )
+    parser.add_argument(
+        "--sequence-stride-frames",
+        type=int,
+        default=20,
+        help="Frame interval between sliding-window starts.",
+    )
+    parser.add_argument(
+        "--save-images",
+        action="store_true",
+        help="Save frames used for each inference window as jpg files.",
+    )
+    parser.add_argument(
+        "--save-images-dir",
+        default=str(DEFAULT_SAVE_IMAGES_DIR),
+        help="Directory for saved inference window images.",
+    )
     parser.add_argument("--show", action="store_true")
     parser.add_argument("--mirror", action="store_true")
     parser.add_argument(
@@ -404,6 +684,12 @@ def resolve_device(device):
 
 def main():
     args = parse_args()
+    if args.sequence_window_frames <= 0:
+        raise ValueError("--sequence-window-frames must be greater than 0")
+    if args.sequence_stride_frames <= 0:
+        raise ValueError("--sequence-stride-frames must be greater than 0")
+    save_images_dir = Path(args.save_images_dir).expanduser()
+
     device = resolve_device(args.device)
     print(f"Using device: {device}")
 
@@ -435,15 +721,115 @@ def main():
         end_ratio=args.end_ratio,
         max_record_frames=max_record_frames,
         min_frames=args.min_frames,
+        sequence_level_detection=args.sequence_level_detection,
+        sequence_window_frames=args.sequence_window_frames,
+        sequence_stride_frames=args.sequence_stride_frames,
     )
 
     latest_result = None
+    sequence_top1_results = {}
+    sequence_pending_counts = {}
+    sequence_end_events = {}
+    current_sequence_id = 0
+    non_sequence_window_index = 0
     fps_meter = deque(maxlen=30)
+    frame_index = 0
+    prediction_requests = None
+    prediction_results = None
+    prediction_thread = None
+    if args.sequence_level_detection:
+        prediction_requests = queue.Queue()
+        prediction_results = queue.Queue()
+        prediction_thread = threading.Thread(
+            target=prediction_worker,
+            args=(recognizer, prediction_requests, prediction_results),
+            daemon=True,
+        )
+        prediction_thread.start()
     print("Press q to quit. Waiting for hand motion...")
+
+    def print_finished_sequence(sequence_id, event_name):
+        gloss_sequence = postprocess_sequence_top1(
+            sequence_top1_results.get(sequence_id, [])
+        )
+        print(
+            f"{event_name}: sequence ended. "
+            f"gloss_sequence={' '.join(gloss_sequence)}"
+        )
+        sequence_top1_results.pop(sequence_id, None)
+        sequence_pending_counts.pop(sequence_id, None)
+        sequence_end_events.pop(sequence_id, None)
+
+    def handle_prediction_results():
+        nonlocal latest_result
+        if prediction_results is None:
+            return
+
+        for message in drain_queue(prediction_results):
+            item = message["item"]
+            sequence_id = item["sequence_id"]
+            sequence_pending_counts[sequence_id] = max(
+                0, sequence_pending_counts.get(sequence_id, 0) - 1
+            )
+
+            if not message["ok"]:
+                print(
+                    f"{item['event']}: window={item['index']} "
+                    f"inference failed: {message['error']}"
+                )
+                if (
+                    sequence_pending_counts.get(sequence_id, 0) == 0
+                    and sequence_id in sequence_end_events
+                ):
+                    print_finished_sequence(
+                        sequence_id, sequence_end_events[sequence_id]
+                    )
+                continue
+
+            result = message["result"]
+            segment = item["segment"]
+            best = result["predictions"][0]
+            if best["score"] <= TOP1_SCORE_THRESHOLD:
+                if (
+                    sequence_pending_counts.get(sequence_id, 0) == 0
+                    and sequence_id in sequence_end_events
+                ):
+                    print_finished_sequence(
+                        sequence_id, sequence_end_events[sequence_id]
+                    )
+                continue
+
+            latest_result = result
+            sequence_top1_results.setdefault(sequence_id, []).append(best)
+            last_detected_capture_to_infer_end_ms = (
+                message["prediction_returned_at"] - segment[-1]["captured_at"]
+            ) * 1000
+            print(
+                f"{item['event']}: window={item['index']} "
+                f"type={item.get('window_type', 'regular')} "
+                f"frames={result['frames']} "
+                f"frame_range={segment[0]['frame_index']}-"
+                f"{segment[-1]['frame_index']} "
+                f"input={result['input_shape']} "
+                f"keypoint={np.mean(keypoint_ms):.2f}ms "
+                f"data_build={result['data_build_ms']:.2f}ms "
+                f"pipeline={result['pipeline_ms']:.2f}ms "
+                f"infer={result['inference_ms']:.2f}ms "
+                f"last_detected_capture_to_infer_end="
+                f"{last_detected_capture_to_infer_end_ms:.2f}ms "
+                f"top1={best['label']}({best['class_id']}) "
+                f"score={best['score']:.4f}"
+            )
+            if (
+                sequence_pending_counts.get(sequence_id, 0) == 0
+                and sequence_id in sequence_end_events
+            ):
+                print_finished_sequence(sequence_id, sequence_end_events[sequence_id])
 
     try:
         keypoint_ms = []
         while True:
+            handle_prediction_results()
             loop_started = time.perf_counter()
             ret, frame = cap.read()
             captured_at = time.perf_counter()
@@ -454,42 +840,86 @@ def main():
 
             frame_data, keypoint_ms_per_frame = extractor.process(frame)
             frame_data["captured_at"] = captured_at
+            frame_data["frame_index"] = frame_index
+            if args.save_images:
+                frame_data["image"] = frame.copy()
+            frame_index += 1
             keypoint_ms.append(keypoint_ms_per_frame)
-            segment, event = segmenter.update(frame_data)
+            segment_result, event = segmenter.update(frame_data)
 
             if event == "started":
+                current_sequence_id += 1
+                sequence_top1_results[current_sequence_id] = []
+                sequence_pending_counts[current_sequence_id] = 0
+                sequence_end_events.pop(current_sequence_id, None)
                 print("Recording segment...")
+
+            if args.sequence_level_detection:
+                windows = segment_result or []
+                for window_info in windows:
+                    prediction_item = dict(window_info)
+                    prediction_item["event"] = event
+                    prediction_item["sequence_id"] = current_sequence_id
+                    if args.save_images:
+                        prediction_item["save_images_dir"] = save_images_dir
+                    sequence_pending_counts[current_sequence_id] = (
+                        sequence_pending_counts.get(current_sequence_id, 0) + 1
+                    )
+                    prediction_requests.put(prediction_item)
+                if event in {"finished", "timeout"}:
+                    sequence_end_events[current_sequence_id] = event
+                    if sequence_pending_counts.get(current_sequence_id, 0) == 0:
+                        print_finished_sequence(current_sequence_id, event)
+                handle_prediction_results()
             elif event in {"finished", "timeout"}:
+                segment = segment_result
                 if segment is None:
                     print("Segment ignored: too short or no valid hand detection.")
                 else:
-                    latest_result = recognizer.predict_segment(segment)
+                    result = recognizer.predict_segment(segment)
                     prediction_returned_at = time.perf_counter()
-                    last_detected_capture_to_infer_end_ms = (
-                        prediction_returned_at - segment[-1]["captured_at"]
-                    ) * 1000
-                    best = latest_result["predictions"][0]
-                    print(
-                        f"{event}: frames={latest_result['frames']} "
-                        f"input={latest_result['input_shape']} "
-                        f"keypoint={np.mean(keypoint_ms):.2f}ms "
-                        f"data_build={latest_result['data_build_ms']:.2f}ms "
-                        f"pipeline={latest_result['pipeline_ms']:.2f}ms "
-                        f"infer={latest_result['inference_ms']:.2f}ms "
-                        f"last_detected_capture_to_infer_end="
-                        f"{last_detected_capture_to_infer_end_ms:.2f}ms "
-                        f"top1={best['label']}({best['class_id']}) "
-                        f"score={best['score']:.4f}"
-                    )
+                    best = result["predictions"][0]
+                    if best["score"] > TOP1_SCORE_THRESHOLD:
+                        if args.save_images:
+                            save_window_images(
+                                {
+                                    "save_images_dir": save_images_dir,
+                                    "sequence_id": 0,
+                                    "index": non_sequence_window_index,
+                                    "segment": segment,
+                                }
+                            )
+                            non_sequence_window_index += 1
+                        latest_result = result
+                        last_detected_capture_to_infer_end_ms = (
+                            prediction_returned_at - segment[-1]["captured_at"]
+                        ) * 1000
+                        print(
+                            f"{event}: frames={latest_result['frames']} "
+                            f"input={latest_result['input_shape']} "
+                            f"keypoint={np.mean(keypoint_ms):.2f}ms "
+                            f"data_build={latest_result['data_build_ms']:.2f}ms "
+                            f"pipeline={latest_result['pipeline_ms']:.2f}ms "
+                            f"infer={latest_result['inference_ms']:.2f}ms "
+                            f"last_detected_capture_to_infer_end="
+                            f"{last_detected_capture_to_infer_end_ms:.2f}ms "
+                            f"top1={best['label']}({best['class_id']}) "
+                            f"score={best['score']:.4f}"
+                        )
 
             fps_meter.append(1.0 / max(time.perf_counter() - loop_started, 1e-6))
             if args.show:
                 fps = float(np.mean(fps_meter)) if fps_meter else 0.0
+                draw_keypoints(frame, frame_data)
                 draw_status(frame, segmenter.state, fps, latest_result)
                 cv2.imshow("FairyTaleSL CNN1D realtime", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
     finally:
+        if prediction_requests is not None and prediction_thread is not None:
+            prediction_requests.put(None)
+            prediction_thread.join()
+            handle_prediction_results()
         extractor.close()
         cap.release()
         if args.show:

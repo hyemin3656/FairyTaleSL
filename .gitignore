@@ -18,3 +18,4 @@ data/videos/
 .DS_Store
 
 realtime_outputs/
+saved_inference_windows/
