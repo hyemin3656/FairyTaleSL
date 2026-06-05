@@ -84,3 +84,4 @@ data_pipeline/ksl.mv.db
 data_pipeline/sign_generation/venv/
 data_pipeline/sign_generation/logs/
 data_pipeline/sign_generation/*.task
+mmaction2/

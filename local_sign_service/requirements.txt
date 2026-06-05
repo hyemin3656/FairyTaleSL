@@ -1,0 +1,30 @@
+# 사이드카 venv 전용 의존성 — 루트 .venv와 분리해서 mmaction2 무게 격리
+# Python 3.10/3.11 권장
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+# uvicorn 0.30.x는 websockets 13.x까지 안정적으로 검증됨. 14+는 핸드셰이크 호환성 이슈 보고됨.
+websockets>=12.0,<14
+wsproto>=1.2.0
+
+# MediaPipe Holistic 처리 (Apple Silicon은 mediapipe-silicon 사용해도 됨)
+mediapipe==0.10.21
+opencv-python==4.10.0.84
+numpy<2.0
+pandas==2.2.3
+
+# PyTorch — CPU only (~10ms 추론, 박혜민 확인)
+torch==2.2.2
+torchvision==0.17.2
+
+# MMAction2 stack
+mmengine==0.10.5
+mmcv==2.1.0
+# mmaction2 자체는 별도로 `git clone + pip install -e` (README 참조)
+
+# mmaction2 모델 import 시 필요한 추가 의존성
+# decord는 macOS arm64 wheel이 없고, skeleton CNN1D 추론에는 video IO 불필요 → 제외
+einops==0.8.0
+scipy==1.13.1
+importlib-metadata==8.5.0
+
