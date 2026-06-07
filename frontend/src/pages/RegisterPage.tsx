@@ -34,13 +34,31 @@ export default function RegisterPage() {
         nickname: form.nickname,
         password: form.password,
       });
-      navigate("/books");
+      navigate("/");
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? "회원가입에 실패했습니다.");
+      setError(normalizeError(err) || "회원가입에 실패했습니다.");
     } finally {
       setLoading(false);
     }
   };
+
+  // FastAPI 422는 detail이 객체 배열({type, loc, msg, ...})로 오므로 문자열로 정규화
+  function normalizeError(err: any): string {
+    const d = err?.response?.data?.detail;
+    if (!d) return err?.message ?? "";
+    if (typeof d === "string") return d;
+    if (Array.isArray(d)) {
+      return d
+        .map((e: any) => {
+          if (typeof e === "string") return e;
+          const field = Array.isArray(e?.loc) ? e.loc.slice(1).join(".") : "";
+          return field ? `${field}: ${e?.msg ?? "오류"}` : e?.msg ?? JSON.stringify(e);
+        })
+        .join(", ");
+    }
+    if (typeof d === "object") return d.msg ?? JSON.stringify(d);
+    return String(d);
+  }
 
   return (
     <div className="auth-page">

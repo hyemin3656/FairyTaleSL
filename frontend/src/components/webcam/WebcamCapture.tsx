@@ -1,15 +1,15 @@
 /**
  * WebcamCapture — 사이드카 기반 수어 인식 미리보기
  *
- * 변경 (2026-06-05):
- *   - 이전: 브라우저가 카메라 점유 + MediaPipe Hands 처리 → /ws/recognition
- *   - 이후: Python 사이드카(:8002)가 카메라 점유 + MediaPipe Holistic + CNN1D 추론
- *           브라우저는 JPEG 미리보기(<img>)와 예측 결과만 받음
+ * UX:
+ *   - 기본 상태: 카메라가 꺼진 placeholder + "🎥 카메라 켜기" 버튼
+ *   - 켜기 누르면 → 사이드카(:8002)에 WS 연결 + JPEG 미리보기 + 인식 결과 시작
+ *   - "끄기" 누르면 → WS 끊고 placeholder로 복귀
  *
  * 부모 컴포넌트 인터페이스(onPrediction)는 그대로 유지 → FollowAlongPanel,
  * ChildQuestionPanel, QuizPanel은 변경 없음.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRecognitionWS } from "../../hooks/useRecognitionWS";
 
 export interface RecognitionPrediction {
@@ -20,20 +20,45 @@ export interface RecognitionPrediction {
 
 interface WebcamCaptureProps {
   onPrediction?: (pred: RecognitionPrediction) => void;
-  mirrored?: boolean;   // 사이드카가 이미 미러링하므로 시각적 효과만 (기본 true)
+  mirrored?: boolean;   // 사이드카가 이미 미러링하므로 시각적 효과만
 }
 
-export default function WebcamCapture({
+export default function WebcamCapture(props: WebcamCaptureProps) {
+  const [cameraOn, setCameraOn] = useState(false);
+
+  if (!cameraOn) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={previewWrapStyle}>
+          <div style={previewPlaceholderStyle}>
+            <span style={{ fontSize: 42 }}>🎥</span>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>카메라가 꺼져 있어요</span>
+            <span style={{ fontSize: 12, color: "#94a3b8" }}>
+              수어 인식을 시작하려면 카메라를 켜주세요
+            </span>
+          </div>
+        </div>
+
+        <button onClick={() => setCameraOn(true)} style={primaryBtnStyle}>
+          🎥 카메라 켜기
+        </button>
+      </div>
+    );
+  }
+
+  return <CameraView {...props} onTurnOff={() => setCameraOn(false)} />;
+}
+
+// ── 실제 카메라/인식 뷰 — cameraOn=true일 때만 마운트되어 WS 연결 ───────────
+function CameraView({
   onPrediction,
-  mirrored: _mirrored = true,
-}: WebcamCaptureProps) {
+  onTurnOff,
+}: WebcamCaptureProps & { onTurnOff: () => void }) {
   const { status, result, previewBlobUrl, errorMsg, reconnect } = useRecognitionWS();
   const onPredRef = useRef(onPrediction);
 
-  // onPrediction 콜백 ref 동기화
   useEffect(() => { onPredRef.current = onPrediction; }, [onPrediction]);
 
-  // 예측 결과를 부모 콜백으로 전달
   useEffect(() => {
     if (result) {
       onPredRef.current?.({
@@ -61,19 +86,22 @@ export default function WebcamCapture({
           <img src={previewBlobUrl} alt="webcam preview" style={previewImgStyle} />
         ) : (
           <div style={previewPlaceholderStyle}>
-            {status === "connecting" || status === "closed"
+            {status === "connecting"
               ? "수어 인식 서비스에 연결 중…"
-              : status === "error"
+              : status === "error" || status === "closed"
                 ? "수어 인식 서비스에 연결할 수 없어요"
                 : "카메라 영상을 기다리는 중…"}
           </div>
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <button onClick={onTurnOff} style={dangerBtnStyle}>
+          ⏹ 카메라 끄기
+        </button>
         <span style={{ fontSize: 12, color: "#94a3b8" }}>{statusBadge}</span>
         {(status === "error" || status === "closed") && (
-          <button onClick={reconnect} style={btnStyle}>다시 연결</button>
+          <button onClick={reconnect} style={ghostBtnStyle}>다시 연결</button>
         )}
       </div>
 
@@ -81,7 +109,7 @@ export default function WebcamCapture({
         <div style={errorStyle}>
           {errorMsg}
           <div style={{ marginTop: 4, fontSize: 12, color: "#64748b" }}>
-            터미널에서 <code>cd local_sign_service && ./.venv/bin/uvicorn main:app --port 8002</code> 실행 후 다시 연결을 눌러주세요.
+            터미널에서 <code>cd local_sign_service && ./.venv/bin/uvicorn main:app --port 8002</code> 실행 후 "다시 연결"을 눌러주세요.
           </div>
         </div>
       )}
@@ -119,7 +147,7 @@ const previewWrapStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: 480,
   aspectRatio: "4 / 3",
-  background: "#000",
+  background: "#0f172a",
   borderRadius: 12,
   overflow: "hidden",
   display: "flex",
@@ -133,19 +161,44 @@ const previewImgStyle: React.CSSProperties = {
   display: "block",
 };
 const previewPlaceholderStyle: React.CSSProperties = {
-  color: "#94a3b8",
+  color: "#cbd5e1",
   fontSize: 13,
   textAlign: "center",
   padding: 16,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 6,
 };
-const btnStyle: React.CSSProperties = {
-  padding: "6px 12px",
+const primaryBtnStyle: React.CSSProperties = {
+  alignSelf: "flex-start",
+  padding: "10px 20px",
   background: "#4f46e5",
+  color: "#fff",
+  fontSize: 14,
+  fontWeight: 700,
+  borderRadius: 10,
+  border: "none",
+  cursor: "pointer",
+};
+const dangerBtnStyle: React.CSSProperties = {
+  padding: "8px 14px",
+  background: "#ef4444",
   color: "#fff",
   fontSize: 13,
   fontWeight: 600,
   borderRadius: 8,
   border: "none",
+  cursor: "pointer",
+};
+const ghostBtnStyle: React.CSSProperties = {
+  padding: "6px 12px",
+  background: "#fff",
+  color: "#4f46e5",
+  fontSize: 13,
+  fontWeight: 600,
+  borderRadius: 8,
+  border: "1px solid #c7d2fe",
   cursor: "pointer",
 };
 const errorStyle: React.CSSProperties = {

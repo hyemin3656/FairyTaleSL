@@ -17,7 +17,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
-      navigate("/books");
+      navigate("/");
     } catch {
       setError("아이디 또는 비밀번호가 올바르지 않습니다.");
     } finally {
@@ -63,7 +63,7 @@ export default function LoginPage() {
         </p>
 
         {/* 개발용 — 게스트로 둘러보기 */}
-        <button className="btn-guest" onClick={() => navigate("/books")}>
+        <button className="btn-guest" onClick={() => navigate("/")}>
           로그인 없이 둘러보기
         </button>
       </div>
