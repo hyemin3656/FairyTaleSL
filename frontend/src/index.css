@@ -147,9 +147,9 @@ a {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  right: -3%;
-  width: 55%;
-  height: 105%;
+  right: -5%;
+  width: 65%;
+  height: 110%;
   z-index: 2;
 }
 
@@ -1985,4 +1985,37 @@ a {
 .btn-avatar-change:hover {
   background: var(--color-primary);
   color: #fff;
+}
+
+.btn-gloss-toggle {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-gloss-toggle.on {
+  border: 1.5px solid #10b981;
+  background: transparent;
+  color: #10b981;
+}
+.btn-gloss-toggle.on:hover {
+  background: #10b981;
+  color: #fff;
+}
+.btn-gloss-toggle.off {
+  border: 1.5px solid var(--color-text-muted);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.btn-gloss-toggle.off:hover {
+  background: var(--color-text-muted);
+  color: #fff;
+}
+
+.gloss-bar--hidden {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
 }

@@ -493,7 +493,7 @@ export default function AvatarScene({
   return (
     <div className="avatar-scene-wrap">
       <Canvas
-        camera={{ position: [0, 0.0, 0.95], fov: 58 }}
+        camera={{ position: [0, 0.0, 1.1], fov: 58 }}
         shadows
         gl={{ alpha: true }}
         onCreated={({ gl, scene }) => {

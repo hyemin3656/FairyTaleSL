@@ -105,6 +105,8 @@ export default function BookReadPage() {
 
   const currentSection = book?.sections[sectionIdx];
 
+  const [showGloss, setShowGloss] = useState(true);
+
   // ── 이미지 트리거: 글로스 재생 시점에 맞춰 이미지 인덱스 전환 ──────────────
   const [imgIdx, setImgIdx] = useState(0);
 
@@ -356,6 +358,13 @@ export default function BookReadPage() {
         <h1 className="read-title">{book.title}</h1>
         <span className="section-counter">{sectionIdx + 1} / {book.sections.length}</span>
         <button className="btn-avatar-change" onClick={() => navigate("/avatar-select")}>아바타 변경</button>
+        <button
+          className={`btn-gloss-toggle ${showGloss ? "on" : "off"}`}
+          onClick={() => setShowGloss((v) => !v)}
+          title="자막 ON/OFF"
+        >
+          자막 {showGloss ? "ON" : "OFF"}
+        </button>
       </header>
 
       {/* 진행 점 */}
@@ -414,7 +423,7 @@ export default function BookReadPage() {
           </section>
 
           {/* 글로스 바 — 이미지 아래 */}
-          <div className="gloss-bar">
+          <div className={`gloss-bar${showGloss ? "" : " gloss-bar--hidden"}`}>
             <div className="gloss-overlay">
               {ws.status === "connecting" && (
                 <span className="overlay-tag connecting">연결 중…</span>
