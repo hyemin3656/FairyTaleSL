@@ -9,6 +9,7 @@ export interface AvatarOption {
   description: string;
   sceneScale?: number;    // 동화 읽기 화면 스케일 (기본 1.0)
   sceneOffsetY?: number;  // 동화 읽기 화면 추가 Y 오프셋 (기본 0)
+  previewScale?: number;  // 아바타 선택 페이지 미리보기 스케일 (기본 sceneScale)
 }
 
 export const AVATAR_OPTIONS: AvatarOption[] = [
@@ -36,8 +37,9 @@ export const AVATAR_OPTIONS: AvatarOption[] = [
     url: "/avatar3.glb",
     preview: "/avatars/preview3.png",
     description: "차분하고 친근한 여자 아바타",
-    sceneScale: 0.5,
-    sceneOffsetY: -0.2,
+    sceneScale: 0.68,
+    sceneOffsetY: -0.05,
+    previewScale: 0.5,
   },
 ];
 
