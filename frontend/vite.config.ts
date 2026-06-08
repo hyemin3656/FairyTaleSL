@@ -6,7 +6,7 @@ import react from "@vitejs/plugin-react";
 //   - Docker Compose: 컨테이너에서 VITE_PROXY_TARGET=http://backend:8000 으로 override
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const httpTarget = env.VITE_PROXY_TARGET || "http://localhost:8000";
+  const httpTarget = process.env.VITE_PROXY_TARGET || env.VITE_PROXY_TARGET || "http://localhost:8000";
   const wsTarget = httpTarget.replace(/^http/, "ws");
 
   return {
