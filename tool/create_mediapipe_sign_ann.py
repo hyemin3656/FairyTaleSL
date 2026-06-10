@@ -2,11 +2,13 @@ import os
 import json
 import pickle
 from pathlib import Path
-
+import csv
+import ast
 import numpy as np
 
-ROOT_DIR = Path("../dataset/cropped_holistic_results_interpolated_remapped_direct")
-OUT_PKL = Path("../dataset/cropped_holistic_results_interpolated_remapped_direct/mediapipe_sign_3d_without_face_pose_score_1.pkl")
+ROOT_DIR = Path("../dataset/gloss_sequences")
+OUT_PKL = Path("../dataset/gloss_sequences/mediapipe_sign_3d_without_face_pose_score_1.pkl")
+TEMPLATE_CSV =  Path("../dataset/gloss_sequences/gloss_sequence_templates.csv")
 
 RANDOM_SEED = 42
 
@@ -18,6 +20,57 @@ NUM_NODE = 65 #533       # 23 + 21 + 21 + 468
 NUM_PERSON = 1
 COORD_DIM = 3       # x, y, z
 
+def load_gloss_sequence_templates(csv_path=TEMPLATE_CSV):
+    """Load template_id -> class_id_sequence mapping from CSV."""
+    last_error = None
+    for encoding in ("utf-8-sig", "cp949", "euc-kr"):
+        template_map = {}
+        try:
+            with open(csv_path, "r", encoding=encoding, newline="") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    template_id = row["template_id"]
+                    class_id_sequence = ast.literal_eval(row["class_id_sequence"])
+                    if not isinstance(class_id_sequence, list):
+                        raise ValueError(
+                            f"class_id_sequence must be list, got {type(class_id_sequence)} "
+                            f"for {template_id}"
+                        )
+                    template_map[template_id] = [int(x) for x in class_id_sequence]
+            return template_map
+        except UnicodeDecodeError as exc:
+            last_error = exc
+
+    raise UnicodeDecodeError(
+        last_error.encoding,
+        last_error.object,
+        last_error.start,
+        last_error.end,
+        f"Could not decode {csv_path} with utf-8-sig, cp949, or euc-kr",
+    )
+
+def map_sequence_label(class_id, template_map=None):
+    """Return gloss id sequence for a sentence template class id.
+
+    Args:
+        class_id (int | str): Class id from annotation folder name. For
+            example, 12 maps to template_id ``tpl_0012``.
+        template_map (dict, optional): Preloaded template mapping. If omitted,
+            the CSV is read inside this function.
+
+    Returns:
+        list[int]: CTC target gloss id sequence, e.g. ``[0, 12]``.
+    """
+    class_id = int(class_id)
+    template_id = f"tpl_{class_id:04d}"
+    if template_map is None:
+        template_map = load_gloss_sequence_templates()
+
+    if template_id not in template_map:
+        raise KeyError(
+            f"Cannot find template_id={template_id} in {TEMPLATE_CSV}"
+        )
+    return template_map[template_id]
 
 def ensure_tvc(arr, expected_v=None, name="array"):
     """
@@ -107,6 +160,7 @@ def parse_subject_and_class(folder_name):
 
 
 def build_annotations():
+    template_map = load_gloss_sequence_templates()
     split_dirs = sorted([p for p in ROOT_DIR.iterdir() if p.is_dir()]) #train/val/test
 
     annotations = []
@@ -119,6 +173,8 @@ def build_annotations():
         for npz_path in sorted(split_dir.rglob("*.npz")):
             file_name = npz_path.stem      # 00_00
             subject, class_name = parse_subject_and_class(file_name)
+            class_id = int(class_name)
+            gt_gloss = map_sequence_label(class_id, template_map)
 
             npz = np.load(npz_path)
             pose = npz["pose"]
@@ -175,7 +231,8 @@ def build_annotations():
             annotations.append(
                 {
                     "frame_dir": file_name,
-                    "label": class_name, # 0~66
+                    "template_id": class_name, 
+                    "label": gt_gloss,
                     "total_frames": T,
                     "keypoint": input_keypoint, 
                     "keypoint_score": input_keypoint_score
@@ -212,6 +269,7 @@ def main():
     first = annotations[6]
     print("Example:")
     print(" frame_dir:", first["frame_dir"])
+    print(" template_id:", first["template_id"])
     print(" label:", first["label"])
     print(" total_frames:", first["total_frames"])
     print(" keypoint shape:", first["keypoint"].shape)

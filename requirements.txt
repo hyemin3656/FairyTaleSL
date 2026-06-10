@@ -1,9 +1,7 @@
-numpy
-torch
-torchvision
-openmim
-mmengine
-mmcv==2.1.0
-opencv-python
+# Python 3.10 recommended for mediapipe==0.10.13
+numpy==1.26.4
+torch==2.2.2
+opencv-python==4.10.0.84
 mediapipe==0.10.13
-pandas
+pandas==2.2.2
+wandb==0.17.9

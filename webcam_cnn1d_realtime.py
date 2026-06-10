@@ -20,19 +20,18 @@ import mediapipe as mp
 import numpy as np
 import pandas as pd
 import torch
-from mmengine.config import Config, DictAction
-from mmengine.dataset import Compose, pseudo_collate
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 WORKSPACE_ROOT = PROJECT_ROOT.parent
-MMACTION_ROOT = WORKSPACE_ROOT / "mmaction2"
 CHECKPOINT_ROOT = WORKSPACE_ROOT / "checkpoints"
 
-if str(MMACTION_ROOT) not in sys.path:
-    sys.path.insert(0, str(MMACTION_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-from mmaction.apis import init_recognizer  # noqa: E402
-from mmaction.utils import register_all_modules  # noqa: E402
+from model.builder import build_model  # noqa: E402
+from model.config_utils import load_config  # noqa: E402
+from model.data import preprocess_keypoint_sample  # noqa: E402
+from model.model import load_checkpoint  # noqa: E402
 
 try:
     from absl import logging as absl_logging
@@ -50,13 +49,12 @@ except ImportError:
 
 
 DEFAULT_CONFIG = (
-    MMACTION_ROOT
-    / "configs/skeleton/cnn1d/"
-    / "cnn1d_8xb16-joint-u100-50e_mediapipe-sign-keypoint-3d_without_face.py"
+    WORKSPACE_ROOT
+    / "FairyTaleSL/model/configs/cnn1d_mediapipe_sign_without_face.py"
 )
 DEFAULT_CHECKPOINT = (
     CHECKPOINT_ROOT
-    / "best_acc_top1_epoch_36.pth"
+    / "best.pth"
 )
 DEFAULT_LABEL_MAP = PROJECT_ROOT / "src/class_labels.json"
 DEFAULT_SAVE_IMAGES_DIR = PROJECT_ROOT / "saved_inference_windows"
@@ -65,7 +63,7 @@ NUM_POSE_FULL = 33
 NUM_POSE_USED = 23
 NUM_HAND = 21
 NUM_NODE = NUM_POSE_USED + NUM_HAND + NUM_HAND
-COORD_DIM = 2
+COORD_DIM = 3
 MP_COORD_DIM = 4
 TOP1_SCORE_THRESHOLD = 0.5
 KOREAN_FONT_CANDIDATES = [
@@ -309,17 +307,24 @@ class RealtimeSegmenter:
 
 class CNN1DRealtimeRecognizer:
     def __init__(self, config, checkpoint, label_map, device, topk, max_gap, cfg_options=None):
-        register_all_modules(init_default_scope=True)
-        self.cfg = Config.fromfile(config)
         if cfg_options is not None:
-            self.cfg.merge_from_dict(cfg_options)
-        self.pipeline = Compose(self.cfg.test_pipeline)
-        self.model = init_recognizer(
-            self.cfg,
-            checkpoint=str(Path(checkpoint).expanduser().resolve()),
-            device=device,
-        )
+            print("--cfg-options is ignored for standalone FairyTaleSL/model inference.")
+        self.cfg = load_config(config)
         self.device = device
+        self.model = build_model(self.cfg).to(self.device)
+        checkpoint_info = load_checkpoint(
+            self.model,
+            Path(checkpoint).expanduser().resolve(),
+            map_location=self.device,
+            strict=False,
+        )
+        self.model.eval()
+        if checkpoint_info["missing_keys"] or checkpoint_info["unexpected_keys"]:
+            print(
+                "Checkpoint loaded with "
+                f"missing_keys={len(checkpoint_info['missing_keys'])}, "
+                f"unexpected_keys={len(checkpoint_info['unexpected_keys'])}"
+            )
         self.topk = topk
         self.max_gap = max_gap
         self.label_map = self._load_label_map(label_map)
@@ -334,25 +339,35 @@ class CNN1DRealtimeRecognizer:
 
     def predict_segment(self, segment):
         started = time.perf_counter()
-        sample = build_mmaction_sample(segment, max_gap=self.max_gap)
+        sample = build_keypoint_sample(segment, max_gap=self.max_gap)
         data_build_ms = (time.perf_counter() - started) * 1000
+
         started = time.perf_counter()
-        data = self.pipeline(sample)
-        data_batch = pseudo_collate([data])
+        keypoint = preprocess_keypoint_sample(
+            sample,
+            clip_len=self.cfg.CLIP_LEN,
+            num_clips=getattr(self.cfg, "TEST_NUM_CLIPS", 1),
+            test_mode=True,
+            zero_pad_short=getattr(self.cfg, "ZERO_PAD_SHORT", False),
+            input_mode=getattr(self.cfg, "INPUT_MODE", "xy"),
+            keypoint_normalize=getattr(self.cfg, "KEYPOINT_NORMALIZE", None),
+            short_sample_interpolation=getattr(self.cfg, "SHORT_SAMPLE_INTERPOLATION", None),
+        )
+        inputs = torch.from_numpy(keypoint[None]).to(self.device)
         pipeline_ms = (time.perf_counter() - started) * 1000
 
         with torch.no_grad():
             if str(self.device).startswith("cuda") and torch.cuda.is_available():
                 torch.cuda.synchronize()
             infer_started = time.perf_counter()
-            result = self.model.test_step(data_batch)[0]
+            scores = self.model.predict(inputs)[0]
             if str(self.device).startswith("cuda") and torch.cuda.is_available():
                 torch.cuda.synchronize()
             infer_ms = (time.perf_counter() - infer_started) * 1000
 
         return {
-            "predictions": self._format_predictions(result.pred_score),
-            "input_shape": tuple(data["inputs"].shape),
+            "predictions": self._format_predictions(scores),
+            "input_shape": tuple(inputs.shape),
             "data_build_ms": data_build_ms,
             "pipeline_ms": pipeline_ms,
             "inference_ms": infer_ms,
@@ -378,7 +393,7 @@ def stack_segment_arrays(segment, key):
     return np.stack([frame_data[key] for frame_data in segment]).astype(np.float32)
 
 
-def build_mmaction_sample(segment, max_gap=5):
+def build_keypoint_sample(segment, max_gap=5):
     pose = stack_segment_arrays(segment, "pose")[:, :NUM_POSE_USED]
     left = stack_segment_arrays(segment, "left_hand")
     right = stack_segment_arrays(segment, "right_hand")
@@ -618,7 +633,7 @@ def draw_status(frame, state, fps, latest_result):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Realtime webcam test for MediaPipe keypoints + CNN1D MMACTION model."
+        description="Realtime webcam test for MediaPipe keypoints + standalone FairyTaleSL CNN1D model."
     )
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--checkpoint", default=str(DEFAULT_CHECKPOINT))
@@ -668,8 +683,7 @@ def parse_args():
     parser.add_argument(
         "--cfg-options",
         nargs="+",
-        action=DictAction,
-        help="Reserved for parity with MMACTION scripts; edit config file for pipeline changes.",
+        help="Ignored. Kept only for compatibility with old MMACTION realtime commands.",
     )
     return parser.parse_args()
 

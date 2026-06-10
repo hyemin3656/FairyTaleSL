@@ -1,28 +1,24 @@
 # FairyTaleSL
 
-MMAction2 기반 수어 동작 인식 프로젝트입니다. 현재 실시간 웹캠 추론 스크립트는 MediaPipe Holistic으로 pose, left hand, right hand keypoint를 추출한 뒤 CNN1D 모델로 gloss를 예측합니다.
+MediaPipe 기반 수어 동작 인식 프로젝트입니다. CNN1D 학습/평가는 `FairyTaleSL/model` 아래 standalone PyTorch 코드로 실행할 수 있으며, MMAction2/mmengine/mmcv 설치가 필요 없습니다. 기존 웹캠 추론 스크립트는 MediaPipe Holistic으로 pose, left hand, right hand keypoint를 추출한 뒤 CNN1D 모델로 gloss를 예측합니다.
 
 ## Requirements
 
-- Python 3.8 이상
+- Python 3.10 권장 (`mediapipe==0.10.13` 기준)
 - PyTorch
-- OpenCV
-- MediaPipe
-- MMAction2
-- mmengine
-- pandas
 - numpy
+- OpenCV, MediaPipe, pandas (웹캠 추론 사용 시)
 
-CUDA GPU가 있으면 `--device auto` 또는 `--device cuda:0`로 GPU 추론을 사용할 수 있습니다.
+CUDA GPU가 있으면 `--device auto` 또는 `--device cuda:0`로 GPU 학습/추론을 사용할 수 있습니다.
 
 ## Installation
 
 ### 1. PyTorch 설치 예시
 
-CUDA 11.8 환경 예시입니다.
+CUDA 11.8 환경 예시입니다. `requirements.txt`는 `torch==2.2.2` 기준입니다.
 
 ```bash
-pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118
+pip install torch==2.2.2 --index-url https://download.pytorch.org/whl/cu118
 ```
 
 ### 2. Python dependency 설치
@@ -31,15 +27,7 @@ pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorc
 pip install -r requirements.txt
 ```
 
-### 3. MMAction2 설치
-
-workspace 루트에 `mmaction2`가 있어야 합니다.
-
-```bash
-git clone https://github.com/open-mmlab/mmaction2.git
-cd mmaction2
-pip install -v -e .
-```
+MMAction2, mmengine, mmcv는 standalone CNN1D 학습/평가에 필요하지 않습니다.
 
 ## Checkpoint
 
