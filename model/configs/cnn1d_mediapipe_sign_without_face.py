@@ -1,6 +1,6 @@
-ANN_FILE = "../../../dataset/cropped_holistic_results_interpolated_remapped_direct/mediapipe_sign_3d_without_face_pose_score_1.pkl"
+ANN_FILE = "../../../dataset/final_merged_dataset_combined/mediapipe_sign_3d_without_face_pose_score_1_70.pkl"
 MODEL_TYPE = "cnn1d"
-NUM_CLASSES = 67
+NUM_CLASSES = 67+70
 NUM_JOINTS = 65
 IN_CHANNELS = 2
 INPUT_MODE = "xy" #xy or xyz or xyscore or xyzscore
@@ -16,8 +16,17 @@ LR = 0.001
 WEIGHT_DECAY = 0.05 #0.01
 VAL_BEGIN = 10
 VAL_INTERVAL = 1
-TEST_NUM_CLIPS = 1
+TEST_NUM_CLIPS = 5
 ZERO_PAD_SHORT = False
+
+RANDOM_HORIZONTAL_FLIP = {
+    "enabled": False, #True,
+    "prob": 0.5,
+    "x_min": 0.0,
+    "x_max": 1.0,
+    "swap_left_right": True,
+    "apply_in_test": False,
+}
 SHORT_SAMPLE_INTERPOLATION = {
     "enabled": False, #True
     "target": "clip_len",  # "clip_len", "sampled_frames", or an integer frame count

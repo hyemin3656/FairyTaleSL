@@ -251,6 +251,7 @@ def main() -> None:
         zero_pad_short=getattr(cfg, "ZERO_PAD_SHORT", False),
         input_mode=getattr(cfg, "INPUT_MODE", "xy"),
         keypoint_normalize=getattr(cfg, "KEYPOINT_NORMALIZE", None),
+        random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
         short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
     )
     val_set = MediapipeSignDataset(
@@ -262,6 +263,7 @@ def main() -> None:
         zero_pad_short=getattr(cfg, "ZERO_PAD_SHORT", False),
         input_mode=getattr(cfg, "INPUT_MODE", "xy"),
         keypoint_normalize=getattr(cfg, "KEYPOINT_NORMALIZE", None),
+        random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
         short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
     )
     train_loader = DataLoader(

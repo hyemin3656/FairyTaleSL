@@ -1,13 +1,14 @@
 import os
 import json
 import pickle
+import argparse
 from pathlib import Path
 import csv
 import ast
 import numpy as np
 
-ROOT_DIR = Path("../dataset/gloss_sequences")
-OUT_PKL = Path("../dataset/gloss_sequences/mediapipe_sign_3d_without_face_pose_score_1.pkl")
+ROOT_DIR = Path("../dataset/final_merged_dataset_combined")
+OUT_PKL = Path("../dataset/final_merged_dataset_combined/mediapipe_sign_3d_without_face_pose_score_1.pkl")
 TEMPLATE_CSV =  Path("../dataset/gloss_sequences/gloss_sequence_templates.csv")
 
 RANDOM_SEED = 42
@@ -159,8 +160,36 @@ def parse_subject_and_class(folder_name):
     return subject, int(class_name)  #0~66
 
 
-def build_annotations():
-    template_map = load_gloss_sequence_templates()
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized in ("true", "t", "1", "yes", "y"):
+        return True
+    if normalized in ("false", "f", "0", "no", "n"):
+        return False
+    raise argparse.ArgumentTypeError(
+        f"Expected a boolean value such as true/false or T/F, got {value!r}."
+    )
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Create MediaPipe sign annotation pkl."
+    )
+    parser.add_argument(
+        "--sequence-level",
+        nargs="?",
+        const=True,
+        default=False,
+        type=str_to_bool,
+        help="Use sequence labels from gloss_sequence_templates.csv. Default: false.",
+    )
+    return parser.parse_args()
+
+
+def build_annotations(sequence_level=False):
+    template_map = load_gloss_sequence_templates() if sequence_level else None
     split_dirs = sorted([p for p in ROOT_DIR.iterdir() if p.is_dir()]) #train/val/test
 
     annotations = []
@@ -174,7 +203,10 @@ def build_annotations():
             file_name = npz_path.stem      # 00_00
             subject, class_name = parse_subject_and_class(file_name)
             class_id = int(class_name)
-            gt_gloss = map_sequence_label(class_id, template_map)
+            if class_id > 136:
+                continue
+            if sequence_level:
+                class_id = map_sequence_label(class_id, template_map)
 
             npz = np.load(npz_path)
             pose = npz["pose"]
@@ -231,8 +263,8 @@ def build_annotations():
             annotations.append(
                 {
                     "frame_dir": file_name,
-                    "template_id": class_name, 
-                    "label": gt_gloss,
+                    "class_name": class_name, 
+                    "label": class_id,
                     "total_frames": T,
                     "keypoint": input_keypoint, 
                     "keypoint_score": input_keypoint_score
@@ -246,19 +278,24 @@ def build_annotations():
 
 
 def main():
+    args = parse_args()
     OUT_PKL.parent.mkdir(parents=True, exist_ok=True)
 
-    annotations, split, frame_lengths = build_annotations()
+    annotations, split, frame_lengths = build_annotations(
+        sequence_level=args.sequence_level
+    )
 
     ann_file = {
         "split": split,
         "annotations": annotations,
+        "sequence_level": args.sequence_level,
     }
 
     with open(OUT_PKL, "wb") as f:
         pickle.dump(ann_file, f)
 
     print(f"Saved annotation file to: {OUT_PKL}")
+    print(f"Sequence level: {args.sequence_level}")
     print(f"Num samples: {len(annotations)}")
     # frame 통계
     print(f"Average frames: {np.mean(frame_lengths):.2f}")
@@ -269,7 +306,7 @@ def main():
     first = annotations[6]
     print("Example:")
     print(" frame_dir:", first["frame_dir"])
-    print(" template_id:", first["template_id"])
+    print(" class_name:", first["class_name"])
     print(" label:", first["label"])
     print(" total_frames:", first["total_frames"])
     print(" keypoint shape:", first["keypoint"].shape)

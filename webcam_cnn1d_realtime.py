@@ -178,19 +178,19 @@ class RealtimeSegmenter:
     # 웹캠 스트림에서 시작구간과 종료구간을 찾아 모델에 입력할 구간을 반환
     def __init__(
         self,
-        window,
+        window_sec,
         start_ratio,
         end_ratio,
-        max_record_frames,
+        max_record_sec,
         min_frames,
         sequence_level_detection=False,
         sequence_window_frames=90,
         sequence_stride_frames=20,
     ):
-        self.window = window
+        self.window_sec = window_sec
         self.start_ratio = start_ratio
         self.end_ratio = end_ratio
-        self.max_record_frames = max_record_frames
+        self.max_record_sec = max_record_sec
         self.min_frames = min_frames
         self.sequence_level_detection = sequence_level_detection
         self.sequence_window_frames = sequence_window_frames
@@ -199,20 +199,46 @@ class RealtimeSegmenter:
 
     def reset(self):
         self.state = "waiting"
-        self.pre_start = deque(maxlen=self.window)
+        self.pre_start = deque()
         self.current = []
         self.last_detected_pos = None
         self.next_sequence_start = 0
         self.sequence_window_count = 0
 
+    def _timestamp(self, frame_data):
+        return frame_data.get("captured_at", time.perf_counter())
+
+    def _window_ready(self, frames, now=None):
+        if not frames:
+            return False
+        if now is None:
+            now = self._timestamp(frames[-1])
+        return now - self._timestamp(frames[0]) >= self.window_sec
+
+    def _prune_before_window(self, frames, now):
+        cutoff = now - self.window_sec
+        while len(frames) > 1 and self._timestamp(frames[1]) < cutoff:
+            frames.popleft()
+
+    def _recent_time_window(self, frames, now):
+        cutoff = now - self.window_sec
+        start = 0
+        for index, item in enumerate(frames):
+            if self._timestamp(item) >= cutoff:
+                start = max(0, index - 1)
+                break
+        return frames[start:]
+
     def update(self, frame_data):
         detected = frame_data["any_hand_detected"]
+        now = self._timestamp(frame_data)
 
         if self.state == "waiting":
             self.pre_start.append(frame_data)
+            self._prune_before_window(self.pre_start, now)
             # ===== 시작 시점 찾기 =====
             # window 크기만큼 최근 프레임을 모은 뒤, 손이 감지된 프레임의 비율이 start_ratio 이상이면 window내의 첫 detected 프레임 부터 기록 시작
-            if len(self.pre_start) == self.window:
+            if self._window_ready(self.pre_start, now):
                 ratio = np.mean([item["any_hand_detected"] for item in self.pre_start])
                 if ratio >= self.start_ratio:
                     buffered = list(self.pre_start)
@@ -235,10 +261,10 @@ class RealtimeSegmenter:
         if detected:
             self.last_detected_pos = len(self.current) - 1
 
-        recent = self.current[-self.window:]
+        recent = self._recent_time_window(self.current, now)
         # ===== 종료 시점 찾기 =====
         # window 크기만큼 최근 프레임을 모은 뒤, 손이 감지되지 않은 프레임의 비율이 end_ratio 이상이면 recording 종료, 기록된 프레임 중 마지막 detected 프레임까지 segment로 반환
-        if len(recent) == self.window:
+        if self._window_ready(recent, now):
             undetected_ratio = np.mean(
                 [not item["any_hand_detected"] for item in recent]
             )
@@ -249,7 +275,8 @@ class RealtimeSegmenter:
                     return windows, "finished"
                 return self._finish(), "finished"
 
-        if len(self.current) >= self.max_record_frames:
+        record_duration = self._timestamp(self.current[-1]) - self._timestamp(self.current[0])
+        if record_duration >= self.max_record_sec:
             if self.sequence_level_detection:
                 windows = self._next_sequence_windows(final=True)
                 self.reset()
@@ -716,9 +743,6 @@ def main():
     cap.set(cv2.CAP_PROP_FPS, args.fps)
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
-    window = max(1, int(round(args.fps * args.window_sec))) 
-    max_record_frames = max(window, int(round(args.fps * args.max_record_sec)))
-
     extractor = MediaPipeWebcamExtractor(model_complexity=args.model_complexity)
     recognizer = CNN1DRealtimeRecognizer(
         args.config,
@@ -730,10 +754,10 @@ def main():
         args.cfg_options,
     )
     segmenter = RealtimeSegmenter(
-        window=window,
+        window_sec=args.window_sec,
         start_ratio=args.start_ratio,
         end_ratio=args.end_ratio,
-        max_record_frames=max_record_frames,
+        max_record_sec=args.max_record_sec,
         min_frames=args.min_frames,
         sequence_level_detection=args.sequence_level_detection,
         sequence_window_frames=args.sequence_window_frames,

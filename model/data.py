@@ -12,11 +12,93 @@ DEFAULT_LEFT_SHOULDER = 11
 DEFAULT_RIGHT_SHOULDER = 12
 DEFAULT_LEFT_HIP = 23
 DEFAULT_RIGHT_HIP = 24
+DEFAULT_POSE_LEFT_RIGHT_PAIRS = (
+    (1, 4),
+    (2, 5),
+    (3, 6),
+    (7, 8),
+    (9, 10),
+    (11, 12),
+    (13, 14),
+    (15, 16),
+    (17, 18),
+    (19, 20),
+    (21, 22),
+)
+DEFAULT_LEFT_HAND_RANGE = (23, 44)
+DEFAULT_RIGHT_HAND_RANGE = (44, 65)
 
 
 def load_annotation(path: Union[str, Path]) -> dict:
     with open(Path(path).expanduser(), "rb") as f:
         return pickle.load(f)
+
+
+def random_horizontal_flip_keypoints(
+    keypoint: np.ndarray,
+    flip_cfg: Union[Dict[str, Any], bool, None],
+    test_mode: bool = False,
+) -> np.ndarray:
+    if not flip_cfg:
+        return keypoint
+    if flip_cfg is True:
+        flip_cfg = {}
+    if not isinstance(flip_cfg, dict):
+        raise TypeError("horizontal flip config must be a dict, bool, or None.")
+    if not flip_cfg.get("enabled", True):
+        return keypoint
+    if test_mode and not flip_cfg.get("apply_in_test", False):
+        return keypoint
+    if keypoint.ndim != 4:
+        raise ValueError(f"keypoint must have shape (M, T, V, C), got {keypoint.shape}.")
+    if keypoint.shape[-1] < 1:
+        raise ValueError("horizontal flip requires at least an x channel.")
+
+    probability = float(flip_cfg.get("prob", 0.5))
+    if probability <= 0.0 or np.random.random() >= probability:
+        return keypoint
+
+    x_channel = int(flip_cfg.get("x_channel", 0))
+    if not (0 <= x_channel < keypoint.shape[-1]):
+        raise ValueError(f"x_channel={x_channel} is out of range for C={keypoint.shape[-1]}.")
+
+    out = keypoint.astype(np.float32, copy=True)
+    x_max = float(flip_cfg.get("x_max", 1.0))
+    x_min = float(flip_cfg.get("x_min", 0.0))
+    out[..., x_channel] = x_max + x_min - out[..., x_channel]
+
+    if not flip_cfg.get("swap_left_right", True):
+        return out
+
+    num_joints = out.shape[2]
+    pairs = flip_cfg.get("left_right_pairs", DEFAULT_POSE_LEFT_RIGHT_PAIRS)
+    for left, right in pairs:
+        left = int(left)
+        right = int(right)
+        if 0 <= left < num_joints and 0 <= right < num_joints:
+            out[:, :, [left, right], :] = out[:, :, [right, left], :]
+
+    hand_ranges = flip_cfg.get(
+        "hand_ranges",
+        (DEFAULT_LEFT_HAND_RANGE, DEFAULT_RIGHT_HAND_RANGE),
+    )
+    if hand_ranges:
+        left_range, right_range = hand_ranges
+        left_start, left_end = [int(item) for item in left_range]
+        right_start, right_end = [int(item) for item in right_range]
+        left_len = left_end - left_start
+        right_len = right_end - right_start
+        if (
+            left_len == right_len
+            and left_len > 0
+            and 0 <= left_start <= left_end <= num_joints
+            and 0 <= right_start <= right_end <= num_joints
+        ):
+            left_hand = out[:, :, left_start:left_end, :].copy()
+            out[:, :, left_start:left_end, :] = out[:, :, right_start:right_end, :]
+            out[:, :, right_start:right_end, :] = left_hand
+
+    return out
 
 
 
@@ -300,6 +382,7 @@ def preprocess_keypoint_sample(
     zero_pad_short: bool = False,
     input_mode: str = "xy",
     keypoint_normalize: Union[Dict[str, Any], bool, None] = None,
+    random_horizontal_flip: Union[Dict[str, Any], bool, None] = None,
     short_sample_interpolation: Union[Dict[str, Any], bool, None] = None,
 ) -> np.ndarray:
     keypoint = np.asarray(sample["keypoint"], dtype=np.float32)
@@ -311,6 +394,12 @@ def preprocess_keypoint_sample(
         raise ValueError(
             f"total_frames={total_frames} does not match keypoint T={keypoint.shape[1]}."
         )
+
+    keypoint = random_horizontal_flip_keypoints(
+        keypoint,
+        random_horizontal_flip,
+        test_mode=test_mode,
+    )
 
     interpolation_target = resolve_short_interpolation_target(
         short_sample_interpolation,
@@ -381,6 +470,7 @@ class MediapipeSignDataset(Dataset):
         zero_pad_short: bool = False,
         input_mode: str = "xy",
         keypoint_normalize: Union[Dict[str, Any], bool, None] = None,
+        random_horizontal_flip: Union[Dict[str, Any], bool, None] = None,
         short_sample_interpolation: Union[Dict[str, Any], bool, None] = None,
     ) -> None:
         ann = load_annotation(ann_file)
@@ -395,6 +485,7 @@ class MediapipeSignDataset(Dataset):
         self.zero_pad_short = zero_pad_short
         self.input_mode = input_mode
         self.keypoint_normalize = keypoint_normalize
+        self.random_horizontal_flip = random_horizontal_flip
         self.short_sample_interpolation = short_sample_interpolation
 
     def __len__(self) -> int:
@@ -411,6 +502,7 @@ class MediapipeSignDataset(Dataset):
             zero_pad_short=self.zero_pad_short,
             input_mode=self.input_mode,
             keypoint_normalize=self.keypoint_normalize,
+            random_horizontal_flip=self.random_horizontal_flip,
             short_sample_interpolation=self.short_sample_interpolation,
         )
         if keypoint.shape[0] == 1:

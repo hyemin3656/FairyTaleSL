@@ -24,3 +24,12 @@ VAL_BEGIN = 5
 VAL_INTERVAL = 1
 TEST_NUM_CLIPS = 5
 ZERO_PAD_SHORT = False
+
+RANDOM_HORIZONTAL_FLIP = {
+    "enabled": True,
+    "prob": 0.5,
+    "x_min": 0.0,
+    "x_max": 1.0,
+    "swap_left_right": True,
+    "apply_in_test": False,
+}
