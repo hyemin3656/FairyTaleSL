@@ -2,7 +2,7 @@
  * FollowAlongPanel — 섹션 종료 후 따라하기 (부 모드)
  *
  * - 목표 글로스에 대해 웹캠 인식 → 정확도 게이지
- * - 임계값(0.5) 도달 시 자동 onPass()
+ * - 정확도 90% 이상이면 자동으로 통과 → 다음 단어/단계로 진행
  * - 사용자가 직접 스킵하면 onSkip()
  *
  * 기존 SignPracticePage 로직을 컴포넌트화. 페이지(스탠드얼론) 흐름과 시나리오
@@ -12,7 +12,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import WebcamCapture from "../webcam/WebcamCapture";
 import type { TsnPrediction } from "../webcam/WebcamCapture";
 
-const SUCCESS_THRESHOLD = 0.5;   // config.yaml::recognition.success_threshold 와 동일
+const SUCCESS_THRESHOLD = 0.9;   // 90% 이상이면 자동 통과
+const HINT_THRESHOLD = 0.5;      // 50~89% 구간은 "비슷해요" 힌트
 
 interface Props {
   targetGloss: string;
@@ -46,7 +47,9 @@ export default function FollowAlongPanel({ targetGloss, onPass, onSkip }: Props)
   }, [isMatch, onPass]);
 
   const barColor =
-    targetScore >= SUCCESS_THRESHOLD ? "#10b981" : targetScore >= 0.3 ? "#f59e0b" : "#ef4444";
+    targetScore >= SUCCESS_THRESHOLD ? "#10b981"
+      : targetScore >= HINT_THRESHOLD ? "#f59e0b"
+      : "#ef4444";
 
   return (
     <div className="follow-along-panel">
@@ -87,8 +90,8 @@ export default function FollowAlongPanel({ targetGloss, onPass, onSkip }: Props)
           ✅ 잘 했어요! <strong>{targetGloss}</strong> 수어가 맞습니다.
         </div>
       )}
-      {topLabel && !isMatch && targetScore >= 0.3 && (
-        <div className="feedback hint">🤔 비슷해요! 조금 더 정확하게 해보세요.</div>
+      {topLabel && !isMatch && targetScore >= HINT_THRESHOLD && (
+        <div className="feedback hint">🤔 비슷해요! 조금 더 정확하게 해보세요. (90% 이상이면 통과)</div>
       )}
 
       <div className="panel-actions">

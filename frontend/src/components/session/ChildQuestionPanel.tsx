@@ -14,7 +14,7 @@
  *      → 부모는 useGlossWS.sendText(text)로 글로스 변환 + 아바타 재생
  *   2) 마치고 돌아가기 → onExit() → scenarioStore.exitChildQuestion()
  */
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import WebcamCapture from "../webcam/WebcamCapture";
 import type { TsnPrediction } from "../webcam/WebcamCapture";
 import { askChildQuestion } from "../../api/qa";
@@ -41,28 +41,43 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
   const [answer, setAnswer] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
 
+  // 방금 추가한 단어 — 사용자가 다른 수어를 보일 때까지 같은 예측은 무시한다.
+  // 예: "직녀" 추가 후, 사이드카가 잔여 동작에서 또 "직녀"를 보내도 후보에 안 띄움.
+  //     "누구" 등 다른 단어가 인식되어야 다시 어떤 예측이든 받기 시작.
+  const muteLabelRef = useRef<string | null>(null);
+
   // 인식된 결과를 "후보(pending)"로만 보여주고, 사용자가 ✅ 추가하기를 눌러야 누적됨.
-  // 사용자가 같은 수어를 잠시 유지하면 confidence가 더 높은 prediction이 와도 같은 라벨이면 갱신만 함.
   const handlePrediction = useCallback((pred: TsnPrediction) => {
     if (phase === "submitting") return;
     if (inputMode !== "sign") return;
     if (pred.is_dummy) return;
     if (pred.confidence < RECOGNITION_THRESHOLD) return;
     if (!pred.gloss) return;
+    // 방금 추가한 단어가 잔여 인식으로 다시 들어오면 무시
+    if (muteLabelRef.current && pred.gloss === muteLabelRef.current) return;
+    // 다른 단어가 들어왔으면 mute 해제 → 새 단어 인식 시작
+    if (muteLabelRef.current && pred.gloss !== muteLabelRef.current) {
+      muteLabelRef.current = null;
+    }
     setPendingLabel(pred.gloss);
     setPendingConf(pred.confidence);
   }, [phase, inputMode]);
 
   const handleConfirmPending = () => {
     if (!pendingLabel) return;
-    setLabels((arr) => [...arr, pendingLabel]);
+    const added = pendingLabel;
+    setLabels((arr) => [...arr, added]);
     setPendingLabel(null);
     setPendingConf(0);
+    // 다음 인식 사이클을 위해 같은 단어 잠시 차단
+    muteLabelRef.current = added;
   };
 
   const handleRejectPending = () => {
     setPendingLabel(null);
     setPendingConf(0);
+    // 거절한 단어도 잠시 차단 — 사용자가 다시 시도하면 다른 자세로 인식되어야 의미 있음
+    muteLabelRef.current = pendingLabel;
   };
 
   const handleClear = () => {
@@ -70,6 +85,7 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
       setLabels([]);
       setPendingLabel(null);
       setPendingConf(0);
+      muteLabelRef.current = null;
     } else {
       setTypedText("");
     }

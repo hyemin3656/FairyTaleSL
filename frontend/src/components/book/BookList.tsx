@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { fetchBooks, fetchCategories, type BookListItem } from "../../api/books";
 import BookCard from "./BookCard";
+import InlineRecommendation from "./InlineRecommendation";
+import SafeBoundary from "../common/SafeBoundary";
 
 export default function BookList() {
   const [books, setBooks] = useState<BookListItem[]>([]);
@@ -88,6 +90,13 @@ export default function BookList() {
           ? `검색 결과 ${total}건`
           : `전체 ${total}권`}
       </p>
+
+      {/* 추천 — 검색/필터 미적용 상태에서만 노출 */}
+      {!keyword && selectedCategories.length === 0 && (
+        <SafeBoundary label="InlineRecommendation">
+          <InlineRecommendation />
+        </SafeBoundary>
+      )}
 
       {/* 상태별 UI */}
       {loading && <div style={stateBoxStyle}>불러오는 중...</div>}

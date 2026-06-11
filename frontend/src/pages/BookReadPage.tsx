@@ -27,6 +27,7 @@ import {
 import { useGlossWS } from "../hooks/useGlossWS";
 import { useScenarioStore } from "../stores/scenarioStore";
 import { useAvatarStore } from "../stores/avatarStore";
+import { isInVocab } from "../constants/signVocab";
 
 import AvatarScene from "../components/avatar/AvatarScene";
 import FollowAlongPanel from "../components/session/FollowAlongPanel";
@@ -208,10 +209,10 @@ export default function BookReadPage() {
   };
 
   const handleEnterFollow = () => {
-    // TODO: 고유명사 제외 정책 — BookSection.proper_nouns 도입 후 필터링
-    const target = ws.tokens[0];
+    // 모델 vocab(67단어)에 있는 토큰만 따라해보기 가능 — 없는 단어면 통과 불가
+    // 첫 번째 vocab 일치 토큰을 우선 선택, 없으면 스킵
+    const target = ws.tokens.find((t) => isInVocab(t));
     if (!target) {
-      // 토큰 없으면 곧장 스킵
       skipFollowAlong();
       return;
     }
@@ -262,7 +263,13 @@ export default function BookReadPage() {
     persistSection({ quiz_correct: r.correct, quiz_attempts: r.attempts });
   };
 
+  // 다음 섹션으로 — WS 상태(이전 섹션의 일시정지·재생 중인 클립 등)도 함께 초기화.
+  // 안 그러면 새 섹션 진입 시 "수어로 보기"를 누르기도 전에 일시정지 버튼이 보이고
+  // 아바타가 이전 클립을 계속 재생하는 현상이 발생.
   const handleNextSection = () => {
+    ws.reset();
+    skipPendingRef.current = false;
+    answerPlayedRef.current = false;
     nextSectionAction();
   };
 
@@ -271,6 +278,7 @@ export default function BookReadPage() {
     if (sectionIdx <= 0) return;
     ws.reset();
     skipPendingRef.current = false;
+    answerPlayedRef.current = false;
     prevSectionAction();
   };
 
@@ -579,20 +587,37 @@ export default function BookReadPage() {
               )}
 
               {/* 1단계 — 따라해보기 (선택) */}
-              {!followDoneForCurrent && ws.tokens.length > 0 && (
-                <div className="step-card step-optional">
-                  <div className="step-head">
-                    <span className="step-badge">선택</span>
-                    <span className="step-title">🤟 따라해보기</span>
+              {!followDoneForCurrent && ws.tokens.length > 0 && (() => {
+                const followCandidate = ws.tokens.find((t) => isInVocab(t));
+                const canFollow = !!followCandidate;
+                return (
+                  <div className="step-card step-optional">
+                    <div className="step-head">
+                      <span className="step-badge">선택</span>
+                      <span className="step-title">🤟 따라해보기</span>
+                    </div>
+                    {canFollow ? (
+                      <>
+                        <p className="step-desc">
+                          이번에는 <strong>{followCandidate}</strong> 수어를 따라해 봐요.
+                        </p>
+                        <button className="btn-practice" onClick={handleEnterFollow}>
+                          따라해보기 시작
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="step-desc">
+                          이 섹션에는 현재 모델이 인식할 수 있는 단어가 없어요. 다음 단계로 진행해요.
+                        </p>
+                        <button className="btn-practice" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+                          따라해보기 불가
+                        </button>
+                      </>
+                    )}
                   </div>
-                  <p className="step-desc">
-                    아바타가 보여준 수어 중 하나를 직접 따라해 봐요.
-                  </p>
-                  <button className="btn-practice" onClick={handleEnterFollow}>
-                    따라해보기 시작
-                  </button>
-                </div>
-              )}
+                );
+              })()}
 
               {/* 2단계 — 퀴즈 (필수) */}
               {hasQuizForCurrent && !quizDoneForCurrent && (

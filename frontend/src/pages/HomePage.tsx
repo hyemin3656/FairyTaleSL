@@ -1,7 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../context/AuthContext";
-import RecommendationCarousel from "../components/home/RecommendationCarousel";
-import SafeBoundary from "../components/common/SafeBoundary";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -35,9 +33,7 @@ export default function HomePage() {
       </div>
 
       <main style={mainStyle}>
-        {/* 로그인 시: 좌(hero) + 우(추천 캐러셀) 2-column. 비로그인 시: hero만 중앙 */}
-        <section style={user ? heroRowStyle : heroStyle}>
-        <div style={user ? heroLeftStyle : heroStyle}>
+        <section style={heroStyle}>
           <span style={badgeStyle}>수어 학습 · 전래동화 · 세계명작 · AI 도우미</span>
           <h1 style={titleStyle}>FairyTaleSL</h1>
           {user ? (
@@ -78,12 +74,6 @@ export default function HomePage() {
               </p>
             </>
           )}
-        </div>
-        {user && (
-          <SafeBoundary label="RecommendationCarousel">
-            <RecommendationCarousel />
-          </SafeBoundary>
-        )}
         </section>
 
         {/* 학습 흐름 — 4 step */}
@@ -274,24 +264,6 @@ const heroStyle: React.CSSProperties = {
   flexDirection: "column",
   gap: 16,
   alignItems: "center",
-};
-const heroRowStyle: React.CSSProperties = {
-  width: "100%",
-  display: "flex",
-  flexDirection: "row",
-  gap: 32,
-  alignItems: "center",
-  justifyContent: "center",
-  flexWrap: "wrap",
-};
-const heroLeftStyle: React.CSSProperties = {
-  textAlign: "center",
-  display: "flex",
-  flexDirection: "column",
-  gap: 16,
-  alignItems: "center",
-  flex: "1 1 480px",
-  maxWidth: 600,
 };
 const badgeStyle: React.CSSProperties = {
   display: "inline-block",
