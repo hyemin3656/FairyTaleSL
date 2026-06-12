@@ -25,6 +25,33 @@ _GLOSS_LIST_PATH = Path(__file__).parent.parent.parent / \
     "data_pipeline/sign_generation/data/gloss_list.json"
 _MOTION_DB_PATH = Path(__file__).parent.parent.parent / \
     "data_pipeline/sign_generation/data/motion_db.sqlite"
+_FAIRY_TALES_PATH = Path(__file__).parent.parent.parent / \
+    "data_pipeline/sign_generation/data/fairy_tales_structured.json"
+
+
+def _load_sentence_emotion_map() -> dict[str, str]:
+    """문장 텍스트 → 감정 레이블 매핑 로드."""
+    try:
+        with open(_FAIRY_TALES_PATH, encoding="utf-8") as f:
+            tales = json.load(f)
+        mapping: dict[str, str] = {}
+        for tale in tales:
+            for seg in tale.get("segments", []):
+                for s in seg.get("sentences", []):
+                    text = s.get("text", "").strip()
+                    emotion = s.get("emotion")
+                    if text and emotion:
+                        mapping[text] = emotion
+        return mapping
+    except FileNotFoundError:
+        return {}
+
+_SENTENCE_EMOTION_MAP: dict[str, str] = _load_sentence_emotion_map()
+
+
+def get_sentence_emotion(text: str) -> str | None:
+    """입력 텍스트와 일치하는 문장의 감정 레이블 반환. 없으면 None."""
+    return _SENTENCE_EMOTION_MAP.get(text.strip())
 
 
 def _load_fallback_map() -> dict[str, dict]:
@@ -310,10 +337,11 @@ def _expand_tokens(tokens: list[str]) -> list[str]:
 
 
 async def resolve_motions(
-    db: AsyncSession, tokens: list[str]
+    db: AsyncSession, tokens: list[str], sentence_emotion: str | None = None
 ) -> list[MotionClip]:
     """
     토큰 리스트를 받아 각 토큰에 대응하는 MotionClip 리스트를 반환.
+    sentence_emotion이 주어지면 모든 클립의 감정을 문장 단위로 통일.
 
     우선순위:
     1. DB에 해당 글로스가 있으면 해당 클립 반환
@@ -424,5 +452,10 @@ async def resolve_motions(
                 is_fallback=True,
                 fallback_type=None,
             ))
+
+    # 문장 단위 감정 적용: sentence_emotion이 있으면 모든 클립에 통일
+    if sentence_emotion:
+        for clip in clips:
+            clip.emotion_label = sentence_emotion
 
     return clips

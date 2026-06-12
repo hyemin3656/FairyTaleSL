@@ -20,7 +20,7 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from core.database import AsyncSessionLocal
-from services.gloss_service import tokenize_text, resolve_motions
+from services.gloss_service import tokenize_text, resolve_motions, get_sentence_emotion
 
 router = APIRouter(tags=["websocket"])
 
@@ -100,8 +100,9 @@ async def gloss_ws(websocket: WebSocket):
             pause_event.set()
 
             tokens = tokenize_text(text)
+            sentence_emotion = get_sentence_emotion(text)
             async with AsyncSessionLocal() as db:
-                clips = await resolve_motions(db, tokens)
+                clips = await resolve_motions(db, tokens, sentence_emotion=sentence_emotion)
 
             # start_index가 토큰 수를 넘으면 0으로 클램프
             if start_index >= len(clips):
