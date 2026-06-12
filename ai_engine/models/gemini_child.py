@@ -10,7 +10,9 @@ gemini_child — 아이가 동화에 대해 한 질문에 Gemini 2.5 Flash로 �
 from __future__ import annotations
 
 import os
+import sqlite3
 from functools import lru_cache
+from pathlib import Path
 
 CHILD_QA_SYSTEM = """당신은 4~7세 아동에게 동화를 설명해주는 친절한 도우미입니다.
 아이의 질문에 다음 규칙으로 답해주세요:
@@ -44,44 +46,55 @@ CHILD_QA_SYSTEM = """당신은 4~7세 아동에게 동화를 설명해주는 친
     이야기 속에서 일어난 일에 대해 물어봐도 좋아."
 """
 
+# motion_db 경로: ai_engine 컨테이너에서 /data_pipeline으로 마운트됨
+_MOTION_DB_PATH = Path("/data_pipeline/sign_generation/data/motion_db.sqlite")
+
 
 @lru_cache(maxsize=1)
-def _get_client():
-    from google import genai  # lazy: 패키지 미설치 시 import 시점에 터지지 않게
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
-    return genai.Client(api_key=api_key)
+def _load_ksl_glosses() -> str:
+    """motion_db.sqlite에서 글로스 목록을 로드해 쉼표 구분 문자열로 반환."""
+    try:
+        conn = sqlite3.connect(str(_MOTION_DB_PATH))
+        rows = conn.execute("SELECT gloss FROM motion_db ORDER BY gloss").fetchall()
+        conn.close()
+        glosses = [r[0] for r in rows if r[0] and not r[0].startswith("-")]
+        return ", ".join(glosses)
+    except Exception:
+        return ""
 
 
-KSL_REWRITE_PROMPT = """당신은 한국수어(KSL) 전문가입니다.
-아래 한국어 문장을 수어로 표현하기 좋은 형태로 다시 써주세요.
+KSL_REWRITE_SYSTEM = """당신은 한국수어(KSL) 전문가입니다.
+아래 [원문]을 [사용 가능한 수어 단어] 목록에 있는 단어들만 사용해서 재구성해주세요.
 
 규칙:
-1. 초등학교 1학년 수준의 쉬운 단어만 사용 (국립국어원 수어사전 등재 단어 위주)
+1. [사용 가능한 수어 단어] 목록에 없는 단어는 반드시 목록 안의 유사한 단어로 대체
 2. 부정 표현 풀기: "행복하지 않다" → "슬프다", "못하다" → "어렵다"
 3. 복합 동사 분리: "잡아먹다" → "잡다 먹다", "날아가다" → "날다"
-4. 추상 단어를 구체적으로: "기억" → "알다", "관계" → "친구"
+4. 의미는 최대한 유지하되 자연스러운 한국어 문장으로 작성
 5. 1~2 문장, 최대 15 단어 이내
-6. 조사·어미는 유지하되 본문 의미를 최대한 살리기
-7. 원문과 의미가 달라지면 안 됨
-
-원문: {original}
-
-수어 친화 버전 (한국어 문장으로, 설명 없이 바로):"""
+6. 설명 없이 재구성된 문장만 출력"""
 
 
 def rewrite_for_sign(answer: str) -> str:
-    """Gemini 답변을 KSL 어휘로 재작성."""
+    """Gemini 답변을 국립국어원 KSL 등재 어휘만 사용해 재작성."""
     from google.genai import types
     client = _get_client()
-    model = "gemini-2.5-flash"
-    prompt = KSL_REWRITE_PROMPT.format(original=answer.strip())
+
+    gloss_list = _load_ksl_glosses()
+    if not gloss_list:
+        return answer
+
+    prompt = (
+        f"{KSL_REWRITE_SYSTEM}\n\n"
+        f"[사용 가능한 수어 단어]\n{gloss_list}\n\n"
+        f"[원문]\n{answer.strip()}\n\n"
+        f"[재구성]"
+    )
     response = client.models.generate_content(
-        model=model,
+        model="gemini-2.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
-            temperature=0.3,
+            temperature=0.2,
             max_output_tokens=128,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
@@ -89,21 +102,25 @@ def rewrite_for_sign(answer: str) -> str:
     return (response.text or answer).strip()
 
 
+@lru_cache(maxsize=1)
+def _get_client():
+    from google import genai
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set in environment")
+    return genai.Client(api_key=api_key)
+
+
 def answer_child_question(question: str, story_context: str) -> str:
     from google.genai import types
     client = _get_client()
     model = os.environ.get("LLM_MODEL", "gemini-2.5-flash")
-    # TODO: 토큰 절약 위해 story_context를 섹션 단위로만 전달 — 향후 전체 책으로 확장 시 캐시 검토
     prompt = (
         f"{CHILD_QA_SYSTEM}\n\n"
         f"[동화 본문]\n{story_context.strip()}\n\n"
         f"[아이의 질문]\n{question.strip()}\n\n"
         f"[답변]"
     )
-    # Gemini 2.5 Flash는 기본적으로 "thinking"이 켜져 있어 max_output_tokens 중
-    # 상당 부분을 사고 토큰이 잠식한다. 동화 응답에는 추론이 거의 필요 없으므로
-    # thinking_budget=0으로 끄고, max_output_tokens도 안전 여유(~256)로 확장한다.
-    # 끄지 않으면 "음, 소는" 처럼 답변이 도중에 끊긴다.
     response = client.models.generate_content(
         model=model,
         contents=prompt,
