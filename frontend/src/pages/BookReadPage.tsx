@@ -237,7 +237,7 @@ export default function BookReadPage() {
   };
 
   const handleEnterChildQ = () => {
-    ws.pause();   // 동화 수어 스트림 즉시 중단
+    ws.reset();   // 동화 수어 스트림 중단 + currentClip 초기화 → idle 포즈
     enterChildQuestion();
   };
 
