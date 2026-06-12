@@ -96,14 +96,13 @@ function drivePoseBones(kp: number[], hum: VRM["humanoid"], sp: number) {
   }
 
   // ── 상완: 어깨→팔꿈치 방향으로 계산 ─────────────────────────
-  // 이전에는 어깨→손목을 사용했으나, 상완 방향은 어깨→팔꿈치가 정확함
+  // 몸통 관통 방지: targetX에 +0.25 forward offset 항상 적용
+  const FORWARD_OFFSET = 0.4;
   if (hasL && lArm) {
     const d = sub(lEl, lSh);
-    // d.y: +0.25≈팔 자연하강, 0≈T포즈, -0.2≈팔 올림 → VRM rz: 1.5=아래, 0=T포즈, -1.5=위
-    const targetZ = THREE.MathUtils.clamp(d.y * 6.0, -0.9, 1.5);
-    // Y: 팔 전방 회전 — 음수 방향이 몸통 안으로 파고드므로 하한을 -0.4로 제한
+    const targetZ = THREE.MathUtils.clamp(d.y * 6.0, -0.9, 1.1);
     const targetY = THREE.MathUtils.clamp(d.z * 5.0, -0.4, 0.8);
-    const targetX = THREE.MathUtils.clamp(d.x * 3.0, -1.0, 0.8);
+    const targetX = THREE.MathUtils.clamp(d.x * 3.0, -1.0, 0.8) + FORWARD_OFFSET;
 
     lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, targetX, sp);
     lArm.rotation.y = THREE.MathUtils.lerp(lArm.rotation.y, targetY, sp);
@@ -111,10 +110,9 @@ function drivePoseBones(kp: number[], hum: VRM["humanoid"], sp: number) {
   }
   if (hasR && rArm) {
     const d = sub(rEl, rSh);
-    const targetZ = THREE.MathUtils.clamp(-d.y * 6.0, -1.5, 0.9);
-    // Y: 팔 전방 회전 — 양수 방향이 몸통 안으로 파고드므로 상한을 0.4로 제한
+    const targetZ = THREE.MathUtils.clamp(-d.y * 6.0, -1.1, 0.9);
     const targetY = THREE.MathUtils.clamp(-d.z * 5.0, -0.8, 0.4);
-    const targetX = THREE.MathUtils.clamp(-d.x * 3.0, -0.8, 1.0);
+    const targetX = THREE.MathUtils.clamp(-d.x * 3.0, -0.8, 1.0) + FORWARD_OFFSET;
 
     rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, targetX, sp);
     rArm.rotation.y = THREE.MathUtils.lerp(rArm.rotation.y, targetY, sp);
@@ -341,10 +339,11 @@ function driveIdlePose(hum: VRM["humanoid"], rate: number) {
   // 호흡 사이클 (1.2 rad/s ≈ 0.19 Hz)
   const breathe = Math.sin(Date.now() / 1000 * 1.2) * 0.018;
 
-  if (lArm)  { lArm.rotation.x  = L(lArm.rotation.x,  0.1); lArm.rotation.y  = L(lArm.rotation.y,  0); lArm.rotation.z  = L(lArm.rotation.z,  1.5); }
-  if (rArm)  { rArm.rotation.x  = L(rArm.rotation.x,  0.1); rArm.rotation.y  = L(rArm.rotation.y,  0); rArm.rotation.z  = L(rArm.rotation.z, -1.5); }
-  if (lFore) { lFore.rotation.x = 0; lFore.rotation.y = L(lFore.rotation.y, -0.1); lFore.rotation.z = 0; }
-  if (rFore) { rFore.rotation.x = 0; rFore.rotation.y = L(rFore.rotation.y,  0.1); rFore.rotation.z = 0; }
+  // 팔 아래로 충분히 내리고(z=1.1) 앞으로 밀어(x=0.45) 몸통 클리핑 방지
+  if (lArm)  { lArm.rotation.x  = L(lArm.rotation.x,  0.45); lArm.rotation.y  = L(lArm.rotation.y, -0.1); lArm.rotation.z  = L(lArm.rotation.z,  1.1); }
+  if (rArm)  { rArm.rotation.x  = L(rArm.rotation.x,  0.45); rArm.rotation.y  = L(rArm.rotation.y,  0.1); rArm.rotation.z  = L(rArm.rotation.z, -1.1); }
+  if (lFore) { lFore.rotation.x = L(lFore.rotation.x, 0.1); lFore.rotation.y = L(lFore.rotation.y, 0.1); lFore.rotation.z = 0; }
+  if (rFore) { rFore.rotation.x = L(rFore.rotation.x, 0.1); rFore.rotation.y = L(rFore.rotation.y, -0.1); rFore.rotation.z = 0; }
   if (chest) { chest.rotation.x = L(chest.rotation.x, breathe); }
   if (spine) { spine.rotation.x = L(spine.rotation.x, breathe * 0.5); }
 }
@@ -481,10 +480,9 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl, sceneScale = 1.0, sceneOf
         driveHandBones(kp, hum, sp);
       }
     } else if (!frozen || !hasAnim) {
-      // 대기 자세: frozen이어도 재생할 애니메이션이 없으면 idle 유지 (T포즈 방지)
       driveIdlePose(hum, playing ? sp : idle);
     }
-    // frozen && hasAnim → 마지막 프레임 포즈 그대로 유지
+    // frozen && hasAnim → 마지막 수어 포즈 유지
 
     vrm.update(delta);
   });

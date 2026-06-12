@@ -19,7 +19,7 @@ export const AVATAR_OPTIONS: AvatarOption[] = [
     url: "/avatar.glb",
     preview: "/avatars/preview_default.png",
     description: "씩씩하고 용감한 남자 아바타",
-    sceneScale: 0.7,
+    sceneScale: 0.75,
     sceneOffsetY: -0.1,
   },
   {
