@@ -12,13 +12,20 @@ import {
 } from "@pixiv/three-vrm";
 import type { MotionClip, AnimData } from "../../api/gloss";
 
-// ── 감정 → VRM 표정 매핑 ─────────────────────────────────────
+// ── 감정 → VRM 표정 매핑 (한국어·영어 병용) ──────────────────
 const EMOTION_TO_VRM: Partial<Record<string, VRMExpressionPresetName>> = {
+  // 영어
   happy:     VRMExpressionPresetName.Happy,
   sad:       VRMExpressionPresetName.Sad,
   angry:     VRMExpressionPresetName.Angry,
   surprised: VRMExpressionPresetName.Surprised,
   relaxed:   VRMExpressionPresetName.Relaxed,
+  // 한국어 (step4 레이블)
+  기쁨:      VRMExpressionPresetName.Happy,
+  슬픔:      VRMExpressionPresetName.Sad,
+  분노:      VRMExpressionPresetName.Angry,
+  놀람:      VRMExpressionPresetName.Surprised,
+  중립:      VRMExpressionPresetName.Relaxed,
 };
 
 const ALL_PRESETS = [
@@ -27,7 +34,7 @@ const ALL_PRESETS = [
   VRMExpressionPresetName.Angry,
   VRMExpressionPresetName.Surprised,
   VRMExpressionPresetName.Relaxed,
-];
+]; // BlinkLeft/Right는 깜빡임 로직에서 별도 처리
 
 // ── VRM 손가락 bone 매핑 ──────────────────────────────────────
 const FINGER_NAMES = [
@@ -354,14 +361,19 @@ interface VRMAvatarProps {
 
 function VRMAvatar({ clip, playing, frozen, avatarUrl, sceneScale = 1.0, sceneOffsetY = 0 }: VRMAvatarProps) {
   const [vrm, setVrm] = useState<VRM | null>(null);
-  const elapsedRef   = useRef(0);
-  const prevGlossRef = useRef<string | null>(null);
-  const frozenRef    = useRef(frozen);
-  const playingRef   = useRef(playing);
-  const clipRef      = useRef(clip);
-  frozenRef.current  = frozen;
-  playingRef.current = playing;
-  clipRef.current    = clip;
+  const elapsedRef    = useRef(0);
+  const prevGlossRef  = useRef<string | null>(null);
+  const frozenRef     = useRef(frozen);
+  const playingRef    = useRef(playing);
+  const clipRef       = useRef(clip);
+  frozenRef.current   = frozen;
+  playingRef.current  = playing;
+  clipRef.current     = clip;
+
+  // 눈 깜빡임 상태
+  const blinkTimerRef = useRef(Math.random() * 3 + 2); // 다음 깜빡임까지 남은 시간(초)
+  const blinkPhaseRef = useRef<"open" | "closing" | "opening">("open");
+  const blinkValRef   = useRef(0);
 
   useEffect(() => {
     setVrm(null);
@@ -416,9 +428,27 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl, sceneScale = 1.0, sceneOf
       const target = clip ? EMOTION_TO_VRM[clip.emotion_label] : undefined;
       for (const p of ALL_PRESETS) {
         const cur  = expr.getValue(p) ?? 0;
-        const goal = p === target ? 0.85 : 0;
-        expr.setValue(p, THREE.MathUtils.lerp(cur, goal, sp));
+        const goal = p === target ? 0.9 : 0;
+        expr.setValue(p, THREE.MathUtils.lerp(cur, goal, 0.12));
       }
+
+      // 눈 깜빡임: 2~5초마다 자연스럽게
+      blinkTimerRef.current -= delta;
+      if (blinkTimerRef.current <= 0 && blinkPhaseRef.current === "open") {
+        blinkPhaseRef.current = "closing";
+      }
+      if (blinkPhaseRef.current === "closing") {
+        blinkValRef.current = Math.min(1, blinkValRef.current + delta / 0.07);
+        if (blinkValRef.current >= 1) blinkPhaseRef.current = "opening";
+      } else if (blinkPhaseRef.current === "opening") {
+        blinkValRef.current = Math.max(0, blinkValRef.current - delta / 0.1);
+        if (blinkValRef.current <= 0) {
+          blinkPhaseRef.current = "open";
+          blinkTimerRef.current = Math.random() * 3 + 2; // 2~5초 후 다음 깜빡임
+        }
+      }
+      expr.setValue(VRMExpressionPresetName.BlinkLeft,  blinkValRef.current);
+      expr.setValue(VRMExpressionPresetName.BlinkRight, blinkValRef.current);
     }
 
     // ── 클립 전환 시 elapsed 리셋 ─────────────────────────────

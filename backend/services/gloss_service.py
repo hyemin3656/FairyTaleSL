@@ -48,18 +48,18 @@ _FALLBACK_MAP: dict[str, dict] = _load_fallback_map()
 KEYPOINT_FPS = 15.0  # step3에서 추출한 fps
 
 
-def _load_from_sqlite(gloss: str) -> tuple[list[list[float]] | None, dict | None]:
-    """motion_db.sqlite에서 keypoint_data(BLOB)와 anim_data(JSON)를 함께 조회."""
+def _load_from_sqlite(gloss: str) -> tuple[list[list[float]] | None, dict | None, str | None]:
+    """motion_db.sqlite에서 keypoint_data, anim_data, emotion_label을 함께 조회."""
     if not _MOTION_DB_PATH.exists():
-        return None, None
+        return None, None, None
     try:
         conn = sqlite3.connect(str(_MOTION_DB_PATH))
         row = conn.execute(
-            "SELECT keypoint_data, anim_data FROM motion_db WHERE gloss = ?", (gloss,)
+            "SELECT keypoint_data, anim_data, emotion_label FROM motion_db WHERE gloss = ?", (gloss,)
         ).fetchone()
         conn.close()
         if not row:
-            return None, None
+            return None, None, None
         keypoints = None
         if row[0]:
             arr = np.frombuffer(row[0], dtype=np.float32)
@@ -72,26 +72,27 @@ def _load_from_sqlite(gloss: str) -> tuple[list[list[float]] | None, dict | None
                 anim_data = json.loads(row[1])
             except Exception:
                 pass
-        return keypoints, anim_data
+        emotion = row[2] or None
+        return keypoints, anim_data, emotion
     except Exception:
         pass
-    return None, None
+    return None, None, None
 
 
-def _load_anim(gloss: str, keypoint_path: str | None) -> tuple[list[list[float]] | None, dict | None]:
-    """keypoint + anim_data 로드: SQLite 우선, 없으면 .npy 파일 시도."""
-    kp, anim = _load_from_sqlite(gloss)
+def _load_anim(gloss: str, keypoint_path: str | None) -> tuple[list[list[float]] | None, dict | None, str | None]:
+    """keypoint + anim_data + emotion 로드: SQLite 우선, 없으면 .npy 파일 시도."""
+    kp, anim, emotion = _load_from_sqlite(gloss)
     if kp:
-        return kp, anim
+        return kp, anim, emotion
     if not keypoint_path:
-        return None, None
+        return None, None, None
     p = Path(keypoint_path)
     if not p.exists() or p.suffix != ".npy":
-        return None, None
+        return None, None, None
     arr = np.load(str(p), allow_pickle=False).astype(np.float32)
     if arr.ndim == 1:
         arr = arr.reshape(1, -1)
-    return arr.tolist(), None
+    return arr.tolist(), None, None
 
 _kiwi = Kiwi()
 
@@ -332,12 +333,12 @@ async def resolve_motions(
         # 1. DB에 직접 등록된 글로스
         motion = motion_map.get(token)
         if motion:
-            kp_seq, anim_data = _load_anim(motion.gloss, motion.keypoint_path)
+            kp_seq, anim_data, sqlite_emotion = _load_anim(motion.gloss, motion.keypoint_path)
             duration = len(kp_seq) / KEYPOINT_FPS if kp_seq else motion.duration_sec
             clips.append(MotionClip(
                 gloss=motion.gloss,
                 gltf_clip_url=motion.gltf_clip_url,
-                emotion_label=motion.emotion_label,
+                emotion_label=sqlite_emotion or motion.emotion_label,
                 blendshape_params=motion.blendshape_params or {},
                 duration_sec=duration,
                 is_fallback=False,
@@ -352,12 +353,12 @@ async def resolve_motions(
             for syn in _synonym_glosses(token):
                 syn_motion = motion_map.get(syn)
                 if syn_motion:
-                    syn_kp, syn_anim = _load_anim(syn_motion.gloss, syn_motion.keypoint_path)
+                    syn_kp, syn_anim, syn_emotion = _load_anim(syn_motion.gloss, syn_motion.keypoint_path)
                     syn_dur = len(syn_kp) / KEYPOINT_FPS if syn_kp else syn_motion.duration_sec
                     clips.append(MotionClip(
                         gloss=token,
                         gltf_clip_url=syn_motion.gltf_clip_url,
-                        emotion_label=syn_motion.emotion_label,
+                        emotion_label=syn_emotion or syn_motion.emotion_label,
                         blendshape_params=syn_motion.blendshape_params or {},
                         duration_sec=syn_dur,
                         is_fallback=True,
@@ -384,12 +385,12 @@ async def resolve_motions(
             for alt_gloss in fb["glosses"]:
                 alt_motion = motion_map.get(alt_gloss)
                 if alt_motion:
-                    alt_kp, alt_anim = _load_anim(alt_motion.gloss, alt_motion.keypoint_path)
+                    alt_kp, alt_anim, alt_emotion = _load_anim(alt_motion.gloss, alt_motion.keypoint_path)
                     alt_dur = len(alt_kp) / KEYPOINT_FPS if alt_kp else alt_motion.duration_sec
                     clips.append(MotionClip(
                         gloss=token,
                         gltf_clip_url=alt_motion.gltf_clip_url,
-                        emotion_label=alt_motion.emotion_label,
+                        emotion_label=alt_emotion or alt_motion.emotion_label,
                         blendshape_params=alt_motion.blendshape_params or {},
                         duration_sec=alt_dur,
                         is_fallback=True,
