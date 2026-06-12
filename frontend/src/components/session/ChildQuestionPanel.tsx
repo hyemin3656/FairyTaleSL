@@ -106,7 +106,8 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
       const res = await askChildQuestion(currentQuestion, storyContext);
       setAnswer(res.answer);
       setPhase("answered");
-      onAnswer(res.answer);
+      // 아바타 수어 재생은 KSL 어휘로 재작성된 sign_text 사용 (없으면 원본)
+      onAnswer(res.sign_text ?? res.answer);
     } catch (e) {
       setErrorMsg((e as Error).message || "응답 실패");
       setPhase("error");

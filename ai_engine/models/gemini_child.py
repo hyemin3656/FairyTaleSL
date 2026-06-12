@@ -54,6 +54,41 @@ def _get_client():
     return genai.Client(api_key=api_key)
 
 
+KSL_REWRITE_PROMPT = """당신은 한국수어(KSL) 전문가입니다.
+아래 한국어 문장을 수어로 표현하기 좋은 형태로 다시 써주세요.
+
+규칙:
+1. 초등학교 1학년 수준의 쉬운 단어만 사용 (국립국어원 수어사전 등재 단어 위주)
+2. 부정 표현 풀기: "행복하지 않다" → "슬프다", "못하다" → "어렵다"
+3. 복합 동사 분리: "잡아먹다" → "잡다 먹다", "날아가다" → "날다"
+4. 추상 단어를 구체적으로: "기억" → "알다", "관계" → "친구"
+5. 1~2 문장, 최대 15 단어 이내
+6. 조사·어미는 유지하되 본문 의미를 최대한 살리기
+7. 원문과 의미가 달라지면 안 됨
+
+원문: {original}
+
+수어 친화 버전 (한국어 문장으로, 설명 없이 바로):"""
+
+
+def rewrite_for_sign(answer: str) -> str:
+    """Gemini 답변을 KSL 어휘로 재작성."""
+    from google.genai import types
+    client = _get_client()
+    model = "gemini-2.5-flash"
+    prompt = KSL_REWRITE_PROMPT.format(original=answer.strip())
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.3,
+            max_output_tokens=128,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
+    )
+    return (response.text or answer).strip()
+
+
 def answer_child_question(question: str, story_context: str) -> str:
     from google.genai import types
     client = _get_client()

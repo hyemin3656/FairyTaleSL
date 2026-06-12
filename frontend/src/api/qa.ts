@@ -47,6 +47,7 @@ export async function generateFollowup(
 
 export interface ChildQAResponse {
   answer: string;
+  sign_text?: string;  // KSL 어휘로 재작성된 수어 재생용 텍스트
 }
 
 export async function askChildQuestion(

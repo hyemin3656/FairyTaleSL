@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from models.t5_qa import generate_question, evaluate_answer, generate_followup_question
-from models.gemini_child import answer_child_question
+from models.gemini_child import answer_child_question, rewrite_for_sign
 
 router = APIRouter(prefix="/qa", tags=["qa"])
 
@@ -68,6 +68,7 @@ async def qa_child(req: ChildQARequest):
         raise HTTPException(status_code=400, detail="question is empty")
     try:
         answer = answer_child_question(req.question, req.story_context)
+        sign_text = rewrite_for_sign(answer)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
@@ -78,4 +79,4 @@ async def qa_child(req: ChildQARequest):
                 detail="오늘의 AI 응답 한도를 모두 사용했어요. 잠시 후 다시 시도해 주세요.",
             )
         raise HTTPException(status_code=500, detail=f"gemini error: {msg}")
-    return {"answer": answer}
+    return {"answer": answer, "sign_text": sign_text}
