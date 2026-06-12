@@ -1,7 +1,7 @@
 # FairyTaleSL
 
-한국 전래동화를 한국수어(KSL)로 배우는 웹 서비스입니다.  
-3D 아바타가 동화 본문을 수어로 재생하고, 아이가 직접 따라하거나 Gemini에게 질문하고, 퀴즈로 학습을 마무리합니다.
+한국 전래동화·세계명작을 **한국수어(KSL)** 로 배우는 웹 서비스입니다.  
+3D VRM 아바타가 동화 본문을 수어로 재생하고, 아이가 직접 따라하거나 Gemini에게 질문하고, 퀴즈로 학습을 마무리합니다.
 
 ---
 
@@ -9,12 +9,15 @@
 
 | 기능 | 설명 |
 |------|------|
-| 수어 재생 | 동화 섹션 텍스트를 글로스로 변환 → 3D VRM 아바타가 수어 동작을 순서대로 재생 |
+| 수어 재생 | 동화 섹션 텍스트 → 글로스 변환 → 3D VRM 아바타가 수어 동작 순서대로 재생 |
+| 감정 표정 | 문장 단위 감정 분류(Claude) 결과를 아바타 표정·눈 깜빡임으로 실시간 반영 |
 | 일시정지 / 재개 | 재생 중 일시정지 시 아바타 동작 freeze, WebSocket 위치 보존 |
+| 자막 ON/OFF | 글로스 토큰 바 표시 여부를 헤더에서 토글 |
+| 아바타 선택 | 3종 VRM 아바타(성준·동순·혜미) 중 선택, 모델별 스케일 독립 적용 |
 | 질문하기 | 수어 또는 키보드로 질문 입력 → Gemini 2.5 Flash 답변 → 아바타가 수어로 답변 재생 |
 | 따라해보기 | 아바타가 보여준 수어 단어를 웹캠으로 직접 따라하면 ST-GCN이 인식·피드백 |
 | 퀴즈 | 섹션별 OX·객관식 퀴즈로 이해도 확인 |
-| 섹션 삽화 | 각 섹션 상단에 AI 생성 삽화 표시 (Imagen API) |
+| 섹션 삽화 | 각 섹션 장면에 맞는 삽화 자동 전환 |
 | 학습 이력 | 세션별 따라하기 통과 여부, 퀴즈 정답률 저장 |
 
 ---
@@ -31,20 +34,48 @@
 
 ---
 
-## 수어 재생 파이프라인
+## 수어 생성 파이프라인
 
 ```
 동화 텍스트
-  → kiwipiepy 형태소 분석 → KSL 어순 변환 → 글로스 시퀀스
+  → kiwipiepy 형태소 분석 (KSL 어순 변환)
+  → 글로스 시퀀스 + 문장 감정 조회
   → WebSocket /ws/gloss (글로스별 MotionClip 스트리밍)
-  → 프론트엔드: animation_data(사전 베이크 bone rotation) 수신
-  → React Three Fiber: VRM 아바타 본 직접 구동 (30fps)
+  → 프론트엔드: MediaPipe 키포인트(225차원) 수신
+  → React Three Fiber: VRM 아바타 bone 직접 구동 (15fps)
 ```
 
-- 글로스 수: **6,376개** (kiwipiepy 기반 추출)
-- 수어 영상: **6,156개** (AI Hub KSL 데이터셋)
-- 키포인트: MediaPipe Holistic 225차원 (손·포즈 통합)
-- 애니메이션: step6_bake_anim.py로 사전 베이크된 bone rotation JSON
+| 항목 | 수치 |
+|------|------|
+| 동화 편수 | **20편** (전래동화 13편 + 세계명작 7편) |
+| 글로스 수 | **6,418개** (국립국어원 KSL 데이터셋) |
+| 수어 영상 | **6,282개** (AI Hub KSL 데이터셋) |
+| 키포인트 차원 | 225차원 (MediaPipe Holistic: 손 42점 + 포즈 33점) |
+| 동화 커버리지 | **100%** (직접 매칭 84.5% + 유의어 대체 15.5%) |
+| 평균 재생 시간 | 글로스당 **3.76초** (평균 56프레임 @ 15fps) |
+
+---
+
+## 감정 분류 파이프라인
+
+```
+동화 문장
+  → Claude (claude-haiku-4-5) 배치 분류 — 5클래스
+  → fairy_tales_structured.json에 문장별 emotion 저장
+  → 수어 재생 시 문장 텍스트로 감정 조회
+  → 해당 문장의 모든 글로스 클립에 동일 감정 적용
+  → VRM ExpressionManager로 아바타 표정 실시간 전환
+```
+
+| 감정 | 비율 | 기준 |
+|------|------|------|
+| 기쁨 | 37.8% | 행복, 화해, 승리, 긍정적 결말 |
+| 중립 | 26.1% | 배경 서술, 평범한 행동 묘사 |
+| 놀람 | 20.0% | 예상 밖 사건, 충격, 긴장 |
+| 슬픔 | 9.5% | 이별, 상실, 절망 |
+| 분노 | 6.7% | 위협, 갈등, 억울함 |
+
+> **문장 단위 분류**: "행복하지 않다" 같은 부정 표현도 문장 전체 맥락으로 판단하여 올바른 감정 적용
 
 ---
 
@@ -62,21 +93,25 @@
 
 ---
 
-## 동화 목록 (13편)
+## 동화 목록 (20편)
 
-토끼와 거북이, 흥부와 놀부, 콩쥐팥쥐, 금도끼 은도끼, 심청전, 단군신화, 선녀와 나무꾼, 해님달님, 팥죽할머니와 호랑이, 견우와 직녀, 장화홍련, 혹부리 영감, 별을 찾아서
+**전래동화 (13편)**  
+토끼와 거북이, 흥부와 놀부, 콩쥐팥쥐, 금도끼 은도끼, 심청전, 단군신화,  
+선녀와 나무꾼, 해님달님, 팥죽할머니와 호랑이, 견우와 직녀, 장화홍련, 혹부리 영감, 별을 찾아서
+
+**세계명작 (7편)**  
+개미와 베짱이, 빨간 모자, 신데렐라, 아기 돼지 삼형제, 인어공주, 벌거벗은 임금님, 사계절 친구들
 
 ---
 
 ## 실행 방법
 
-### 방법 1 — Docker (권장)
+### Docker (권장)
 
 ```bash
 git clone https://github.com/hyemin3656/FairyTaleSL.git
 cd FairyTaleSL
 
-# 환경변수 설정
 cp .env.example .env
 # .env: SECRET_KEY, GEMINI_API_KEY 값 입력
 
@@ -93,31 +128,6 @@ docker compose exec backend python scripts/seed.py
 
 ---
 
-### 방법 2 — 로컬 직접 실행 (개발)
-
-**Terminal 1 — AI Engine**
-```bash
-cd ai_engine
-uvicorn main:app --host 0.0.0.0 --port 8001 --reload
-```
-
-**Terminal 2 — Backend**
-```bash
-cd backend
-AI_ENGINE_URL=http://localhost:8001 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-**Terminal 3 — Frontend**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-접속: `http://localhost:5173`
-
----
-
 ## 주요 파일 구조
 
 ```
@@ -127,48 +137,40 @@ FairyTaleSL/
 │   │   ├── ws.py                    # WebSocket 글로스 스트리밍 (pause/resume)
 │   │   ├── books.py                 # 동화 목록/상세 API
 │   │   └── qa.py                    # Gemini 질문 응답 API
-│   ├── services/gloss_service.py    # kiwipiepy KSL 어순 변환 + MotionClip 조립
-│   ├── models/book.py               # Book, BookSection (image_url 포함)
-│   ├── scripts/seed.py              # 13권 동화 + 글로스 모션 시딩
-│   ├── alembic/versions/            # DB 마이그레이션
-│   └── static/images/sections/     # 섹션 삽화 저장 위치
+│   ├── services/gloss_service.py    # kiwipiepy KSL 어순 변환 + 감정 조회 + MotionClip 조립
+│   ├── models/book.py               # Book, BookSection
+│   └── scripts/seed.py              # 20편 동화 + 글로스 모션 시딩
 ├── frontend/
 │   └── src/
-│       ├── pages/BookReadPage.tsx          # 학습 시나리오 메인 페이지
-│       ├── components/avatar/AvatarScene.tsx  # VRM 아바타 + bone 구동
+│       ├── pages/BookReadPage.tsx             # 학습 시나리오 메인 페이지
+│       ├── components/avatar/AvatarScene.tsx  # VRM 아바타 + bone 구동 + 표정/눈깜빡임
 │       ├── components/session/
-│       │   ├── ChildQuestionPanel.tsx      # 수어/키보드 질문 입력
-│       │   ├── FollowAlongPanel.tsx        # 따라해보기
-│       │   └── QuizPanel.tsx              # 퀴즈
-│       └── stores/scenarioStore.ts        # Zustand 학습 상태 머신
+│       │   ├── ChildQuestionPanel.tsx         # 수어/키보드 질문 입력
+│       │   ├── FollowAlongPanel.tsx           # 따라해보기
+│       │   └── QuizPanel.tsx                 # 퀴즈
+│       └── stores/
+│           ├── scenarioStore.ts              # Zustand 학습 상태 머신
+│           └── avatarStore.ts               # 아바타 선택 + 모델별 스케일
 ├── ai_engine/
 │   ├── models/stgcn.py              # ST-GCN 모델 정의
 │   └── routers/predict.py           # POST /predict (수어 추론)
 └── data_pipeline/
-    ├── sign_generation/             # 글로스 추출 → 키포인트 → Motion DB 파이프라인
-    └── generate_section_images.py   # Imagen API 섹션 삽화 생성
+    └── sign_generation/             # 글로스 추출 → 키포인트 → Motion DB 파이프라인
+        ├── step1_extract_gloss.py      # kiwipiepy 형태소 분석 + KSL 어순 변환
+        ├── step3_extract_keypoints.py  # MediaPipe 키포인트 추출
+        ├── step3c_reextract.py         # generic placeholder 재추출
+        ├── step4b_emotion_runyourai.py # Claude 문장 감정 분류
+        └── step5_motion_db.py          # SQLite Motion DB 시딩
 ```
 
 ---
 
-## gitignore 대상
+## 기술 스택
 
-| 항목 | 이유 |
+| 영역 | 기술 |
 |------|------|
-| `*.pt`, `weights/` | 대용량 모델 가중치 |
-| `ai_engine/data/` | 대용량 학습 데이터 |
-| `data_pipeline/raw_data/` | AI Hub 원본 영상 |
-| `data_pipeline/sign_generation/data/motion_db.sqlite` | 대용량 Motion DB |
-| `.env` | 시크릿 키 포함 |
-| `node_modules/` | 패키지 캐시 |
-
----
-
-## 컨테이너 종료
-
-```bash
-docker compose down
-
-# DB 포함 전체 초기화
-docker compose down -v
-```
+| Frontend | React, TypeScript, Vite, React Three Fiber, @pixiv/three-vrm, Zustand |
+| Backend | FastAPI, SQLAlchemy, asyncpg, WebSocket, kiwipiepy |
+| AI | MediaPipe Holistic, ST-GCN, Claude (감정 분류), Gemini 2.5 Flash (QA) |
+| DB | PostgreSQL (서비스 데이터), SQLite (Motion DB) |
+| Infra | Docker Compose, Nginx |
