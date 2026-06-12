@@ -236,7 +236,10 @@ export default function BookReadPage() {
     }).catch(() => { /* 저장 실패는 학습 흐름에 영향 없음 */ });
   };
 
-  const handleEnterChildQ = () => enterChildQuestion();
+  const handleEnterChildQ = () => {
+    ws.pause();   // 동화 수어 스트림 즉시 중단
+    enterChildQuestion();
+  };
 
   const handleChildAnswer = (answer: string) => {
     // 답변 텍스트를 글로스로 변환해 아바타가 재생.
@@ -414,7 +417,7 @@ export default function BookReadPage() {
                   status={ws.status}
                   currentIndex={ws.currentIndex}
                   total={ws.total}
-                  frozen={mode !== "STORY_PLAYING"}
+                  frozen={mode !== "STORY_PLAYING" && mode !== "CHILD_QUESTION"}
                   avatarUrl={avatarUrl}
                   sceneScale={selectedAvatar.sceneScale}
                   sceneOffsetY={selectedAvatar.sceneOffsetY}
