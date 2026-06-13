@@ -65,7 +65,12 @@ NUM_HAND = 21
 NUM_NODE = NUM_POSE_USED + NUM_HAND + NUM_HAND
 COORD_DIM = 3
 MP_COORD_DIM = 4
-TOP1_SCORE_THRESHOLD = 0.5
+POSE_LEFT_WRIST = 15
+POSE_RIGHT_WRIST = 16
+HAND_WRIST = 0
+POSE_WRIST_MIN_VISIBILITY = 0.2
+DEFAULT_HAND_POSE_MAX_DISTANCE = 0.25
+TOP1_SCORE_THRESHOLD = 0.2
 KOREAN_FONT_CANDIDATES = [
     Path("C:/Windows/Fonts/malgun.ttf"),
     Path("C:/Windows/Fonts/malgunbd.ttf"),
@@ -89,7 +94,7 @@ def landmarks_to_array(landmarks, num_points):
     return arr
 
 
-def interpolate_short_gaps(arr, frame_level_detection, max_gap=5):
+def interpolate_short_gaps(arr, frame_level_detection, max_gap=10):
     # 검출되지 않은 프레임이 max_gap 이하로 이어지는 경우 선형 보간으로 채우고, 보간된 프레임의 score는 0.5로 설정
     # arr: [T, V, C], frame_level_detection: [T], max_gap: int
     out = arr.copy()
@@ -137,36 +142,140 @@ class MediaPipeWebcamExtractor:
         model_complexity=1,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5,
+        hand_pose_max_distance=DEFAULT_HAND_POSE_MAX_DISTANCE,
     ):
-        self.mp_holistic = mp.solutions.holistic
-        self.holistic = self.mp_holistic.Holistic(
+        self.hand_pose_max_distance = hand_pose_max_distance
+        self.hand_pose_max_distance_sq = hand_pose_max_distance * hand_pose_max_distance
+        self.mp_pose = mp.solutions.pose
+        self.mp_hands = mp.solutions.hands
+        self.pose = self.mp_pose.Pose(
             static_image_mode=False,
             model_complexity=model_complexity,
             smooth_landmarks=True,
             enable_segmentation=False,
-            refine_face_landmarks=False,
+            min_detection_confidence=min_detection_confidence,
+            min_tracking_confidence=min_tracking_confidence,
+        )
+        self.hands = self.mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=2,
+            model_complexity=model_complexity,
             min_detection_confidence=min_detection_confidence,
             min_tracking_confidence=min_tracking_confidence,
         )
 
     def close(self):
-        self.holistic.close()
+        self.pose.close()
+        self.hands.close()
+
+    @staticmethod
+    def _split_hands(hand_results):
+        left_hand = None
+        right_hand = None
+        left_score = -1.0
+        right_score = -1.0
+
+        landmarks = hand_results.multi_hand_landmarks or []
+        handedness = hand_results.multi_handedness or []
+        for hand_landmarks, hand_info in zip(landmarks, handedness):
+            if not hand_info.classification:
+                continue
+
+            classification = hand_info.classification[0]
+            label = classification.label.lower()
+            score = classification.score
+            # MediaPipe Hands handedness is opposite to the Holistic labels used for training.
+            if label == "left" and score > right_score:
+                right_hand = hand_landmarks
+                right_score = score
+            elif label == "right" and score > left_score:
+                left_hand = hand_landmarks
+                left_score = score
+
+        return left_hand, right_hand
+
+    @staticmethod
+    def _landmark_xy(landmark):
+        return float(landmark.x), float(landmark.y)
+
+    @staticmethod
+    def _squared_distance_xy(point_a, point_b):
+        dx = point_a[0] - point_b[0]
+        dy = point_a[1] - point_b[1]
+        return dx * dx + dy * dy
+
+    def _pose_wrist_points(self, pose_landmarks):
+        if pose_landmarks is None:
+            return None, None
+
+        landmarks = pose_landmarks.landmark
+        left = landmarks[POSE_LEFT_WRIST]
+        right = landmarks[POSE_RIGHT_WRIST]
+        left_point = (
+            self._landmark_xy(left)
+            if left.visibility >= POSE_WRIST_MIN_VISIBILITY
+            else None
+        )
+        right_point = (
+            self._landmark_xy(right)
+            if right.visibility >= POSE_WRIST_MIN_VISIBILITY
+            else None
+        )
+        return left_point, right_point
+
+    def _remap_hands_by_pose_wrists(self, left_hand, right_hand, pose_landmarks):
+        left_wrist, right_wrist = self._pose_wrist_points(pose_landmarks)
+        if left_wrist is None and right_wrist is None:
+            return left_hand, right_hand
+
+        remapped = {"left": (None, float("inf")), "right": (None, float("inf"))}
+        for hand_landmarks in (left_hand, right_hand):
+            if hand_landmarks is None:
+                continue
+
+            hand_wrist = self._landmark_xy(hand_landmarks.landmark[HAND_WRIST])
+            distances = []
+            if left_wrist is not None:
+                distances.append(
+                    ("left", self._squared_distance_xy(hand_wrist, left_wrist))
+                )
+            if right_wrist is not None:
+                distances.append(
+                    ("right", self._squared_distance_xy(hand_wrist, right_wrist))
+                )
+            if not distances:
+                continue
+
+            side, distance_sq = min(distances, key=lambda item: item[1])
+            if distance_sq > self.hand_pose_max_distance_sq:
+                continue
+            if distance_sq < remapped[side][1]:
+                remapped[side] = (hand_landmarks, distance_sq)
+
+        return remapped["left"][0], remapped["right"][0]
 
     def process(self, frame):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rgb.flags.writeable = False
         started = time.perf_counter()
-        results = self.holistic.process(rgb)
+        pose_results = self.pose.process(rgb)
+        hand_results = self.hands.process(rgb)
         keypoint_ms = (time.perf_counter() - started) * 1000
 
-        pose_detected = results.pose_landmarks is not None
-        left_detected = results.left_hand_landmarks is not None
-        right_detected = results.right_hand_landmarks is not None
+        left_hand_landmarks, right_hand_landmarks = self._split_hands(hand_results)
+        left_hand_landmarks, right_hand_landmarks = self._remap_hands_by_pose_wrists(
+            left_hand_landmarks,
+            right_hand_landmarks,
+            pose_results.pose_landmarks,
+        )
+        pose_detected = pose_results.pose_landmarks is not None
+        left_detected = left_hand_landmarks is not None
+        right_detected = right_hand_landmarks is not None
 
         return {
-            "pose": landmarks_to_array(results.pose_landmarks, NUM_POSE_FULL),
-            "left_hand": landmarks_to_array(results.left_hand_landmarks, NUM_HAND),
-            "right_hand": landmarks_to_array(results.right_hand_landmarks, NUM_HAND),
+            "pose": landmarks_to_array(pose_results.pose_landmarks, NUM_POSE_FULL),
+            "left_hand": landmarks_to_array(left_hand_landmarks, NUM_HAND),
+            "right_hand": landmarks_to_array(right_hand_landmarks, NUM_HAND),
             "pose_detected": pose_detected,
             "left_hand_detected": left_detected,
             "right_hand_detected": right_detected,
@@ -420,7 +529,7 @@ def stack_segment_arrays(segment, key):
     return np.stack([frame_data[key] for frame_data in segment]).astype(np.float32)
 
 
-def build_keypoint_sample(segment, max_gap=5):
+def build_keypoint_sample(segment, max_gap=10):
     pose = stack_segment_arrays(segment, "pose")[:, :NUM_POSE_USED]
     left = stack_segment_arrays(segment, "left_hand")
     right = stack_segment_arrays(segment, "right_hand")
@@ -646,7 +755,7 @@ def draw_status(frame, state, fps, latest_result):
     if latest_result:
         y = 64
         for rank, pred in enumerate(latest_result["predictions"][:3], start=1):
-            text = f"top{rank} {pred['label']} {pred['score']:.3f}"
+            text = f"top{rank} {pred['label']}({pred['class_id']}) {pred['score']:.3f}"
             draw_unicode_text(
                 frame,
                 text,
@@ -674,10 +783,16 @@ def parse_args():
     parser.add_argument("--window-sec", type=float, default=0.5)
     parser.add_argument("--start-ratio", type=float, default=0.8)
     parser.add_argument("--end-ratio", type=float, default=0.8)
-    parser.add_argument("--max-gap", type=int, default=5)
+    parser.add_argument("--max-gap", type=int, default=10)
     parser.add_argument("--min-frames", type=int, default=8)
     parser.add_argument("--max-record-sec", type=float, default=10.0)
     parser.add_argument("--model-complexity", type=int, default=1)
+    parser.add_argument(
+        "--hand-pose-max-distance",
+        type=float,
+        default=DEFAULT_HAND_POSE_MAX_DISTANCE,
+        help="Discard a detected hand if its wrist is farther than this normalized distance from the nearest pose wrist.",
+    )
     parser.add_argument(
         "--sequence-level-detection",
         action="store_true",
@@ -686,13 +801,13 @@ def parse_args():
     parser.add_argument(
         "--sequence-window-frames",
         type=int,
-        default=90,
+        default=35,
         help="Number of frames per sliding-window model input.",
     )
     parser.add_argument(
         "--sequence-stride-frames",
         type=int,
-        default=20,
+        default=35,
         help="Frame interval between sliding-window starts.",
     )
     parser.add_argument(
@@ -743,7 +858,10 @@ def main():
     cap.set(cv2.CAP_PROP_FPS, args.fps)
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
-    extractor = MediaPipeWebcamExtractor(model_complexity=args.model_complexity)
+    extractor = MediaPipeWebcamExtractor(
+        model_complexity=args.model_complexity,
+        hand_pose_max_distance=args.hand_pose_max_distance,
+    )
     recognizer = CNN1DRealtimeRecognizer(
         args.config,
         args.checkpoint,
@@ -875,8 +993,9 @@ def main():
                 continue
             if args.mirror:
                 frame = cv2.flip(frame, 1)
-
+            
             frame_data, keypoint_ms_per_frame = extractor.process(frame)
+            print(f"Keypoint extraction: {keypoint_ms_per_frame:.2f}ms")
             frame_data["captured_at"] = captured_at
             frame_data["frame_index"] = frame_index
             if args.save_images:
