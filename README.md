@@ -10,7 +10,7 @@
 | 기능 | 설명 |
 |------|------|
 | 수어 재생 | 동화 섹션 텍스트 → 글로스 변환 → 3D VRM 아바타가 수어 동작 순서대로 재생 |
-| 감정 표정 | 문장 단위 감정 분류(Claude) 결과를 아바타 표정·눈 깜빡임으로 실시간 반영 |
+| 감정 표정 | 문장 단위 감정 분류 결과를 아바타 표정·눈 깜빡임으로 실시간 반영 (문장 내 모든 글로스에 동일 감정 적용) |
 | 일시정지 / 재개 | 재생 중 일시정지 시 아바타 동작 freeze, WebSocket 위치 보존 |
 | 자막 ON/OFF | 글로스 토큰 바 표시 여부를 헤더에서 토글 |
 | 아바타 선택 | 3종 VRM 아바타(성준·동순·혜미) 중 선택, 모델별 스케일 독립 적용 |
@@ -37,21 +37,23 @@
 ## 수어 생성 파이프라인
 
 ```
-동화 텍스트
-  → kiwipiepy 형태소 분석 (KSL 어순 변환)
-  → 글로스 시퀀스 + 문장 감정 조회
-  → WebSocket /ws/gloss (글로스별 MotionClip 스트리밍)
-  → 프론트엔드: MediaPipe 키포인트(225차원) 수신
+fairy_tales_structured.json (사전 큐레이팅된 ksl_glosses)
+  → BookSection.sign_text 에 글로스 시퀀스 저장
+  → 재생 시: sign_text → WebSocket /ws/gloss
+  → 글로스별 MotionClip 스트리밍 (키포인트 + 감정 레이블)
   → React Three Fiber: VRM 아바타 bone 직접 구동 (15fps)
+  → 미등록 글로스: 유의어 대체(_SYNONYM_MAP) → idle 유지 (fallback 동작 없음)
 ```
+
+> **질문하기(QA)**: Gemini 답변 → RunYourAI KSL 재작성(국립국어원 어휘 제한) → 글로스 스트리밍
 
 | 항목 | 수치 |
 |------|------|
-| 동화 편수 | **20편** (전래동화 13편 + 세계명작 7편) |
+| 동화 편수 | **20편** (전래동화 13편 + 세계명작 5편 + 창작 2편) |
 | 글로스 수 | **6,418개** (국립국어원 KSL 데이터셋) |
 | 수어 영상 | **6,282개** (AI Hub KSL 데이터셋) |
 | 키포인트 차원 | 225차원 (MediaPipe Holistic: 손 42점 + 포즈 33점) |
-| 동화 커버리지 | **100%** (직접 매칭 84.5% + 유의어 대체 15.5%) |
+| 동화 커버리지 | **100%** (직접 매칭 + 유의어 대체, fallback 동작 제거) |
 | 평균 재생 시간 | 글로스당 **3.76초** (평균 56프레임 @ 15fps) |
 
 ---
@@ -113,7 +115,7 @@ git clone https://github.com/hyemin3656/FairyTaleSL.git
 cd FairyTaleSL
 
 cp .env.example .env
-# .env: SECRET_KEY, GEMINI_API_KEY 값 입력
+# .env: SECRET_KEY, LLM_API_KEY (RunYourAI) 값 입력
 
 docker compose up --build
 ```
@@ -138,8 +140,9 @@ FairyTaleSL/
 │   │   ├── books.py                 # 동화 목록/상세 API
 │   │   └── qa.py                    # Gemini 질문 응답 API
 │   ├── services/gloss_service.py    # kiwipiepy KSL 어순 변환 + 감정 조회 + MotionClip 조립
-│   ├── models/book.py               # Book, BookSection
-│   └── scripts/seed.py              # 20편 동화 + 글로스 모션 시딩
+│   ├── models/book.py               # Book, BookSection (sign_text 포함)
+│   ├── alembic/versions/0008_add_section_sign_text.py
+│   └── scripts/seed.py              # 20편 동화(JSON 단일 소스, ksl_glosses) + 글로스 모션 시딩
 ├── frontend/
 │   └── src/
 │       ├── pages/BookReadPage.tsx             # 학습 시나리오 메인 페이지
