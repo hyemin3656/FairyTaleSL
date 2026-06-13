@@ -17,6 +17,7 @@ export interface BookSection {
   order: number;
   title: string | null;
   text: string;
+  sign_text: string | null;
   image_url: string | null;
   image_urls: string[] | null;
   image_triggers: (string | null)[] | null;

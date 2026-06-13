@@ -232,7 +232,7 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
           onClick={handleSubmit}
           disabled={!canSend}
         >
-          {phase === "submitting" ? "⏳ Gemini에 묻는 중…" : "✉ 질문 보내기"}
+          {phase === "submitting" ? "⏳ Gemini에 묻는 중…" : "💬 질문 보내기"}
         </button>
       </div>
 

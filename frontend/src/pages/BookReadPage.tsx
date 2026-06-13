@@ -170,7 +170,7 @@ export default function BookReadPage() {
     if (!currentSection) return;
     answerPlayedRef.current = false;
     if (ws.status === "closed" || ws.status === "error") ws.reconnect();
-    ws.sendText(currentSection.text);
+    ws.sendText(currentSection.sign_text ?? currentSection.text);
   };
 
   const handlePause = () => {
@@ -185,7 +185,7 @@ export default function BookReadPage() {
       answerPlayedRef.current = false;
       const startIdx = pausedTokenIndex ?? 0;
       if (ws.status === "closed" || ws.status === "error") ws.reconnect();
-      ws.sendText(currentSection.text, startIdx);
+      ws.sendText(currentSection.sign_text ?? currentSection.text, startIdx);
     } else {
       ws.resume();
     }
@@ -204,7 +204,7 @@ export default function BookReadPage() {
     skipPendingRef.current = true;
     if (ws.status === "closed" || ws.status === "error") ws.reconnect();
     if (ws.status === "idle" || ws.status === "done") {
-      ws.sendText(currentSection.text);
+      ws.sendText(currentSection.sign_text ?? currentSection.text);
     }
   };
 

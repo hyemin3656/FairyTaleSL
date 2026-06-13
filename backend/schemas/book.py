@@ -11,6 +11,7 @@ class BookSectionOut(BaseModel):
     order: int
     title: str | None
     text: str
+    sign_text: str | None = None
     image_url: str | None = None
     image_urls: list[str] | None = None
     image_triggers: list[str | None] | None = None

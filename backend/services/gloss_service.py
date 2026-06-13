@@ -453,7 +453,15 @@ async def resolve_motions(
                 fallback_type=None,
             ))
 
-    # 문장 단위 감정 적용: sentence_emotion이 있으면 모든 클립에 통일
+    # 문장 단위 감정 결정: 명시적 sentence_emotion이 없으면 클립 다수결로 도출
+    if not sentence_emotion and clips:
+        from collections import Counter
+        counts = Counter(
+            c.emotion_label for c in clips if c.emotion_label and not c.is_fallback
+        )
+        if counts:
+            sentence_emotion = counts.most_common(1)[0][0]
+
     if sentence_emotion:
         for clip in clips:
             clip.emotion_label = sentence_emotion

@@ -339,13 +339,30 @@ function driveIdlePose(hum: VRM["humanoid"], rate: number) {
   // 호흡 사이클 (1.2 rad/s ≈ 0.19 Hz)
   const breathe = Math.sin(Date.now() / 1000 * 1.2) * 0.018;
 
-  // 팔 아래로 충분히 내리고(z=1.1) 앞으로 밀어(x=0.45) 몸통 클리핑 방지
-  if (lArm)  { lArm.rotation.x  = L(lArm.rotation.x,  0.45); lArm.rotation.y  = L(lArm.rotation.y, -0.1); lArm.rotation.z  = L(lArm.rotation.z,  1.1); }
-  if (rArm)  { rArm.rotation.x  = L(rArm.rotation.x,  0.45); rArm.rotation.y  = L(rArm.rotation.y,  0.1); rArm.rotation.z  = L(rArm.rotation.z, -1.1); }
-  if (lFore) { lFore.rotation.x = L(lFore.rotation.x, 0.1); lFore.rotation.y = L(lFore.rotation.y, 0.1); lFore.rotation.z = 0; }
-  if (rFore) { rFore.rotation.x = L(rFore.rotation.x, 0.1); rFore.rotation.y = L(rFore.rotation.y, -0.1); rFore.rotation.z = 0; }
+  // 차렷 자세: 팔을 몸통 옆에 자연스럽게 내림
+  if (lArm)  { lArm.rotation.x  = L(lArm.rotation.x,  0.05); lArm.rotation.y  = L(lArm.rotation.y,  0.0); lArm.rotation.z  = L(lArm.rotation.z,  1.5); }
+  if (rArm)  { rArm.rotation.x  = L(rArm.rotation.x,  0.05); rArm.rotation.y  = L(rArm.rotation.y,  0.0); rArm.rotation.z  = L(rArm.rotation.z, -1.5); }
+  if (lFore) { lFore.rotation.x = L(lFore.rotation.x, 0.0);  lFore.rotation.y = L(lFore.rotation.y,  0.0); lFore.rotation.z = 0; }
+  if (rFore) { rFore.rotation.x = L(rFore.rotation.x, 0.0);  rFore.rotation.y = L(rFore.rotation.y,  0.0); rFore.rotation.z = 0; }
   if (chest) { chest.rotation.x = L(chest.rotation.x, breathe); }
   if (spine) { spine.rotation.x = L(spine.rotation.x, breathe * 0.5); }
+
+  // 손목·손가락 중립 복귀 (이전 애니메이션 잔류 자세 제거)
+  for (const side of ["Left", "Right"] as const) {
+    const wrist = b(`${side === "Left" ? "left" : "right"}Hand` as VRMHumanBoneName);
+    if (wrist) {
+      wrist.rotation.x = L(wrist.rotation.x, 0);
+      wrist.rotation.y = L(wrist.rotation.y, 0);
+      wrist.rotation.z = L(wrist.rotation.z, 0);
+    }
+    const prefix = side === "Left" ? "left" : "right";
+    for (const finger of ["Thumb", "Index", "Middle", "Ring", "Little"]) {
+      for (const joint of ["Proximal", "Intermediate", "Distal"]) {
+        const bone = b(`${prefix}${finger}${joint}` as VRMHumanBoneName);
+        if (bone) bone.rotation.z = L(bone.rotation.z, 0);
+      }
+    }
+  }
 }
 
 // ── VRM 아바타 컴포넌트 ───────────────────────────────────────
@@ -462,7 +479,9 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl, sceneScale = 1.0, sceneOf
     const frames   = clip?.keypoints;
     const fps      = clip?.fps ?? 15;
 
-    const hasAnim = !!(animData || (frames && frames.length > 0));
+    // fallback_type=null인 기본 FALLBACK 클립은 수어 데이터가 없으므로 idle 포즈 유지
+    const isBareFallback = !!(clip?.is_fallback && !clip?.fallback_type);
+    const hasAnim = !!(animData || (frames && frames.length > 0)) && !isBareFallback;
 
     if (playing && !frozen && hasAnim) {
       elapsedRef.current += delta;

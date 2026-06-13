@@ -1,6 +1,7 @@
 """
-전래동화 8권 및 기본 모션 데이터를 DB에 삽입합니다.
+동화 20권 및 기본 모션 데이터를 DB에 삽입합니다.
 실행: docker compose exec backend python scripts/seed.py
+데이터 소스: /data_pipeline/sign_generation/data/fairy_tales_structured.json (ksl_glosses 포함)
 """
 import asyncio
 import json
@@ -15,8 +16,14 @@ from core.database import AsyncSessionLocal
 from models.book import Book, BookSection
 from models.motion import GlossMotion
 
-sys.path.insert(0, os.path.dirname(__file__))
-from fairy_tales import FAIRY_TALES_STRUCTURED
+# JSON 파일 로드: 컨테이너(/data_pipeline) 또는 로컬(../../data_pipeline) 자동 선택
+_TALES_JSON_PATH = (
+    Path("/data_pipeline/sign_generation/data/fairy_tales_structured.json")
+    if Path("/data_pipeline").exists()
+    else Path(__file__).parent.parent.parent / "data_pipeline/sign_generation/data/fairy_tales_structured.json"
+)
+with open(_TALES_JSON_PATH, encoding="utf-8") as _f:
+    FAIRY_TALES_STRUCTURED = json.load(_f)
 
 # 감정 레이블 한→영 매핑 (gloss_list.json → GlossMotion.emotion_label)
 _EMOTION_MAP = {
@@ -92,14 +99,30 @@ def _build_gloss_motions() -> list[dict]:
 def _build_books() -> list[dict]:
     """FAIRY_TALES_STRUCTURED → seed용 BOOKS 리스트 변환."""
     category_meta = {
-        "토끼와_거북이": {"cover": "/static/covers/rabbit_turtle.svg",  "author": "이솝",    "age": (5, 8)},
-        "흥부와_놀부":   {"cover": "/static/covers/heungbu_nolbu.svg",  "author": "전래동화", "age": (6, 9)},
-        "콩쥐팥쥐":     {"cover": "/static/covers/kongjwi_patjwi.svg", "author": "전래동화", "age": (6, 9)},
-        "금도끼_은도끼": {"cover": "/static/covers/golden_axe.svg",     "author": "전래동화", "age": (5, 8)},
-        "심청전":       {"cover": "/static/covers/simcheong.svg",      "author": "전래동화", "age": (7, 10)},
-        "단군신화":     {"cover": "/static/covers/dangun.svg",         "author": "전래동화", "age": (8, 11)},
-        "선녀와_나무꾼": {"cover": "/static/covers/sunnyeo.svg",        "author": "전래동화", "age": (6, 9)},
-        "해님달님":     {"cover": "/static/covers/haenim_dalnim.svg",  "author": "전래동화", "age": (5, 8)},
+        # 전래동화 8권
+        "토끼와_거북이":  {"cover": "/static/covers/rabbit_turtle.svg",       "author": "이솝",    "age": (5, 8)},
+        "흥부와_놀부":    {"cover": "/static/covers/heungbu_nolbu.svg",        "author": "전래동화", "age": (6, 9)},
+        "콩쥐팥쥐":      {"cover": "/static/covers/kongjwi_patjwi.svg",       "author": "전래동화", "age": (6, 9)},
+        "금도끼_은도끼":  {"cover": "/static/covers/golden_axe.svg",           "author": "전래동화", "age": (5, 8)},
+        "심청전":        {"cover": "/static/covers/simcheong.svg",            "author": "전래동화", "age": (7, 10)},
+        "단군신화":      {"cover": "/static/covers/dangun.svg",               "author": "전래동화", "age": (8, 11)},
+        "선녀와_나무꾼":  {"cover": "/static/covers/sunnyeo.svg",              "author": "전래동화", "age": (6, 9)},
+        "해님달님":      {"cover": "/static/covers/haenim_dalnim.svg",         "author": "전래동화", "age": (5, 8)},
+        # 신규 전래동화 5권
+        "혹부리_영감":    {"cover": "/static/covers/hump_grandpa.svg",         "author": "전래동화", "age": (6, 10)},
+        "별을_찾아서":    {"cover": "/static/covers/find_star.svg",            "author": "김은하",  "age": (7, 10)},
+        "팥죽할머니와_호랑이": {"cover": "/static/covers/patjuk_tiger.svg",    "author": "전래동화", "age": (5, 8)},
+        "견우와_직녀":    {"cover": "/static/covers/gyeonu_jiknyeo.svg",       "author": "전래동화", "age": (6, 10)},
+        "장화홍련":      {"cover": "/static/covers/janghwa_hongryeon.svg",    "author": "전래동화", "age": (8, 12)},
+        # 세계명작 5권
+        "개미와_베짱이":  {"cover": "/static/covers/ant_grasshopper.svg",      "author": "이솝",    "age": (5, 8)},
+        "빨간_모자":     {"cover": "/static/covers/red_hood.svg",             "author": "그림형제", "age": (5, 8)},
+        "신데렐라":      {"cover": "/static/covers/cinderella.svg",           "author": "페로",    "age": (5, 8)},
+        "아기_돼지_삼형제": {"cover": "/static/covers/three_pigs.svg",         "author": "전래동화", "age": (5, 8)},
+        "인어공주":      {"cover": "/static/covers/little_mermaid.svg",       "author": "안데르센", "age": (6, 9)},
+        "벌거벗은_임금님": {"cover": "/static/covers/emperors_clothes.svg",    "author": "안데르센", "age": (6, 9)},
+        # 창작동화 2권
+        "사계절_친구들":  {"cover": "/static/covers/four_seasons.svg",         "author": "창작",    "age": (5, 8)},
     }
 
     books = []
@@ -116,17 +139,25 @@ def _build_books() -> list[dict]:
             for seg in tale["segments"]
             for s in seg["sentences"]
         )
+        def _sent_glosses(s):
+            return s.get("ksl_glosses", []) if isinstance(s, dict) else []
+
         sections = [
             {
                 "order": seg["segment_id"],
                 "title": f"{tale['title']} {seg['segment_id']}부",
                 "text":  " ".join(_sent_text(s) for s in seg["sentences"]),
-                "image_url": f"/images/sections/{tid}_{seg['segment_id']}.jpg",
+                "sign_text": " ".join(
+                    g for s in seg["sentences"] for g in _sent_glosses(s)
+                ) or None,
+                "image_url": f"/images/sections/{tid}_{seg['segment_id']}.png",
             }
             for seg in tale["segments"]
         ]
+        # tale_id 기반 결정적 UUID — 재시딩해도 동일한 UUID 유지
+        stable_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"fairytalesl.book.{tid}")
         books.append({
-            "id":              uuid.uuid4(),
+            "id":              stable_id,
             "title":           tale["title"],
             "description":     full_text[:80] + "…",
             "cover_image_url": meta["cover"],
@@ -139,7 +170,9 @@ def _build_books() -> list[dict]:
     return books
 
 
-BOOKS = _build_books() + [
+BOOKS = _build_books()
+
+_REMOVED_STATIC = [
     {
         "id": uuid.uuid4(),
         "title": "혹부리 영감",
@@ -215,7 +248,7 @@ BOOKS = _build_books() + [
             {"order": 3, "title": "원한을 풀다", "text": "용감한 부사가 진실을 밝혀 계모를 벌했습니다. 장화와 홍련의 원한이 풀렸습니다. 두 자매는 다시 태어나 행복하게 살았습니다.", "image_url": "/images/sections/장화홍련_3.jpg"},
         ],
     },
-]
+]  # _REMOVED_STATIC: 해당 동화들은 fairy_tales_structured.json에 통합됨
 
 GLOSS_MOTIONS = [
     # ── 토끼와 거북이 ──────────────────────────────────────────
