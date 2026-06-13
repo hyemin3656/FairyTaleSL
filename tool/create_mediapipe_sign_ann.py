@@ -7,8 +7,11 @@ import csv
 import ast
 import numpy as np
 
-ROOT_DIR = Path("../dataset/final_merged_dataset_combined")
-OUT_PKL = Path("../dataset/final_merged_dataset_combined/mediapipe_sign_3d_without_face_pose_score_1.pkl")
+ROOT_DIR_KSL1 = Path("../dataset/cropped_holistic_results_interpolated_remapped_direct")
+ROOT_DIR_KSL_2 = Path("../dataset/holistic_result_comp2_augmented_20_vari_3")
+ROOT_DIRS = [ROOT_DIR_KSL1, ROOT_DIR_KSL_2]
+
+OUT_PKL = Path("../dataset/holistic_result_comp2_augmented_20_vari_3/mediapipe_sign_3d_without_face_pose_score_1.pkl")
 TEMPLATE_CSV =  Path("../dataset/gloss_sequences/gloss_sequence_templates.csv")
 
 RANDOM_SEED = 42
@@ -190,89 +193,93 @@ def parse_args():
 
 def build_annotations(sequence_level=False):
     template_map = load_gloss_sequence_templates() if sequence_level else None
-    split_dirs = sorted([p for p in ROOT_DIR.iterdir() if p.is_dir()]) #train/val/test
 
     annotations = []
     split = {}
-    frame_lengths = []   
+    frame_lengths = []
 
-    for split_dir in split_dirs:
-        split_name = split_dir.name
-        split[split_name] = []
-        for npz_path in sorted(split_dir.rglob("*.npz")):
-            file_name = npz_path.stem      # 00_00
-            subject, class_name = parse_subject_and_class(file_name)
-            class_id = int(class_name)
-            if class_id > 136:
-                continue
-            if sequence_level:
-                class_id = map_sequence_label(class_id, template_map)
+    for root_dir in ROOT_DIRS:
+        if not root_dir.exists():
+            raise FileNotFoundError(f"Root directory does not exist: {root_dir}")
 
-            npz = np.load(npz_path)
-            pose = npz["pose"]
-            face = npz["face"]
-            left_hand = npz["left_hand"]
-            right_hand = npz["right_hand"]
+        split_dirs = sorted([p for p in root_dir.iterdir() if p.is_dir()])  # train/val/test
+        for split_dir in split_dirs:
+            split_name = split_dir.name
+            split.setdefault(split_name, [])
+            for npz_path in sorted(split_dir.rglob("*.npz")):
+                file_name = npz_path.stem      # 00_00
+                subject, class_name = parse_subject_and_class(file_name)
+                class_id = int(class_name)
+                if class_id > 136:
+                    continue
+                if sequence_level:
+                    class_id = map_sequence_label(class_id, template_map)
 
-            pose = ensure_tvc(pose, expected_v=NUM_POSE, name=f"{file_name}[pose]") #(T, NUM_POSE, 4)
-            face = ensure_tvc(face, expected_v=NUM_FACE, name=f"{file_name}[face]") #(T, NUM_FACE, 4)
-            left = ensure_tvc(left_hand, expected_v=NUM_HAND, name=f"{file_name}[left hand]") #(T, NUM_HAND, 4)
-            right = ensure_tvc(right_hand, expected_v=NUM_HAND, name=f"{file_name}/[right hand]") #(T, NUM_HAND, 4)
-            T = pose.shape[0]
-            frame_lengths.append(T)   # 추가
+                npz = np.load(npz_path)
+                pose = npz["pose"]
+                face = npz["face"]
+                left_hand = npz["left_hand"]
+                right_hand = npz["right_hand"]
 
-            arrays = {
-                "pose": pose,
-                "face": face,
-                "left_hand": left,
-                "right_hand": right,
-            }
-            # 1. NaN 있으면 에러
-            for name, arr in arrays.items():
-                if np.isnan(arr).any():
-                    raise ValueError(f"{file_name}[{name}] contains NaN")
+                pose = ensure_tvc(pose, expected_v=NUM_POSE, name=f"{file_name}[pose]") #(T, NUM_POSE, 4)
+                face = ensure_tvc(face, expected_v=NUM_FACE, name=f"{file_name}[face]") #(T, NUM_FACE, 4)
+                left = ensure_tvc(left_hand, expected_v=NUM_HAND, name=f"{file_name}[left hand]") #(T, NUM_HAND, 4)
+                right = ensure_tvc(right_hand, expected_v=NUM_HAND, name=f"{file_name}/[right hand]") #(T, NUM_HAND, 4)
+                T = pose.shape[0]
+                frame_lengths.append(T)   # 추가
 
-            # 2. T가 모두 같지 않으면 에러
-            T_values = {name: arr.shape[0] for name, arr in arrays.items()}
-
-            if len(set(T_values.values())) != 1:
-                raise ValueError(
-                    f"{file_name} has inconsistent T: "
-                    + ", ".join([f"{name}={T}" for name, T in T_values.items()]))
-
-            keypoints = {}
-            scores = {}
-
-            for name, arr in arrays.items():
-                keypoints[name] = arr[..., :-1]  # (T, V, C-1)
-                scores[name] = arr[..., -1]      # (T, V)
-            
-            scores["pose"] = np.ones(scores["pose"].shape, dtype=np.float32)
-
-            # [T, 533, 3]
-            keypoint = np.concatenate([keypoints['pose'], keypoints['left_hand'], keypoints['right_hand']], axis=1) # keypoints['face']
-            input_keypoint = keypoint[None, ...].astype(np.float32) # [M, T, V, C]
-
-            # [T, 533]
-            keypoint_score = np.concatenate([scores['pose'], scores['left_hand'], scores['right_hand']], axis=1) # scores['face']
-            input_keypoint_score = keypoint_score[None, ...].astype(np.float32)  # [M, T, V]
-
-            assert keypoint.shape == (T, NUM_NODE, COORD_DIM), keypoint.shape
-            assert keypoint_score.shape == (T, NUM_NODE), keypoint_score.shape
-
-            annotations.append(
-                {
-                    "frame_dir": file_name,
-                    "class_name": class_name, 
-                    "label": class_id,
-                    "total_frames": T,
-                    "keypoint": input_keypoint, 
-                    "keypoint_score": input_keypoint_score
+                arrays = {
+                    "pose": pose,
+                    "face": face,
+                    "left_hand": left,
+                    "right_hand": right,
                 }
-            )
+                # 1. NaN 있으면 에러
+                for name, arr in arrays.items():
+                    if np.isnan(arr).any():
+                        raise ValueError(f"{file_name}[{name}] contains NaN")
 
-            split[split_name].append(file_name)
-        print(f"{split_name} 완료")
+                # 2. T가 모두 같지 않으면 에러
+                T_values = {name: arr.shape[0] for name, arr in arrays.items()}
+
+                if len(set(T_values.values())) != 1:
+                    raise ValueError(
+                        f"{file_name} has inconsistent T: "
+                        + ", ".join([f"{name}={T}" for name, T in T_values.items()]))
+
+                keypoints = {}
+                scores = {}
+
+                for name, arr in arrays.items():
+                    keypoints[name] = arr[..., :-1]  # (T, V, C-1)
+                    scores[name] = arr[..., -1]      # (T, V)
+                
+                scores["pose"] = np.ones(scores["pose"].shape, dtype=np.float32)
+
+                # [T, 533, 3]
+                keypoint = np.concatenate([keypoints['pose'], keypoints['left_hand'], keypoints['right_hand']], axis=1) # keypoints['face']
+                input_keypoint = keypoint[None, ...].astype(np.float32) # [M, T, V, C]
+
+                # [T, 533]
+                keypoint_score = np.concatenate([scores['pose'], scores['left_hand'], scores['right_hand']], axis=1) # scores['face']
+                input_keypoint_score = keypoint_score[None, ...].astype(np.float32)  # [M, T, V]
+
+                assert keypoint.shape == (T, NUM_NODE, COORD_DIM), keypoint.shape
+                assert keypoint_score.shape == (T, NUM_NODE), keypoint_score.shape
+
+                annotations.append(
+                    {
+                        "frame_dir": file_name,
+                        "class_name": class_name, 
+                        "label": class_id,
+                        "total_frames": T,
+                        "keypoint": input_keypoint, 
+                        "keypoint_score": input_keypoint_score
+                    }
+                )
+
+                split[split_name].append(file_name)
+            print(f"{root_dir.name}/{split_name} 완료")
 
     return annotations, split, frame_lengths
 

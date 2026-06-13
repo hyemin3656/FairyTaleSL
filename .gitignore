@@ -8,6 +8,8 @@ checkpoints/
 results/
 work_dirs/
 
+saliency
+
 data/videos/
 *.pth
 *.pkl

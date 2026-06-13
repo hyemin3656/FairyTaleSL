@@ -9,6 +9,10 @@ from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
 import torch
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 DEFAULT_ANN_FILE = WORKSPACE_ROOT / "dataset/cropped_holistic_results_split/mediapipe_sign_3d_without_face_pose_score_1.pkl"
 DEFAULT_CONFIG = PROJECT_ROOT / "model/configs/cnn1d_mediapipe_sign_without_face.py"
+DEFAULT_SALIENCY_DIR = WORKSPACE_ROOT / "saliency/samples"
 
 from model.builder import build_model
 from model.config_utils import load_config, resolve_config_path
@@ -44,6 +49,16 @@ def parse_args() -> argparse.Namespace:
         help="Directory to save eval logs. Defaults to the checkpoint directory.",
     )
     parser.add_argument("--sequence", action="store_true", help="Evaluate sequence annotation with sliding windows and WER.")
+    parser.add_argument(
+        "--saliency-dir",
+        default=str(DEFAULT_SALIENCY_DIR),
+        help="Directory to save per-sample saliency jpgs. Default: saliency/samples.",
+    )
+    parser.add_argument(
+        "--no-saliency",
+        action="store_true",
+        help="Disable per-sample saliency jpg export during regular eval.",
+    )
     parser.add_argument("--sequence-window", type=int, default=None)
     parser.add_argument(
         "--sequence-windows",
@@ -67,6 +82,129 @@ def parse_args() -> argparse.Namespace:
     parser.set_defaults(sequence_include_tail=None)
     return parser.parse_args()
 
+
+
+def compute_input_saliency(model: torch.nn.Module, inputs: torch.Tensor, target_class: int | None = None):
+    """Return prediction scores and gradient*input saliency with shape [clips, T, V]."""
+    saliency_inputs = inputs.detach().clone().requires_grad_(True)
+    model.zero_grad(set_to_none=True)
+
+    if hasattr(model, "forward_clip_logits") and saliency_inputs.ndim == 6:
+        clip_logits = model.forward_clip_logits(saliency_inputs)
+        logits = clip_logits.mean(dim=1)
+    else:
+        logits = model(saliency_inputs)
+
+    scores = logits.softmax(dim=-1)[0]
+    if target_class is None:
+        target_class = int(scores.argmax().item())
+
+    logits[0, target_class].backward()
+    grad = saliency_inputs.grad.detach()
+    saliency = (grad * saliency_inputs.detach()).abs()
+
+    if saliency.ndim == 6:
+        saliency = saliency.sum(dim=(0, 2, 5))  # [clips, T, V]
+    elif saliency.ndim == 5:
+        saliency = saliency.sum(dim=(0, 1, 4))[None]  # [1, T, V]
+    else:
+        raise ValueError(f"Unexpected saliency shape: {tuple(saliency.shape)}")
+
+    return scores.detach(), target_class, saliency.cpu().numpy()
+
+
+def save_saliency_heatmap(saliency: np.ndarray, output_path: Path, title: str) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    clips, clip_len, num_joints = saliency.shape
+    heatmap = saliency.reshape(clips * clip_len, num_joints).T
+    max_value = float(heatmap.max()) if heatmap.size else 0.0
+    if max_value > 0:
+        heatmap = heatmap / max_value
+
+    frame_importance = heatmap.mean(axis=0) if heatmap.size else np.zeros(clips * clip_len)
+    joint_importance = heatmap.mean(axis=1) if heatmap.size else np.zeros(num_joints)
+    top_joint_indices = np.argsort(-joint_importance)[:10]
+
+    fig = plt.figure(figsize=(18, 9))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1, 5], width_ratios=[5, 1], hspace=0.08, wspace=0.06)
+    ax_frame = fig.add_subplot(gs[0, 0])
+    ax_heat = fig.add_subplot(gs[1, 0])
+    ax_joint = fig.add_subplot(gs[1, 1])
+
+    x = np.arange(clips * clip_len)
+    ax_frame.plot(x, frame_importance, color="black", linewidth=1.2)
+    ax_frame.set_xlim(0, max(clips * clip_len - 1, 1))
+    ax_frame.set_ylabel("Frame\nmean")
+    ax_frame.set_xticks([])
+    ax_frame.grid(True, linestyle="--", alpha=0.25)
+
+    im = ax_heat.imshow(heatmap, aspect="auto", interpolation="nearest", cmap="magma", vmin=0, vmax=1)
+    ax_heat.set_xlabel("Sampled frame index (clips flattened)")
+    ax_heat.set_ylabel("Keypoint index")
+    ax_heat.set_title(title)
+
+    for boundary in (23, 44):
+        if boundary < num_joints:
+            ax_heat.axhline(boundary - 0.5, color="cyan", linewidth=1.0, alpha=0.85)
+    for clip_idx in range(1, clips):
+        ax_heat.axvline(clip_idx * clip_len - 0.5, color="white", linewidth=0.8, alpha=0.55)
+
+    ax_joint.barh(np.arange(num_joints), joint_importance, color="steelblue")
+    ax_joint.invert_yaxis()
+    ax_joint.set_title("Joint mean")
+    ax_joint.set_xlabel("Importance")
+    ax_joint.set_yticks(top_joint_indices)
+    ax_joint.set_yticklabels([str(i) for i in top_joint_indices])
+    ax_joint.grid(True, axis="x", linestyle="--", alpha=0.25)
+
+    cbar = fig.colorbar(im, ax=[ax_frame, ax_heat, ax_joint], fraction=0.025, pad=0.015)
+    cbar.set_label("Normalized abs(gradient * input)")
+
+    fig.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+
+
+def saliency_output_path(base_dir: Path, frame_dir: str) -> Path:
+    class_folder = frame_dir.rsplit("_", 1)[-1] if "_" in frame_dir else "unknown"
+    return base_dir / class_folder / f"{frame_dir}.jpg"
+
+
+def save_eval_saliency_samples(
+    model: torch.nn.Module,
+    samples: Sequence[Dict[str, Any]],
+    cfg,
+    device: torch.device,
+    output_dir: Path,
+) -> List[Path]:
+    model.eval()
+    saved_paths = []
+    for sample in samples:
+        frame_dir = str(sample.get("frame_dir", "sample"))
+        keypoint = preprocess_keypoint_sample(
+            sample,
+            clip_len=cfg.CLIP_LEN,
+            num_clips=cfg.TEST_NUM_CLIPS,
+            test_mode=True,
+            zero_pad_short=getattr(cfg, "ZERO_PAD_SHORT", False),
+            input_mode=getattr(cfg, "INPUT_MODE", "xy"),
+            keypoint_normalize=getattr(cfg, "KEYPOINT_NORMALIZE", None),
+            random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
+            short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
+        )
+        inputs = torch.from_numpy(keypoint[None]).to(device)
+        scores, target_class, saliency = compute_input_saliency(model, inputs)
+        output_path = saliency_output_path(output_dir, frame_dir)
+        save_saliency_heatmap(
+            saliency,
+            output_path,
+            title=(
+                f"Saliency | sample={frame_dir} | "
+                f"target={target_class} score={float(scores[target_class]):.4f}"
+            ),
+        )
+        saved_paths.append(output_path)
+    return saved_paths
 
 def append_eval_log(log_path: Path, lines: Sequence[str]) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -544,6 +682,11 @@ def main() -> None:
     )
     metrics = run_eval(model, loader, device)
     save_regular_eval(args, cfg, checkpoint_path, log_dir, device, info, metrics, dataset)
+
+    if not args.no_saliency:
+        saliency_dir = Path(args.saliency_dir).expanduser().resolve()
+        saved_paths = save_eval_saliency_samples(model, dataset.samples, cfg, device, saliency_dir)
+        print(f"Saved saliency samples: {len(saved_paths)} files under {saliency_dir}")
 
 
 if __name__ == "__main__":
