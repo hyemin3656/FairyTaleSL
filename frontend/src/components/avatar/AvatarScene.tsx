@@ -486,9 +486,9 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl, sceneScale = 1.0, sceneOf
     if (playing && !frozen && hasAnim) {
       elapsedRef.current += delta;
 
-      if (animData) {
-        driveAnimData(animData, elapsedRef.current, hum, sp);
-      } else if (frames && frames.length > 0) {
+      // keypoints 우선 (raw MediaPipe — 글로스별로 실제로 다름)
+      // animation_data(사전 베이크)는 다수 글로스가 동일 데이터라 폴백으로만 사용
+      if (frames && frames.length > 0) {
         const totalFrames = frames.length;
         const framePos    = (elapsedRef.current * fps) % totalFrames;
         const f0 = Math.floor(framePos);
@@ -497,6 +497,8 @@ function VRMAvatar({ clip, playing, frozen, avatarUrl, sceneScale = 1.0, sceneOf
         const kp = lerpFrames(frames[f0], frames[f1], t);
         drivePoseBones(kp, hum, sp);
         driveHandBones(kp, hum, sp);
+      } else if (animData) {
+        driveAnimData(animData, elapsedRef.current, hum, sp);
       }
     } else if (!frozen || !hasAnim) {
       driveIdlePose(hum, playing ? sp : idle);
