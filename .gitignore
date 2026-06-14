@@ -85,3 +85,4 @@ data_pipeline/sign_generation/venv/
 data_pipeline/sign_generation/logs/
 data_pipeline/sign_generation/*.task
 mmaction2/
+!data_pipeline/sign_generation/data/motion_db.sqlite

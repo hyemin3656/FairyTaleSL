@@ -1,0 +1,1 @@
+data_pipeline/sign_generation/data/motion_db.sqlite filter=lfs diff=lfs merge=lfs -text
