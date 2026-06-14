@@ -1130,6 +1130,12 @@ a {
 }
 
 /* 지우기 버튼 — 명확히 보이도록 */
+.cq-input-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .btn-cq-clear {
   align-self: flex-start;
   background: #fef2f2;
@@ -1506,6 +1512,48 @@ a {
   font-weight: 500;
 }
 .feedback.success { background: #d1fae5; color: #065f46; }
+
+/* ── 따라해보기 성공 카드 ────────────────────────────────────────────── */
+.follow-success-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 20px;
+  background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1.5px solid #6ee7b7;
+  border-radius: 14px;
+  text-align: center;
+  animation: slideInRight 0.45s ease-out;
+}
+.follow-success-emoji {
+  font-size: 56px;
+  line-height: 1;
+}
+.follow-success-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #065f46;
+  letter-spacing: -0.4px;
+}
+.follow-success-desc {
+  font-size: 15px;
+  color: #047857;
+  margin: 0;
+  line-height: 1.6;
+}
+.follow-success-desc strong {
+  color: #065f46;
+}
+.follow-success-score {
+  font-size: 14px;
+  color: #047857;
+  margin: 0;
+}
+.follow-success-score strong {
+  font-size: 18px;
+  color: #065f46;
+}
 .feedback.hint    { background: #fef3c7; color: #92400e; }
 
 .btn-done {

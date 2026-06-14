@@ -2,8 +2,9 @@
  * FollowAlongPanel — 섹션 종료 후 따라하기 (부 모드)
  *
  * - 목표 글로스에 대해 웹캠 인식 → 정확도 게이지
- * - 정확도 90% 이상이면 자동으로 통과 → 다음 단어/단계로 진행
- * - 사용자가 직접 스킵하면 onSkip()
+ * - 정확도 90% 이상이면 "✅ 따라해보기 성공입니다!" 화면으로 전환
+ * - 사용자가 직접 [확인] 버튼을 눌러야 다음 단계(퀴즈 풀기)로 진행
+ * - 사용자가 직접 [건너뛰기] 누르면 onSkip()
  *
  * 기존 SignPracticePage 로직을 컴포넌트화. 페이지(스탠드얼론) 흐름과 시나리오
  * 내장 흐름에서 같은 UI를 재사용한다.
@@ -12,7 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import WebcamCapture from "../webcam/WebcamCapture";
 import type { TsnPrediction } from "../webcam/WebcamCapture";
 
-const SUCCESS_THRESHOLD = 0.9;   // 90% 이상이면 자동 통과
+const SUCCESS_THRESHOLD = 0.9;   // 90% 이상이면 성공 화면 표시
 const HINT_THRESHOLD = 0.5;      // 50~89% 구간은 "비슷해요" 힌트
 
 interface Props {
@@ -23,7 +24,10 @@ interface Props {
 
 export default function FollowAlongPanel({ targetGloss, onPass, onSkip }: Props) {
   const [latest, setLatest] = useState<TsnPrediction | null>(null);
-  const passedRef = useRef(false);
+  // 통과한 순간을 "잠금"해서, 이후 인식이 흔들려도 성공 화면이 계속 유지되게 한다.
+  const [passed, setPassed] = useState(false);
+  // 성공 시 인식한 단어/정확도를 스냅샷으로 보존
+  const passedSnapshotRef = useRef<{ gloss: string; score: number } | null>(null);
 
   const handlePrediction = useCallback((p: TsnPrediction) => {
     if (p.is_dummy) return;
@@ -34,23 +38,55 @@ export default function FollowAlongPanel({ targetGloss, onPass, onSkip }: Props)
     ? { label: latest.gloss, score: latest.confidence }
     : null;
   const targetScore = topLabel && topLabel.label === targetGloss ? topLabel.score : 0;
-  const isMatch =
+  const isMatchNow =
     !!topLabel && topLabel.label === targetGloss && targetScore >= SUCCESS_THRESHOLD;
 
-  // 통과 시 자동 진행 (한 번만, "✅ 잘 했어요!" 표시 후 0.8초 뒤)
+  // 90% 도달 순간 한 번만 성공 잠금 + 스냅샷 저장
   useEffect(() => {
-    if (isMatch && !passedRef.current) {
-      passedRef.current = true;
-      const t = setTimeout(onPass, 800);
-      return () => clearTimeout(t);
+    if (isMatchNow && !passed) {
+      passedSnapshotRef.current = { gloss: targetGloss, score: targetScore };
+      setPassed(true);
     }
-  }, [isMatch, onPass]);
+  }, [isMatchNow, passed, targetGloss, targetScore]);
 
   const barColor =
     targetScore >= SUCCESS_THRESHOLD ? "#10b981"
       : targetScore >= HINT_THRESHOLD ? "#f59e0b"
       : "#ef4444";
 
+  // ── 성공 화면 — 사용자가 [확인]을 눌러야 다음 단계로 진행 ──────────────────
+  if (passed) {
+    const snap = passedSnapshotRef.current;
+    return (
+      <div className="follow-along-panel">
+        <div className="panel-header">
+          <span className="panel-icon">🎉</span>
+          <span className="panel-title">따라해보기</span>
+        </div>
+
+        <div className="follow-success-card">
+          <div className="follow-success-emoji">✅</div>
+          <div className="follow-success-title">따라해보기 성공입니다!</div>
+          <p className="follow-success-desc">
+            <strong>{snap?.gloss ?? targetGloss}</strong> 수어를 정확하게 따라했어요.
+          </p>
+          {snap?.score != null && (
+            <p className="follow-success-score">
+              정확도 <strong>{Math.round(snap.score * 100)}%</strong>
+            </p>
+          )}
+        </div>
+
+        <div className="panel-actions">
+          <button className="btn-acknowledge" onClick={onPass}>
+            확인 →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 일반 화면 — 인식 중 ─────────────────────────────────────────────────
   return (
     <div className="follow-along-panel">
       <div className="panel-header">
@@ -69,7 +105,7 @@ export default function FollowAlongPanel({ targetGloss, onPass, onSkip }: Props)
         <span className="recognition-label">인식된 수어</span>
         {topLabel ? (
           <>
-            <span className={`recognition-gloss ${isMatch ? "match" : "no-match"}`}>
+            <span className={`recognition-gloss ${isMatchNow ? "match" : "no-match"}`}>
               {topLabel.label}
             </span>
             <div className="conf-bar-wrap">
@@ -85,12 +121,7 @@ export default function FollowAlongPanel({ targetGloss, onPass, onSkip }: Props)
         )}
       </div>
 
-      {isMatch && (
-        <div className="feedback success">
-          ✅ 잘 했어요! <strong>{targetGloss}</strong> 수어가 맞습니다.
-        </div>
-      )}
-      {topLabel && !isMatch && targetScore >= HINT_THRESHOLD && (
+      {topLabel && !isMatchNow && targetScore >= HINT_THRESHOLD && (
         <div className="feedback hint">🤔 비슷해요! 조금 더 정확하게 해보세요. (90% 이상이면 통과)</div>
       )}
 

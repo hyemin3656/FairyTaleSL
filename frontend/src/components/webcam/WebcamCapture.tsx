@@ -21,6 +21,9 @@ export interface RecognitionPrediction {
 interface WebcamCaptureProps {
   onPrediction?: (pred: RecognitionPrediction) => void;
   mirrored?: boolean;   // 사이드카가 이미 미러링하므로 시각적 효과만
+  // 인식 모드 (기본: "gloss" — 한 segment당 1단어)
+  // "sequence": sliding window 연속 인식 → 손을 들고 있는 동안 여러 단어 연속 출력
+  recognitionMode?: "gloss" | "sequence";
 }
 
 export default function WebcamCapture(props: WebcamCaptureProps) {
@@ -53,11 +56,20 @@ export default function WebcamCapture(props: WebcamCaptureProps) {
 function CameraView({
   onPrediction,
   onTurnOff,
+  recognitionMode,
 }: WebcamCaptureProps & { onTurnOff: () => void }) {
-  const { status, result, previewBlobUrl, errorMsg, reconnect } = useRecognitionWS();
+  const { status, result, previewBlobUrl, errorMsg, reconnect, setMode, mode } = useRecognitionWS();
   const onPredRef = useRef(onPrediction);
 
   useEffect(() => { onPredRef.current = onPrediction; }, [onPrediction]);
+
+  // 인식 모드 변경 — props.recognitionMode와 사이드카 mode 동기화
+  useEffect(() => {
+    if (!recognitionMode) return;
+    if (status !== "idle" && status !== "active") return;   // WS ready 후에만 전송
+    if (mode === recognitionMode) return;
+    setMode(recognitionMode);
+  }, [recognitionMode, mode, status, setMode]);
 
   useEffect(() => {
     if (result) {

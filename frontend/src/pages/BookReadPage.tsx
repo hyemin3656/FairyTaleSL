@@ -258,6 +258,10 @@ export default function BookReadPage() {
     if (!currentSection) return;
     const quiz = quizzes.get(currentSection.order);
     if (!quiz) return;   // 퀴즈 없으면 버튼이 안 보이므로 도달 X (방어)
+    // 질문 텍스트를 글로스로 변환해 아바타가 수어로 재생.
+    // QUIZ 모드에서도 frozen=false라 클립이 도착하면 즉시 애니메이션 시작됨.
+    if (ws.status === "closed" || ws.status === "error") ws.reconnect();
+    ws.sendText(quiz.question);
     startQuiz(quiz);
   };
 
@@ -417,7 +421,16 @@ export default function BookReadPage() {
                   status={ws.status}
                   currentIndex={ws.currentIndex}
                   total={ws.total}
-                  frozen={mode !== "STORY_PLAYING" && mode !== "CHILD_QUESTION"}
+                  /* 수어 클립 재생이 필요한 모드는 아바타가 움직여야 한다:
+                     - STORY_PLAYING: 동화 본문 재생
+                     - CHILD_QUESTION: Gemini/Claude 답변 재생
+                     - QUIZ: 퀴즈 질문 텍스트 재생
+                     그 외(PAUSED/FOLLOW_ALONG/SECTION_DONE/COMPLETED)에서는 idle. */
+                  frozen={
+                    mode !== "STORY_PLAYING"
+                    && mode !== "CHILD_QUESTION"
+                    && mode !== "QUIZ"
+                  }
                   avatarUrl={avatarUrl}
                   sceneScale={selectedAvatar.sceneScale}
                   sceneOffsetY={selectedAvatar.sceneOffsetY}

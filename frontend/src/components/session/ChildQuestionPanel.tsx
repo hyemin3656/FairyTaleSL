@@ -34,57 +34,51 @@ type InputMode = "sign" | "keyboard";
 export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, answerGlossTokens = [] }: Props) {
   const [inputMode, setInputMode] = useState<InputMode>("sign");
   const [labels, setLabels] = useState<string[]>([]);
-  const [pendingLabel, setPendingLabel] = useState<string | null>(null);
-  const [pendingConf, setPendingConf] = useState<number>(0);
+  // 최근 인식된 단어 표시용 (자동 누적 모드의 시각적 피드백)
+  const [lastRecognized, setLastRecognized] = useState<{ gloss: string; conf: number } | null>(null);
   const [typedText, setTypedText] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [answer, setAnswer] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
 
-  // 방금 추가한 단어 — 사용자가 다른 수어를 보일 때까지 같은 예측은 무시한다.
-  // 예: "직녀" 추가 후, 사이드카가 잔여 동작에서 또 "직녀"를 보내도 후보에 안 띄움.
-  //     "누구" 등 다른 단어가 인식되어야 다시 어떤 예측이든 받기 시작.
+  // 직전 추가된 단어 — 연속 인식 중 같은 단어가 인접 window에서 또 인식돼도 중복 추가 방지.
+  // 다른 단어가 한 번이라도 인식되면 같은 단어를 또 받을 수 있게 풀어준다 (e.g., "직녀 직녀").
   const muteLabelRef = useRef<string | null>(null);
 
-  // 인식된 결과를 "후보(pending)"로만 보여주고, 사용자가 ✅ 추가하기를 눌러야 누적됨.
+  // sequence 모드에서는 sliding window가 0.67초마다 예측을 보내므로,
+  // 사용자 손동작을 끊지 않고 여러 글로스를 연속으로 인식해서 자동 누적한다.
+  // (이전: 한 단어씩 사용자가 ✅ 추가 버튼으로 확정 → 변경: 자동 누적)
   const handlePrediction = useCallback((pred: TsnPrediction) => {
     if (phase === "submitting") return;
     if (inputMode !== "sign") return;
     if (pred.is_dummy) return;
     if (pred.confidence < RECOGNITION_THRESHOLD) return;
     if (!pred.gloss) return;
-    // 방금 추가한 단어가 잔여 인식으로 다시 들어오면 무시
-    if (muteLabelRef.current && pred.gloss === muteLabelRef.current) return;
-    // 다른 단어가 들어왔으면 mute 해제 → 새 단어 인식 시작
-    if (muteLabelRef.current && pred.gloss !== muteLabelRef.current) {
-      muteLabelRef.current = null;
+
+    // 직전 추가한 단어와 같으면 무시 (인접 sliding window의 중복 출력 제거)
+    if (muteLabelRef.current === pred.gloss) {
+      // 시각적 피드백은 갱신 (계속 인식 중이라는 신호)
+      setLastRecognized({ gloss: pred.gloss, conf: pred.confidence });
+      return;
     }
-    setPendingLabel(pred.gloss);
-    setPendingConf(pred.confidence);
+    // 다른 단어 → 누적 + 직전 단어 갱신
+    setLabels((arr) => [...arr, pred.gloss]);
+    setLastRecognized({ gloss: pred.gloss, conf: pred.confidence });
+    muteLabelRef.current = pred.gloss;
   }, [phase, inputMode]);
 
-  const handleConfirmPending = () => {
-    if (!pendingLabel) return;
-    const added = pendingLabel;
-    setLabels((arr) => [...arr, added]);
-    setPendingLabel(null);
-    setPendingConf(0);
-    // 다음 인식 사이클을 위해 같은 단어 잠시 차단
-    muteLabelRef.current = added;
-  };
-
-  const handleRejectPending = () => {
-    setPendingLabel(null);
-    setPendingConf(0);
-    // 거절한 단어도 잠시 차단 — 사용자가 다시 시도하면 다른 자세로 인식되어야 의미 있음
-    muteLabelRef.current = pendingLabel;
+  // 마지막 단어 한 개만 제거
+  const handleRemoveLast = () => {
+    setLabels((arr) => arr.slice(0, -1));
+    // mute 해제 — 마지막 단어를 다시 보여줄 수도 있음
+    muteLabelRef.current = null;
+    setLastRecognized(null);
   };
 
   const handleClear = () => {
     if (inputMode === "sign") {
       setLabels([]);
-      setPendingLabel(null);
-      setPendingConf(0);
+      setLastRecognized(null);
       muteLabelRef.current = null;
     } else {
       setTypedText("");
@@ -158,46 +152,40 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
       {/* 본문 — 모드별 입력 영역 */}
       {inputMode === "sign" ? (
         <>
-          <WebcamCapture onPrediction={handlePrediction} mirrored />
+          <WebcamCapture
+            onPrediction={handlePrediction}
+            mirrored
+            recognitionMode="sequence"
+          />
 
-          {/* 후보(pending) — 인식된 수어가 의도한 단어가 맞으면 ✅ 추가하기 */}
+          {/* 최근 인식된 단어 — 실시간 피드백 */}
           <div className="cq-pending-card">
-            <div className="cq-pending-label">현재 인식된 수어</div>
-            {pendingLabel ? (
-              <>
-                <div className="cq-pending-row">
-                  <span className="cq-pending-word">{pendingLabel}</span>
-                  <span className="cq-pending-conf">정확도 {Math.round(pendingConf * 100)}%</span>
-                </div>
-                <div className="cq-pending-actions">
-                  <button className="btn-pending-add" onClick={handleConfirmPending}>
-                    ✅ 이 단어 추가
-                  </button>
-                  <button className="btn-pending-skip" onClick={handleRejectPending}>
-                    ✗ 다시 하기
-                  </button>
-                </div>
-                <p className="cq-pending-hint">
-                  맞으면 "추가", 아니면 "다시 하기"를 눌러 새로 수어를 보여줘요.
-                </p>
-              </>
+            <div className="cq-pending-label">최근 인식된 수어</div>
+            {lastRecognized ? (
+              <div className="cq-pending-row">
+                <span className="cq-pending-word">{lastRecognized.gloss}</span>
+                <span className="cq-pending-conf">정확도 {Math.round(lastRecognized.conf * 100)}%</span>
+              </div>
             ) : (
-              <p className="cq-placeholder">손으로 수어를 보여주면 여기에 단어가 나타나요.</p>
+              <p className="cq-placeholder">손을 들고 수어를 연속으로 보여주면 단어들이 자동으로 누적돼요.</p>
             )}
           </div>
 
-          {/* 누적된 단어들 (= 만들고 있는 문장) */}
+          {/* 누적된 단어들 (= 만들고 있는 문장) — 자동 추가, 사용자는 잘못된 단어만 ↩로 제거 */}
           <div className="cq-input-card">
             <div className="cq-input-label">만들어진 문장</div>
             <div className="cq-tokens">
               {labels.length === 0 ? (
-                <span className="cq-placeholder">아직 추가된 단어가 없어요.</span>
+                <span className="cq-placeholder">아직 인식된 단어가 없어요.</span>
               ) : (
                 labels.map((l, i) => <span key={i} className="cq-token">{l}</span>)
               )}
             </div>
             {labels.length > 0 && (
-              <button className="btn-cq-clear" onClick={handleClear}>🗑 전부 지우기</button>
+              <div className="cq-input-actions">
+                <button className="btn-cq-clear" onClick={handleRemoveLast}>↩ 마지막 단어 지우기</button>
+                <button className="btn-cq-clear" onClick={handleClear}>🗑 전부 지우기</button>
+              </div>
             )}
           </div>
         </>
@@ -232,7 +220,7 @@ export default function ChildQuestionPanel({ storyContext, onAnswer, onExit, ans
           onClick={handleSubmit}
           disabled={!canSend}
         >
-          {phase === "submitting" ? "⏳ Gemini에 묻는 중…" : "💬 질문 보내기"}
+          {phase === "submitting" ? "⏳ Claude에 묻는 중…" : "💬 질문 보내기"}
         </button>
       </div>
 
