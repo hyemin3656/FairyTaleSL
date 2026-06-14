@@ -8,26 +8,89 @@ import pandas as pd
 from tqdm import tqdm
 
 INPUT_NPZ_DIR = "/home/ubuntu/dataset/holistic_result_comp2"
-OUTPUT_AUG_DIR = "/home/ubuntu/dataset/holistic_result_comp2_augmented_20_vari_3"
+OUTPUT_AUG_DIR = "/home/ubuntu/dataset/holistic_result_comp2_augmented_20_vari_4"
 AUGMENTATIONS_PER_SAMPLE = 18
+AUGMENTATIONS_PER_SAMPLE_CHOICES = [17, 18, 19]
 SPLIT_RATIOS = {"train": 0.8, "val": 0.1, "test": 0.1}
 RANDOM_SEED = 42
 
 # 이 데이터셋에서는 video id/file name이 class id 역할을 합니다.
 CLASS_COLUMN = "source_video"
 
-# ratio는 상대 비율입니다. 아래 목록의 ratio를 기준으로 원본 샘플마다
-# AUGMENTATIONS_PER_SAMPLE개가 되도록 개수를 자동 배분합니다.
-GAU_NOISE = [0.0005, 0.001, 0.002]
-PERSON_SCALE = [1.3, 1.5, 1.7, 1.9]
+# 아래 후보들로 가능한 조합을 만든 뒤 intensity가 낮은 것부터 높은 것까지
+# 골고루 뽑아 source마다 17/18/19개 중 하나의 augmentation을 만듭니다.
+GAU_NOISE = [0.0, 0.0005, 0.001, 0.002, 0.003]
+PERSON_SCALE = [0.75, 0.85, 1.0, 1.15, 1.3]
 DUMMY_THRESHOLD = [0.9, 0.8]
-SPEED = [0.8, 1.2]
+SPEED = [0.65, 0.8, 1.2, 1.5]
 
-AUGMENTATION_SPEEDS = [1.0, 0.8, 1.2]
+AUGMENTATION_ENABLE = {
+    "front_offset": True,
+    "dummy_threshold": True,
+    "temporal_speed": True,
+    "person_scale": True,
+    "xy_scale": True,
+    "rotation": True,
+    "hand_motion_scale": True,
+    "position_shift": True,
+    "hand_dropout": True,
+    "gaussian_noise": True,
+}
+
+AUGMENTATION_SPEEDS = [1.0, 0.65, 0.8, 1.2, 1.5]
+AUGMENTATION_SHIFTS = [
+    (0.0, 0.0),
+    (-0.05, 0.0),
+    (0.05, 0.0),
+    (0.0, -0.08),
+    (0.0, 0.08),
+    (-0.08, -0.08),
+    (0.08, -0.08),
+    (-0.08, 0.12),
+    (0.08, 0.12),
+    (0.0, -0.16),
+    (0.0, 0.16),
+]
+AUGMENTATION_XY_SCALES = [
+    (1.0, 1.0),
+    (0.9, 1.0),
+    (1.1, 1.0),
+    (1.0, 0.9),
+    (1.0, 1.1),
+    (0.9, 1.1),
+    (1.1, 0.9),
+]
+AUGMENTATION_ROTATIONS = [0.0, -5.0, 5.0, -8.0, 8.0]
+AUGMENTATION_HAND_DROPOUT_RATIOS = [0.0, 0.03, 0.06, 0.1]
+AUGMENTATION_HAND_MOTION_SCALES = [0.8, 0.9, 1.0, 1.1, 1.25]
+BALANCED_CANDIDATE_TRIALS = 5000
+
+
+def shift_name_suffix(shift):
+    shift_x, shift_y = shift
+    return f"shift_x_{shift_x:+.2f}_y_{shift_y:+.2f}".replace("+", "p").replace("-", "m").replace(".", "_")
+
+
+
+def xy_scale_name_suffix(xy_scale):
+    scale_x, scale_y = xy_scale
+    return f"xy_scale_x_{scale_x:.2f}_y_{scale_y:.2f}".replace(".", "_")
+
+
+def rotation_name_suffix(rotation_degrees):
+    return f"rot_{rotation_degrees:+.1f}".replace("+", "p").replace("-", "m").replace(".", "_")
+
+
+def hand_dropout_name_suffix(ratio):
+    return f"hand_drop_{ratio:.2f}".replace(".", "_")
+
+
+def hand_motion_name_suffix(scale):
+    return f"hand_motion_{scale:.2f}".replace(".", "_")
 
 BASE_AUGMENTATION_SPEC = {
     "name": "base",
-    "ratio": 2,
+    "ratio": 1,
     "params": {
         "front": True,
         "dummy_threshold": 0.9,
@@ -37,46 +100,163 @@ BASE_AUGMENTATION_SPEC = {
         "max_gap": 10,
         "max_appear": 5,
         "person_scale": 1.0,
+        "xy_scale_x": 1.0,
+        "xy_scale_y": 1.0,
+        "rotation_degrees": 0.0,
+        "hand_dropout_ratio": 0.0,
+        "hand_motion_scale": 1.0,
+        "position_shift_x": 0.0,
+        "position_shift_y": 0.0,
+        "clip_position_shift": False,
         "gaussian_scale": 0.0,
         "speed": 1.0,
     },
 }
 
-VARIATION_SPECS = [
-    {"name": "lowest_variation", "ratio": 1, "params": {"front": False, "gaussian_scale": GAU_NOISE[0], "person_scale": PERSON_SCALE[0], "dummy_threshold": DUMMY_THRESHOLD[0]}},
-    {"name": "low_variation", "ratio": 1, "params": {"front": False, "gaussian_scale": GAU_NOISE[0], "person_scale": PERSON_SCALE[1], "dummy_threshold": DUMMY_THRESHOLD[0]}},
-    {"name": "semi_low_variation", "ratio": 1, "params": {"front": True, "gaussian_scale": GAU_NOISE[0], "person_scale": PERSON_SCALE[1], "dummy_threshold": DUMMY_THRESHOLD[1]}},
-    {"name": "semi_high_variation", "ratio": 1, "params": {"front": True, "gaussian_scale": GAU_NOISE[1], "person_scale": PERSON_SCALE[2], "dummy_threshold": DUMMY_THRESHOLD[1]}},
-    {"name": "high_variation", "ratio": 1, "params": {"gaussian_scale": GAU_NOISE[2], "person_scale": PERSON_SCALE[2], "dummy_threshold": DUMMY_THRESHOLD[1]}},
-    {"name": "highest_variation", "ratio": 1, "params": {"gaussian_scale": GAU_NOISE[2], "person_scale": PERSON_SCALE[3], "dummy_threshold": DUMMY_THRESHOLD[1]}},
-]
+
+def _rank(value, candidates):
+    if len(candidates) <= 1:
+        return 0.0
+    return candidates.index(value) / (len(candidates) - 1)
 
 
-AUGMENTATION_SPECS = [BASE_AUGMENTATION_SPEC]
+def _max_abs_delta(candidates, center):
+    return max(abs(item - center) for item in candidates) or 1.0
 
-# lowest_variation은 기존 speed=1.0으로만 1개 추가
-lowest_params = dict(VARIATION_SPECS[0]["params"])
-lowest_params["speed"] = 1.0
-AUGMENTATION_SPECS.append(
-    {
-        "name": f"{VARIATION_SPECS[0]['name']}_speed_1_0",
-        "ratio": VARIATION_SPECS[0]["ratio"],
-        "params": lowest_params,
+
+def _candidate_values(name, values, identity):
+    return values if AUGMENTATION_ENABLE.get(name, True) else [identity]
+
+
+def _shift_strength(shift):
+    max_strength = max((abs(x) + abs(y)) for x, y in AUGMENTATION_SHIFTS)
+    if max_strength <= 0:
+        return 0.0
+    return (abs(shift[0]) + abs(shift[1])) / max_strength
+
+
+def _xy_scale_strength(xy_scale):
+    max_strength = max((abs(x - 1.0) + abs(y - 1.0)) for x, y in AUGMENTATION_XY_SCALES)
+    if max_strength <= 0:
+        return 0.0
+    return (abs(xy_scale[0] - 1.0) + abs(xy_scale[1] - 1.0)) / max_strength
+
+
+def _candidate_intensity(params):
+    components = [
+        _rank(params["gaussian_scale"], GAU_NOISE),
+        abs(params["person_scale"] - 1.0) / _max_abs_delta(PERSON_SCALE, 1.0),
+        _rank(params["dummy_threshold"], DUMMY_THRESHOLD),
+        abs(params["speed"] - 1.0) / _max_abs_delta(AUGMENTATION_SPEEDS, 1.0),
+        _shift_strength((params["position_shift_x"], params["position_shift_y"])),
+        _xy_scale_strength((params["xy_scale_x"], params["xy_scale_y"])),
+        abs(params["rotation_degrees"]) / max(abs(item) for item in AUGMENTATION_ROTATIONS),
+        params["hand_dropout_ratio"] / max(AUGMENTATION_HAND_DROPOUT_RATIOS),
+        abs(params["hand_motion_scale"] - 1.0) / _max_abs_delta(AUGMENTATION_HAND_MOTION_SCALES, 1.0),
+    ]
+    intensity = sum(components) / len(components)
+    high_count = sum(component >= 0.85 for component in components)
+    low_count = sum(component <= 0.15 for component in components)
+    extreme_penalty = max(0, high_count - 3) * 0.08 + max(0, low_count - 5) * 0.02
+    return intensity, extreme_penalty
+
+
+def _balanced_spec_name(index, params, intensity):
+    return (
+        f"balanced_{index:02d}_intensity_{intensity:.2f}_"
+        f"gau_{params['gaussian_scale']:.4f}_"
+        f"scale_{params['person_scale']:.2f}_"
+        f"dummy_{params['dummy_threshold']:.1f}_"
+        f"speed_{str(params['speed']).replace('.', '_')}_"
+        f"{shift_name_suffix((params['position_shift_x'], params['position_shift_y']))}_"
+        f"{xy_scale_name_suffix((params['xy_scale_x'], params['xy_scale_y']))}_"
+        f"{rotation_name_suffix(params['rotation_degrees'])}_"
+        f"{hand_dropout_name_suffix(params['hand_dropout_ratio'])}_"
+        f"{hand_motion_name_suffix(params['hand_motion_scale'])}"
+    )
+
+
+def _sample_candidate_params(rng):
+    shift_values = _candidate_values("position_shift", AUGMENTATION_SHIFTS, (0.0, 0.0))
+    xy_scale_values = _candidate_values("xy_scale", AUGMENTATION_XY_SCALES, (1.0, 1.0))
+    shift = shift_values[int(rng.integers(len(shift_values)))]
+    xy_scale = xy_scale_values[int(rng.integers(len(xy_scale_values)))]
+
+    front_values = [True, False] if AUGMENTATION_ENABLE.get("front_offset", True) else [True]
+    gaussian_values = _candidate_values("gaussian_noise", GAU_NOISE, 0.0)
+    person_scale_values = _candidate_values("person_scale", PERSON_SCALE, 1.0)
+    dummy_values = _candidate_values("dummy_threshold", DUMMY_THRESHOLD, 0.9)
+    speed_values = _candidate_values("temporal_speed", AUGMENTATION_SPEEDS, 1.0)
+    rotation_values = _candidate_values("rotation", AUGMENTATION_ROTATIONS, 0.0)
+    hand_dropout_values = _candidate_values("hand_dropout", AUGMENTATION_HAND_DROPOUT_RATIOS, 0.0)
+    hand_motion_values = _candidate_values("hand_motion_scale", AUGMENTATION_HAND_MOTION_SCALES, 1.0)
+
+    return {
+        "front": front_values[int(rng.integers(len(front_values)))],
+        "gaussian_scale": gaussian_values[int(rng.integers(len(gaussian_values)))],
+        "person_scale": person_scale_values[int(rng.integers(len(person_scale_values)))],
+        "dummy_threshold": dummy_values[int(rng.integers(len(dummy_values)))],
+        "speed": speed_values[int(rng.integers(len(speed_values)))],
+        "position_shift_x": float(shift[0]),
+        "position_shift_y": float(shift[1]),
+        "xy_scale_x": float(xy_scale[0]),
+        "xy_scale_y": float(xy_scale[1]),
+        "rotation_degrees": float(rotation_values[int(rng.integers(len(rotation_values)))]),
+        "hand_dropout_ratio": float(hand_dropout_values[int(rng.integers(len(hand_dropout_values)))]),
+        "hand_motion_scale": float(hand_motion_values[int(rng.integers(len(hand_motion_values)))]),
     }
-)
 
-# 나머지 variation은 speed 1.0, 0.8, 1.2로 확장
-for spec in VARIATION_SPECS[1:]:
-    for speed in AUGMENTATION_SPEEDS:
-        speed_params = dict(spec["params"])
-        speed_params["speed"] = speed
-        AUGMENTATION_SPECS.append(
+
+def build_balanced_augmentation_specs(total):
+    if total < 1:
+        raise ValueError("total must be at least 1.")
+
+    specs = [BASE_AUGMENTATION_SPEC]
+    if total == 1:
+        return specs
+
+    selected_keys = set()
+    targets = np.linspace(0.06, 0.9, total - 1)
+    rng = np.random.default_rng(RANDOM_SEED)
+    for index, target in enumerate(targets, start=1):
+        best = None
+        best_intensity = None
+        best_cost = None
+        for _ in range(BALANCED_CANDIDATE_TRIALS):
+            params = _sample_candidate_params(rng)
+            key = tuple(sorted(params.items()))
+            if key in selected_keys:
+                continue
+            intensity, extreme_penalty = _candidate_intensity(params)
+            cost = abs(intensity - float(target)) + extreme_penalty
+            cost += 0.001 * ((index + int(params["front"])) % 3)
+            if best_cost is None or cost < best_cost:
+                best = params
+                best_intensity = intensity
+                best_cost = cost
+
+        if best is None:
+            break
+
+        selected_keys.add(tuple(sorted(best.items())))
+        specs.append(
             {
-                "name": f"{spec['name']}_speed_{str(speed).replace('.', '_')}",
-                "ratio": spec["ratio"],
-                "params": speed_params,
+                "name": _balanced_spec_name(index, best, best_intensity),
+                "ratio": 1,
+                "params": dict(best),
             }
         )
+
+    return specs
+
+
+AUGMENTATION_SPECS = build_balanced_augmentation_specs(max(AUGMENTATIONS_PER_SAMPLE_CHOICES))
+
+
+def augmentation_count_for_source(source_video):
+    rng = np.random.default_rng(RANDOM_SEED + int(source_video))
+    return int(rng.choice(AUGMENTATIONS_PER_SAMPLE_CHOICES))
+
 
 def _allocate_counts(total, weights):
     weights = np.array(weights, dtype=np.float64)
@@ -237,9 +417,40 @@ def augment_one_video(data, video_df, params):
         scale=params["person_scale"],
         clip=params.get("clip_scale", False),
     )
-    npz_gaussian, df_gaussian = gaussian_noise(
+    npz_xy_scaled, df_xy_scaled = person_xy_scale(
         npz_scaled,
         df_scaled,
+        scale_x=params.get("xy_scale_x", 1.0),
+        scale_y=params.get("xy_scale_y", 1.0),
+        clip=params.get("clip_scale", False),
+    )
+    npz_rotated, df_rotated = rotate_keypoints(
+        npz_xy_scaled,
+        df_xy_scaled,
+        degrees=params.get("rotation_degrees", 0.0),
+        clip=params.get("clip_rotation", False),
+    )
+    npz_hand_scaled, df_hand_scaled = hand_motion_scale(
+        npz_rotated,
+        df_rotated,
+        scale=params.get("hand_motion_scale", 1.0),
+        clip=params.get("clip_hand_motion", False),
+    )
+    npz_shifted, df_shifted = position_shift(
+        npz_hand_scaled,
+        df_hand_scaled,
+        shift_x=params.get("position_shift_x", 0.0),
+        shift_y=params.get("position_shift_y", 0.0),
+        clip=params.get("clip_position_shift", False),
+    )
+    npz_hand_dropout, df_hand_dropout = random_zero_hand_frames(
+        npz_shifted,
+        df_shifted,
+        ratio=params.get("hand_dropout_ratio", 0.0),
+    )
+    npz_gaussian, df_gaussian = gaussian_noise(
+        npz_hand_dropout,
+        df_hand_dropout,
         scale=params["gaussian_scale"],
     )
 
@@ -734,6 +945,164 @@ def person_center_scale(
     return augmented_data, processed_video_df
 
 
+def _pose_frame_centers(
+    video_npz,
+    left_shoulder_idx=11,
+    right_shoulder_idx=12,
+    default_center=(0.5, 0.5),
+):
+    pose = video_npz["pose"]
+    centers = np.zeros((pose.shape[0], 2), dtype=np.float32)
+    default_center_arr = np.array(default_center, dtype=np.float32)
+
+    for t, pose_frame in enumerate(pose):
+        shoulder_visible = (
+            left_shoulder_idx < pose_frame.shape[0]
+            and right_shoulder_idx < pose_frame.shape[0]
+            and pose_frame[left_shoulder_idx, 3] > 0
+            and pose_frame[right_shoulder_idx, 3] > 0
+        )
+        if shoulder_visible:
+            centers[t] = (
+                pose_frame[left_shoulder_idx, :2]
+                + pose_frame[right_shoulder_idx, :2]
+            ) * 0.5
+            continue
+
+        valid_pose = pose_frame[pose_frame[:, 3] > 0]
+        centers[t] = valid_pose[:, :2].mean(axis=0) if valid_pose.size > 0 else default_center_arr
+
+    return centers
+
+
+def person_xy_scale(video_npz, video_df, scale_x=1.0, scale_y=1.0, clip=False):
+    scale = np.array([float(scale_x), float(scale_y)], dtype=np.float32)
+    centers = _pose_frame_centers(video_npz)
+    augmented_data = {}
+
+    for key in ["pose", "face", "left_hand", "right_hand"]:
+        arr = video_npz[key].astype(np.float32).copy()
+        valid_mask = arr[:, :, 3] > 0
+        arr[:, :, :2] = centers[:, None, :] + (arr[:, :, :2] - centers[:, None, :]) * scale
+        if clip:
+            arr[:, :, 0] = np.clip(arr[:, :, 0], 0.0, 1.0)
+            arr[:, :, 1] = np.clip(arr[:, :, 1], 0.0, 1.0)
+        arr[:, :, :2] *= valid_mask[:, :, None]
+        augmented_data[key] = arr
+
+    if "fps" in video_npz:
+        augmented_data["fps"] = video_npz["fps"]
+    return augmented_data, video_df
+
+
+def rotate_keypoints(video_npz, video_df, degrees=0.0, clip=False):
+    degrees = float(degrees)
+    if np.isclose(degrees, 0.0):
+        out = {key: video_npz[key].copy() for key in ["pose", "face", "left_hand", "right_hand"]}
+        if "fps" in video_npz:
+            out["fps"] = video_npz["fps"]
+        return out, video_df
+
+    centers = _pose_frame_centers(video_npz)
+    rad = np.deg2rad(degrees)
+    rot = np.array(
+        [[np.cos(rad), -np.sin(rad)], [np.sin(rad), np.cos(rad)]],
+        dtype=np.float32,
+    )
+    augmented_data = {}
+
+    for key in ["pose", "face", "left_hand", "right_hand"]:
+        arr = video_npz[key].astype(np.float32).copy()
+        valid_mask = arr[:, :, 3] > 0
+        centered = arr[:, :, :2] - centers[:, None, :]
+        arr[:, :, :2] = centers[:, None, :] + centered @ rot.T
+        if clip:
+            arr[:, :, 0] = np.clip(arr[:, :, 0], 0.0, 1.0)
+            arr[:, :, 1] = np.clip(arr[:, :, 1], 0.0, 1.0)
+        arr[:, :, :2] *= valid_mask[:, :, None]
+        augmented_data[key] = arr
+
+    if "fps" in video_npz:
+        augmented_data["fps"] = video_npz["fps"]
+    return augmented_data, video_df
+
+
+def hand_motion_scale(video_npz, video_df, scale=1.0, clip=False):
+    scale = float(scale)
+    centers = _pose_frame_centers(video_npz)
+    augmented_data = {}
+
+    for key in ["pose", "face", "left_hand", "right_hand"]:
+        arr = video_npz[key].astype(np.float32).copy()
+        if key in ("left_hand", "right_hand"):
+            valid_mask = arr[:, :, 3] > 0
+            arr[:, :, :2] = centers[:, None, :] + (arr[:, :, :2] - centers[:, None, :]) * scale
+            if clip:
+                arr[:, :, 0] = np.clip(arr[:, :, 0], 0.0, 1.0)
+                arr[:, :, 1] = np.clip(arr[:, :, 1], 0.0, 1.0)
+            arr[:, :, :2] *= valid_mask[:, :, None]
+        augmented_data[key] = arr
+
+    if "fps" in video_npz:
+        augmented_data["fps"] = video_npz["fps"]
+    return augmented_data, video_df
+
+
+def random_zero_hand_frames(video_npz, video_df, ratio=0.0, min_keep_frames=1):
+    ratio = float(ratio)
+    if ratio < 0.0 or ratio >= 1.0:
+        raise ValueError(f"ratio must be in [0.0, 1.0), got {ratio}.")
+
+    augmented_data = {key: video_npz[key].astype(np.float32).copy() for key in ["pose", "face", "left_hand", "right_hand"]}
+    total_frames = int(video_npz["pose"].shape[0])
+    zero_count = int(round(total_frames * ratio))
+    max_zero_count = max(0, total_frames - int(min_keep_frames))
+    zero_count = min(zero_count, max_zero_count)
+
+    if zero_count > 0:
+        for key in ["left_hand", "right_hand"]:
+            zero_indices = np.random.choice(total_frames, size=zero_count, replace=False)
+            augmented_data[key][zero_indices] = 0.0
+
+    if "fps" in video_npz:
+        augmented_data["fps"] = video_npz["fps"]
+
+    processed_video_df = _sync_detection_columns_from_npz(video_df, augmented_data)
+    return augmented_data, processed_video_df
+
+
+def position_shift(video_npz, video_df, shift_x=0.0, shift_y=0.0, clip=False):
+    """
+    모든 유효 keypoint의 x/y 좌표를 지정한 값만큼 이동합니다.
+
+    좌표가 0~1 스케일인 데이터를 기준으로 shift_x=0.05는 화면 너비의 5%,
+    shift_y=-0.03은 화면 높이의 3%만큼 위로 이동하는 의미입니다.
+    """
+    shift_x = float(shift_x)
+    shift_y = float(shift_y)
+    augmented_data = {}
+
+    for key in ["pose", "face", "left_hand", "right_hand"]:
+        arr = video_npz[key].astype(np.float32).copy()
+        valid_mask = arr[:, :, 3] > 0
+
+        arr[:, :, 0] += shift_x * valid_mask
+        arr[:, :, 1] += shift_y * valid_mask
+
+        if clip:
+            arr[:, :, 0] = np.clip(arr[:, :, 0], 0.0, 1.0)
+            arr[:, :, 1] = np.clip(arr[:, :, 1], 0.0, 1.0)
+
+        arr[:, :, :2] *= valid_mask[:, :, None]
+        augmented_data[key] = arr
+
+    if "fps" in video_npz:
+        augmented_data["fps"] = video_npz["fps"]
+
+    return augmented_data, video_df
+
+
+
 def gaussian_noise(video_npz, video_df, scale=0.001):
     augmented_data = {}
 
@@ -770,7 +1139,6 @@ if __name__ == "__main__":
 
     npz_files = sorted([f for f in os.listdir(INPUT_NPZ_DIR) if f.endswith(".npz")])
     merged_df = pd.read_csv(input_dir / "all_summary.csv")
-    aug_plan = build_augmentation_plan(AUGMENTATION_SPECS, AUGMENTATIONS_PER_SAMPLE)
 
     default_params = {}
     for spec in AUGMENTATION_SPECS:
@@ -801,15 +1169,23 @@ if __name__ == "__main__":
         raise ValueError("No source videos found to augment.")
     source_meta_df.to_csv(output_dir / "source_videos.csv", index=False)
 
-    split_counts_per_class = _split_counts(len(aug_plan), SPLIT_RATIOS)
+    aug_count_by_source = {
+        int(row["source_video"]): augmentation_count_for_source(int(row["source_video"]))
+        for _, row in source_meta_df.iterrows()
+    }
+    split_count_examples = {
+        count: _split_counts(count, SPLIT_RATIOS)
+        for count in sorted(set(aug_count_by_source.values()))
+    }
     manifest_rows = []
     summary_rows = []
     split_summary_rows = {split_name: [] for split_name in SPLIT_RATIOS}
     skipped = []
 
     print(f"Classes/source videos: {len(source_meta_df)}")
-    print(f"Augmentations per class: {len(aug_plan)}")
-    print(f"Split counts per class: {split_counts_per_class}")
+    print(f"Augmentations per class choices: {AUGMENTATIONS_PER_SAMPLE_CHOICES}")
+    print(f"Augmentation count distribution: {pd.Series(aug_count_by_source).value_counts().sort_index().to_dict()}")
+    print(f"Split count examples: {split_count_examples}")
 
     for source_order, source_row in tqdm(
         list(source_meta_df.iterrows()),
@@ -818,6 +1194,8 @@ if __name__ == "__main__":
         source_video = int(source_row["source_video"])
         class_id = int(source_row["class_id"])
         npz_file = source_row["npz_file"]
+        aug_count = aug_count_by_source[source_video]
+        aug_plan = build_augmentation_plan(AUGMENTATION_SPECS, aug_count)
         aug_splits = assign_aug_splits_for_source(
             len(aug_plan),
             SPLIT_RATIOS,
@@ -892,6 +1270,7 @@ if __name__ == "__main__":
                     "source_file": npz_file,
                     "aug_idx": aug_idx,
                     "aug_name": aug_spec["name"],
+                    "aug_count_for_class": aug_count,
                     "params": json.dumps(params, ensure_ascii=False, sort_keys=True),
                     "num_frames": int(aug_npz["pose"].shape[0]),
                 }
