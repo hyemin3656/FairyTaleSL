@@ -20,29 +20,31 @@ if _ROOT_ENV.exists():
     load_dotenv(_ROOT_ENV)
 load_dotenv()   # ai_engine/.env (있으면)
 
-from routers import predict, qa
+from routers import qa
+
+try:
+    from routers import predict as _predict_router
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
+    print("[AI Engine] torch/numpy 없음 — /predict 비활성화, QA만 동작")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ST-GCN classify 모드 초기화 (67 한국어 클래스)
-    from models.stgcn import get_model, load_weights
-    from routers.predict import VOCAB, WEIGHTS_PATH
-    get_model(vocab=VOCAB, device="cpu", mode="classify")
-    load_weights(WEIGHTS_PATH)
-    print(f"[AI Engine] ST-GCN ready (classify, {len(VOCAB)} classes).")
-    # T5 백그라운드 로드 예약
-    from models.t5_qa import preload as t5_preload
-    t5_preload()
+    if _HAS_TORCH:
+        try:
+            from models.stgcn import get_model, load_weights
+            from routers.predict import VOCAB, WEIGHTS_PATH
+            get_model(vocab=VOCAB, device="cpu", mode="classify")
+            load_weights(WEIGHTS_PATH)
+            print(f"[AI Engine] ST-GCN ready ({len(VOCAB)} classes).")
+        except Exception as e:
+            print(f"[AI Engine] ST-GCN 로드 실패 (무시): {e}")
     yield
 
 
-app = FastAPI(
-    title="PSYcho AI Engine",
-    description="ST-GCN + CTC 수어 인식 / pko-T5 Q&A",
-    version="0.1.0",
-    lifespan=lifespan,
-)
+app = FastAPI(title="PSYcho AI Engine", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -51,7 +53,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(predict.router)
+if _HAS_TORCH:
+    app.include_router(_predict_router.router)
 app.include_router(qa.router)
 
 

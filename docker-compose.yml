@@ -33,6 +33,17 @@ services:
       - internal
       - public
 
+  ai_engine:
+    build: ./ai_engine
+    env_file: .env
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./ai_engine:/app
+      - ./data_pipeline:/data_pipeline:ro
+    networks:
+      - public
+
   frontend:
     build: ./frontend
     environment:
