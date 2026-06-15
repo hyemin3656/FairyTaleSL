@@ -48,7 +48,7 @@ MODE_DEFAULT = os.environ.get("SIGN_MODE", "gloss")   # "gloss" | "sequence"
 
 CONFIG_PATH = Path(os.environ.get(
     "SIGN_CONFIG",
-    PROJECT_ROOT.parent / "mmaction2" / "configs/skeleton/cnn1d/cnn1d_8xb16-joint-u100-50e_mediapipe-sign-keypoint-3d_without_face.py",
+    PROJECT_ROOT / "src" / "cnn1d_config.py",
 ))
 CHECKPOINT_PATH = Path(os.environ.get(
     "SIGN_CHECKPOINT",

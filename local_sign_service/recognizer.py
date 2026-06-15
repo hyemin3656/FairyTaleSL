@@ -283,7 +283,7 @@ class RealtimeSegmenter:
 
 # ── CNN1D 추론기 ───────────────────────────────────────────────────────
 class CNN1DRealtimeRecognizer:
-    """MMAction2 CNN1D 모델 wrapper."""
+    """hyemin 브랜치 커스텀 CNN1D 모델 wrapper (mmaction2 대체)."""
 
     def __init__(
         self,
@@ -294,21 +294,27 @@ class CNN1DRealtimeRecognizer:
         topk: int = 5,
         max_gap: int = 5,
     ) -> None:
-        import torch
-        from mmaction.apis import init_recognizer
-        from mmaction.utils import register_all_modules
-        from mmengine.config import Config
-        from mmengine.dataset import Compose
+        import sys, torch
+        # hyemin 모델 모듈 경로 추가
+        _src = Path(__file__).resolve().parent / "src"
+        if str(_src) not in sys.path:
+            sys.path.insert(0, str(_src))
+        from builder import build_model
+        from config_utils import load_config
+        from model import load_checkpoint
 
         self._torch = torch
-        register_all_modules(init_default_scope=True)
-        self.cfg = Config.fromfile(str(config))
-        self.pipeline = Compose(self.cfg.test_pipeline)
-        self.model = init_recognizer(self.cfg, checkpoint=str(Path(checkpoint).expanduser().resolve()), device=device)
         self.device = device
         self.topk = topk
         self.max_gap = max_gap
         self.label_map = self._load_label_map(label_map)
+
+        cfg = load_config(str(config))
+        self.cfg = cfg
+        self.model = build_model(cfg)
+        self.model = self.model.to(device)
+        load_checkpoint(self.model, str(checkpoint), map_location=device)
+        self.model.eval()
 
     @staticmethod
     def _load_label_map(path: Path) -> dict:
@@ -319,20 +325,40 @@ class CNN1DRealtimeRecognizer:
             return json.load(f)
 
     def predict_segment(self, segment: list[dict]) -> dict:
-        """segment → top-k 예측."""
-        from mmengine.dataset import pseudo_collate
-        sample = build_mmaction_sample(segment, max_gap=self.max_gap)
-        data = self.pipeline(sample)
-        data_batch = pseudo_collate([data])
-        with self._torch.no_grad():
-            result = self.model.test_step(data_batch)[0]
-        return self._format(result.pred_score)
+        """segment → top-k 예측 (hyemin preprocess 사용)."""
+        import sys
+        _src = Path(__file__).resolve().parent / "src"
+        if str(_src) not in sys.path:
+            sys.path.insert(0, str(_src))
+        from data import preprocess_keypoint_sample
 
-    def _format(self, pred_score) -> dict:
-        topk = min(self.topk, pred_score.numel())
-        scores, indices = pred_score.topk(topk)
+        cfg = self.cfg
+        sample = build_mmaction_sample(segment, max_gap=self.max_gap)
+
+        x = preprocess_keypoint_sample(
+            sample,
+            clip_len=getattr(cfg, "CLIP_LEN", 50),
+            num_clips=getattr(cfg, "TEST_NUM_CLIPS", 1),
+            test_mode=True,
+            input_mode=getattr(cfg, "INPUT_MODE", "xy"),
+            keypoint_normalize=getattr(cfg, "KEYPOINT_NORMALIZE", None),
+            random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
+            short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
+            zero_pad_short=getattr(cfg, "ZERO_PAD_SHORT", False),
+        )
+        x = self._torch.tensor(x, dtype=self._torch.float32).to(self.device)
+        if x.dim() == 3:
+            x = x.unsqueeze(0)  # (1, T, N, C)
+        with self._torch.no_grad():
+            logits = self.model(x)
+        scores = self._torch.softmax(logits[0], dim=-1)
+        return self._format(scores)
+
+    def _format(self, scores) -> dict:
+        topk = min(self.topk, scores.numel())
+        vals, indices = scores.topk(topk)
         preds = []
-        for cls, score in zip(indices.tolist(), scores.tolist()):
+        for cls, score in zip(indices.tolist(), vals.tolist()):
             preds.append({
                 "class_id": int(cls),
                 "label": self.label_map.get(str(int(cls)), str(int(cls))),

@@ -125,10 +125,35 @@ def _build_books() -> list[dict]:
         "사계절_친구들":  {"cover": "/static/covers/four_seasons.svg",         "author": "창작",    "age": (5, 8)},
     }
 
+    # 섹션 소제목 (tale_id → 세그먼트 순서대로)
+    section_titles: dict[str, list[str]] = {
+        "토끼와_거북이":       ["달리기 시합", "거북이의 승리"],
+        "흥부와_놀부":         ["착한 흥부, 욕심쟁이 놀부", "제비와 박씨", "놀부의 벌"],
+        "콩쥐팥쥐":           ["콩쥐의 슬픔", "잔치날의 기적", "콩쥐의 행복"],
+        "금도끼_은도끼":       ["연못에 빠진 도끼", "정직한 나무꾼", "욕심쟁이의 최후"],
+        "심청전":             ["효녀 심청", "연꽃이 된 심청", "아버지와의 재회"],
+        "단군신화":           ["환웅의 하강", "곰과 호랑이의 시험", "고조선의 탄생"],
+        "선녀와_나무꾼":       ["사슴의 은혜", "날개옷과 결혼", "하늘로 돌아간 선녀"],
+        "해님달님":           ["어머니와 호랑이", "호랑이의 변장", "하늘로 오른 오누이", "해님과 달님"],
+        "혹부리_영감":         ["할아버지의 혹", "도깨비 잔치", "혹을 떼다"],
+        "별을_찾아서":         ["별똥별", "달나라", "별의 귀환"],
+        "팥죽할머니와_호랑이": ["할머니의 팥죽", "친구들의 도움", "호랑이를 물리치다"],
+        "견우와_직녀":         ["하늘나라의 만남", "은하수의 이별", "칠월 칠석의 만남"],
+        "장화홍련":           ["계모의 구박", "억울한 죽음", "원한을 풀다"],
+        "개미와_베짱이":       ["여름의 개미와 베짱이", "배고픈 겨울", "게으름의 후회"],
+        "빨간_모자":          ["숲 속의 늑대", "할머니 집의 위기", "사냥꾼의 구출"],
+        "신데렐라":           ["구박받는 신데렐라", "무도회의 신데렐라", "유리구두의 주인"],
+        "아기_돼지_삼형제":    ["집 짓기", "늑대의 습격", "벽돌 집의 승리"],
+        "인어공주":           ["바다 아래의 꿈", "목소리와 다리", "바다 거품이 된 사랑"],
+        "벌거벗은_임금님":     ["사기꾼의 마법 옷", "임금님의 행진", "아이의 외침"],
+        "사계절_친구들":       ["봄과 여름의 친구들", "가을의 작별", "겨울 그리고 다시 봄"],
+    }
+
     books = []
     for tale in FAIRY_TALES_STRUCTURED:
         tid  = tale["tale_id"]
         meta = category_meta.get(tid, {"cover": "/static/covers/fallback.svg", "author": "전래동화", "age": (6, 9)})
+        titles = section_titles.get(tid, [])
 
         # seg["sentences"]는 문자열 리스트
         def _sent_text(s):
@@ -144,15 +169,15 @@ def _build_books() -> list[dict]:
 
         sections = [
             {
-                "order": seg["segment_id"],
-                "title": f"{tale['title']} {seg['segment_id']}부",
-                "text":  " ".join(_sent_text(s) for s in seg["sentences"]),
+                "order":     seg["segment_id"],
+                "title":     titles[i] if i < len(titles) else f"{tale['title']} {seg['segment_id']}부",
+                "text":      " ".join(_sent_text(s) for s in seg["sentences"]),
                 "sign_text": " ".join(
                     g for s in seg["sentences"] for g in _sent_glosses(s)
                 ) or None,
                 "image_url": f"/images/sections/{tid}_{seg['segment_id']}.png",
             }
-            for seg in tale["segments"]
+            for i, seg in enumerate(tale["segments"])
         ]
         # tale_id 기반 결정적 UUID — 재시딩해도 동일한 UUID 유지
         stable_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"fairytalesl.book.{tid}")

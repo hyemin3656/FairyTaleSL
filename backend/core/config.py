@@ -1,9 +1,15 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# 루트 .env → backend/.env 순 적재 (나중 파일이 우선순위 높음)
+# 로컬 개발 시 backend/.env 에 localhost 오버라이드를 넣으면 Docker 호스트명 대체 가능
+_HERE = Path(__file__).resolve().parent.parent
+_ENV_FILES = [str(_HERE.parent / ".env"), str(_HERE / ".env")]
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=_ENV_FILES, env_file_encoding="utf-8", extra="ignore"
     )
 
     # Database
