@@ -130,61 +130,6 @@ docker compose exec backend python scripts/seed.py
 
 ### 로컬 개발 (Docker 없이) — 4개 터미널
 
-로컬에서 코드 변경하며 개발할 때는 4개 서비스를 각각 별도 터미널에서 실행합니다. 모든 명령은 **프로젝트 루트(`PSYcho/`)에서 시작**합니다.
-
-#### Terminal 1 — Backend (:8000)
-```bash
-lsof -ti :8000 | xargs kill -9       # 기존 프로세스 정리
-cd backend && ./.venv/bin/uvicorn main:app --port 8000 --reload
-```
-
-#### Terminal 2 — AI Engine (:8001)
-```bash
-lsof -ti :8001 | xargs kill -9
-cd ai_engine && ./.venv/bin/uvicorn main:app --port 8001 --reload
-```
-
-#### Terminal 3 — Frontend (:5173)
-```bash
-lsof -ti :5173 | xargs kill -9
-cd frontend && npm run dev
-```
-
-#### Terminal 4 — Local Sign Service (:8002, 수어 인식 사이드카)
-```bash
-lsof -ti :8002 | xargs kill -9
-cd local_sign_service && ./.venv/bin/uvicorn main:app --port 8002
-```
-
-브라우저 접속: **http://localhost:5173**
-
-> **기동 순서 권장**: 사이드카(8002) → AI 엔진(8001) → 백엔드(8000) → 프론트(5173)
-> 모델 로딩이 무거운 사이드카·AI 엔진을 먼저 띄우면 안정적입니다.
-
-#### 사전 준비 — 1회만 실행
-```bash
-# 1. 각 venv 의존성 설치
-cd backend && python -m venv .venv && ./.venv/bin/pip install -r requirements.txt && cd ..
-cd ai_engine && python -m venv .venv && ./.venv/bin/pip install -r requirements.txt && cd ..
-cd local_sign_service && python -m venv .venv && ./.venv/bin/pip install -r requirements.txt && cd ..
-cd frontend && npm install && cd ..
-
-# 2. DB 마이그레이션 + 시드
-cd backend && DATABASE_URL="sqlite+aiosqlite:///./dev.db" ./.venv/bin/alembic upgrade head
-DATABASE_URL="sqlite+aiosqlite:///./dev.db" ./.venv/bin/python scripts/seed.py
-
-# 3. motion_db.sqlite 받기 (Git LFS)
-brew install git-lfs && git lfs install
-git lfs pull
-
-# 4. .env 작성 (LLM_API_KEY, GEMINI_API_KEY 등 입력)
-cp .env.example .env
-```
-
----
-
-### 로컬 개발 (Docker 없이) — 4개 터미널
-
 로컬에서 코드 변경하며 개발할 때는 4개 서비스를 각각 별도 터미널에서 실행합니다.  
 모든 명령은 프로젝트 루트(`PSYcho/`)에서 시작합니다.
 
