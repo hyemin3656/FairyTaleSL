@@ -17,13 +17,18 @@ sldict.korean.go.kr 전체 수어 영상 수집 → keypoint 추출 → motion_d
 주의:
   - 약 25,500개 항목 처리 → 수 시간 소요
   - 중간 중단 후 재실행 시 sldict_full_log.json 기준으로 이어받기
+  - 네트워크 fetch/download는 FETCH_WORKERS 스레드로 병렬 처리
+  - MediaPipe 추출은 단일 스레드 (thread-safety 보장)
 """
 
 import json
+import queue
 import re
 import sqlite3
+import threading
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import cv2
@@ -44,14 +49,15 @@ HEADERS = {
     "Referer": "https://sldict.korean.go.kr",
 }
 
-MAX_ORIGIN_NO = 25600   # 이진탐색으로 확인된 최대값
-KEYPOINT_FPS  = 15      # 30fps 영상에서 2프레임마다 1장 추출
+MAX_ORIGIN_NO = 25600
+KEYPOINT_FPS  = 15
+FETCH_WORKERS = 8   # 네트워크 병렬 스레드 수
+LOG_INTERVAL  = 200  # 로그 저장 주기
 
 
 # ── 1단계: sldict origin_no 조회 ─────────────────────────────
 
 def fetch_entry(origin_no: int) -> tuple[str | None, str | None]:
-    """origin_no → (단어명, 영상URL). 없으면 (None, None)."""
     url = (
         f"https://sldict.korean.go.kr/front/sign/signContentsView.do"
         f"?origin_no={origin_no}&top_gubun=CTE"
@@ -63,11 +69,9 @@ def fetch_entry(origin_no: int) -> tuple[str | None, str | None]:
     except Exception:
         return None, None
 
-    # 단어명
     og = re.search(r'content="한국수어사전_([^"]+)"', html)
     word = og.group(1).strip() if og else None
 
-    # 영상 URL
     preview = re.search(r'(https?://[^\s"\']+_105X105\.jpg)', html)
     if not preview:
         return word, None
@@ -99,9 +103,8 @@ def download_video(url: str, save_path: Path) -> bool:
 
 # ── 3단계: MediaPipe keypoint 추출 ───────────────────────────
 
-BASE_DIR_KP    = Path(__file__).parent
-POSE_MODEL_PATH = BASE_DIR_KP / "pose_landmarker_lite.task"
-HAND_MODEL_PATH = BASE_DIR_KP / "hand_landmarker.task"
+POSE_MODEL_PATH = BASE_DIR / "pose_landmarker_lite.task"
+HAND_MODEL_PATH = BASE_DIR / "hand_landmarker.task"
 POSE_MODEL_URL  = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task"
 HAND_MODEL_URL  = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task"
 
@@ -139,7 +142,6 @@ def _lm_to_arr(landmarks, n: int) -> np.ndarray:
 
 
 def extract_keypoints(video_path: Path, pose_lm, hand_lm) -> np.ndarray | None:
-    """영상 → (N, 225) float32. lhand(63)+rhand(63)+pose(99)."""
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
         return None
@@ -185,28 +187,34 @@ def extract_keypoints(video_path: Path, pose_lm, hand_lm) -> np.ndarray | None:
 
 # ── 4단계: motion_db 업서트 ──────────────────────────────────
 
+_db_lock = threading.Lock()
+
 def upsert(gloss: str, kp_seq: np.ndarray) -> None:
-    conn = sqlite3.connect(str(DB_PATH))
     blob = kp_seq.astype(np.float32).tobytes()
-    conn.execute("""
-        INSERT INTO motion_db (gloss, keypoint_data, emotion_label)
-        VALUES (?, ?, 'neutral')
-        ON CONFLICT(gloss) DO UPDATE SET keypoint_data = excluded.keypoint_data
-    """, (gloss, blob))
-    conn.commit()
-    conn.close()
+    with _db_lock:
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.execute("""
+            INSERT INTO motion_db (gloss, keypoint_data, emotion_label)
+            VALUES (?, ?, 'neutral')
+            ON CONFLICT(gloss) DO UPDATE SET keypoint_data = excluded.keypoint_data
+        """, (gloss, blob))
+        conn.commit()
+        conn.close()
 
 
 def has_keypoint(gloss: str) -> bool:
-    conn = sqlite3.connect(str(DB_PATH))
-    row = conn.execute(
-        "SELECT keypoint_data FROM motion_db WHERE gloss=?", (gloss,)
-    ).fetchone()
-    conn.close()
+    with _db_lock:
+        conn = sqlite3.connect(str(DB_PATH))
+        row = conn.execute(
+            "SELECT keypoint_data FROM motion_db WHERE gloss=?", (gloss,)
+        ).fetchone()
+        conn.close()
     return bool(row and row[0])
 
 
 # ── 로그 ─────────────────────────────────────────────────────
+
+_log_lock = threading.Lock()
 
 def load_log() -> dict:
     if LOG_PATH.exists():
@@ -216,8 +224,31 @@ def load_log() -> dict:
 
 
 def save_log(log: dict) -> None:
-    with open(LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(log, f, ensure_ascii=False, indent=2)
+    with _log_lock:
+        with open(LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(log, f, ensure_ascii=False, indent=2)
+
+
+# ── 네트워크 fetch + download 작업 (병렬) ────────────────────
+
+def fetch_and_download(origin_no: int) -> dict:
+    """fetch_entry + download_video → 결과 dict 반환."""
+    word, video_url = fetch_entry(origin_no)
+
+    if not video_url:
+        return {"origin_no": origin_no, "status": "no_video", "word": word}
+
+    gloss = word or f"sign_{origin_no}"
+
+    if word and has_keypoint(word):
+        return {"origin_no": origin_no, "status": "already_done", "gloss": gloss}
+
+    save_path = VIDEO_DIR / f"{gloss}.mp4"
+    ok = download_video(video_url, save_path)
+    if not ok:
+        return {"origin_no": origin_no, "status": "dl_fail", "gloss": gloss}
+
+    return {"origin_no": origin_no, "status": "ready", "gloss": gloss, "path": save_path}
 
 
 # ── 메인 ─────────────────────────────────────────────────────
@@ -228,83 +259,84 @@ def main():
 
     log = load_log()
     done_nos     = set(log["done_nos"])
-    no_video_nos = set(log["no_video_nos"])
+    no_video_nos = set(log.get("no_video_nos", []))
+    failed_nos   = set(log.get("failed_nos", []))
     skip_nos     = done_nos | no_video_nos
 
     total    = MAX_ORIGIN_NO
     success  = len(done_nos)
     no_video = len(no_video_nos)
-    dl_fail  = 0
+    dl_fail  = len(failed_nos)
+    processed = 0
 
+    pending = [n for n in range(1, MAX_ORIGIN_NO + 1) if n not in skip_nos]
     print(f"sldict 전체 수집 시작 (origin_no 1~{MAX_ORIGIN_NO})")
-    print(f"이미 완료: {success}개 | 영상없음: {no_video}개\n")
+    print(f"이미 완료: {success}개 | 영상없음: {no_video}개 | 남은 수: {len(pending)}개")
+    print(f"병렬 fetch 스레드: {FETCH_WORKERS}개\n")
 
-    for origin_no in range(1, MAX_ORIGIN_NO + 1):
-        if origin_no in skip_nos:
-            continue
+    start_time = time.time()
 
-        word, video_url = fetch_entry(origin_no)
+    with ThreadPoolExecutor(max_workers=FETCH_WORKERS) as executor:
+        futures = {executor.submit(fetch_and_download, n): n for n in pending}
 
-        if not video_url:
-            log["no_video_nos"].append(origin_no)
-            no_video_nos.add(origin_no)
-            no_video += 1
-            if origin_no % 500 == 0:
-                print(f"  [{origin_no}/{total}] 진행 중 | ✅{success} ❌영상없음:{no_video}")
+        for future in as_completed(futures):
+            result = future.result()
+            origin_no = result["origin_no"]
+            status    = result["status"]
+            processed += 1
+
+            if status == "no_video":
+                log["no_video_nos"].append(origin_no)
+                no_video_nos.add(origin_no)
+                no_video += 1
+
+            elif status == "already_done":
+                log["done_nos"].append(origin_no)
+                done_nos.add(origin_no)
+                success += 1
+
+            elif status == "dl_fail":
+                log["failed_nos"].append(origin_no)
+                failed_nos.add(origin_no)
+                dl_fail += 1
+                print(f"[{origin_no}] {result.get('gloss','')} ❌ 다운로드 실패")
+
+            elif status == "ready":
+                gloss = result["gloss"]
+                save_path = result["path"]
+                kp = extract_keypoints(save_path, pose_lm, hand_lm)
+                save_path.unlink(missing_ok=True)
+
+                if kp is None or len(kp) == 0:
+                    print(f"[{origin_no}] {gloss} ⚠️ keypoint 없음")
+                    log["no_video_nos"].append(origin_no)
+                    no_video_nos.add(origin_no)
+                    no_video += 1
+                else:
+                    upsert(gloss, kp)
+                    log["done_nos"].append(origin_no)
+                    log["done_words"].append(gloss)
+                    done_nos.add(origin_no)
+                    success += 1
+                    print(f"[{origin_no}] {gloss} ✅ {len(kp)}프레임")
+
+            if processed % LOG_INTERVAL == 0:
                 save_log(log)
-            time.sleep(0.1)
-            continue
-
-        # 단어명 없으면 origin_no로 임시 저장
-        gloss = word or f"sign_{origin_no}"
-
-        # 이미 keypoint 있으면 스킵
-        if word and has_keypoint(word):
-            log["done_nos"].append(origin_no)
-            done_nos.add(origin_no)
-            success += 1
-            time.sleep(0.05)
-            continue
-
-        save_path = VIDEO_DIR / f"{gloss}.mp4"
-        print(f"[{origin_no}] {gloss}", end=" ")
-
-        if not download_video(video_url, save_path):
-            print("❌ 다운로드 실패")
-            log["failed_nos"].append(origin_no)
-            dl_fail += 1
-            time.sleep(0.2)
-            continue
-
-        kp = extract_keypoints(save_path, pose_lm, hand_lm)
-        if kp is None or len(kp) == 0:
-            print("⚠️ keypoint 없음")
-            log["no_video_nos"].append(origin_no)
-            no_video_nos.add(origin_no)
-            no_video += 1
-        else:
-            upsert(gloss, kp)
-            print(f"✅ {len(kp)}프레임")
-            log["done_nos"].append(origin_no)
-            if word:
-                log["done_words"].append(word)
-            done_nos.add(origin_no)
-            success += 1
-
-        # keypoint 추출 후 영상 즉시 삭제 (디스크 절약)
-        save_path.unlink(missing_ok=True)
-
-        if origin_no % 100 == 0:
-            save_log(log)
-            print(f"\n  === [{origin_no}/{total}] ✅{success} 영상없음:{no_video} DL실패:{dl_fail} ===\n")
-
-        time.sleep(0.15)
+                elapsed = time.time() - start_time
+                rate = processed / elapsed * 3600
+                remaining = (len(pending) - processed) / (processed / elapsed) / 3600
+                print(
+                    f"\n  === [{processed}/{len(pending)}] "
+                    f"✅{success} 영상없음:{no_video} DL실패:{dl_fail} "
+                    f"| {rate:.0f}개/시간 | 남은시간:{remaining:.1f}h ===\n"
+                )
 
     save_log(log)
+    elapsed = time.time() - start_time
     print(f"\n{'='*50}")
     print(f"완료: {success}개 | 영상없음: {no_video}개 | DL실패: {dl_fail}개")
+    print(f"소요시간: {elapsed/3600:.1f}시간")
     print(f"저장 경로: {DB_PATH}")
-    print(f"\n다음: venv/bin/python step4b_emotion_runyourai.py")
 
 
 if __name__ == "__main__":
