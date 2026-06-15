@@ -337,10 +337,10 @@ class CNN1DRealtimeRecognizer:
 
         x = preprocess_keypoint_sample(
             sample,
-            clip_len=getattr(cfg, "CLIP_LEN", 50),
+            clip_len=getattr(cfg, "CLIP_LEN", 40),
             num_clips=getattr(cfg, "TEST_NUM_CLIPS", 1),
             test_mode=True,
-            input_mode=getattr(cfg, "INPUT_MODE", "xy"),
+            input_mode=getattr(cfg, "INPUT_MODE", "xyhandrel_bone"),
             keypoint_normalize=getattr(cfg, "KEYPOINT_NORMALIZE", None),
             random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
             short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),

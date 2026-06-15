@@ -291,7 +291,77 @@ def input_mode_to_channels(input_mode: str) -> int:
         return 3
     if input_mode == "xyzscore":
         return 4
-    raise ValueError("input_mode must be one of: xy, xyz, xyscore, xyzscore")
+    if input_mode == "xyhandrel":
+        return 4
+    if input_mode == "xyhandrel_norm":
+        return 6
+    if input_mode == "xyhandrel_bone":
+        return 6
+    raise ValueError("input_mode must be one of: xy, xyz, xyscore, xyzscore, xyhandrel, xyhandrel_norm, xyhandrel_bone")
+
+
+def build_hand_relative_xy(
+    keypoint: np.ndarray,
+    keypoint_score: Union[np.ndarray, None],
+) -> np.ndarray:
+    if keypoint.shape[2] < 65:
+        raise ValueError(f"xyhandrel input requires 65 joints, got {keypoint.shape[2]}.")
+
+    rel = np.zeros(keypoint.shape[:-1] + (2,), dtype=np.float32)
+    xy = keypoint[..., :2].astype(np.float32)
+    hand_slices = ((23, 44), (44, 65))
+    for start, end in hand_slices:
+        wrist_xy = xy[:, :, start:start + 1, :]
+        rel[:, :, start:end, :] = xy[:, :, start:end, :] - wrist_xy
+
+    xy_valid = np.any(xy != 0.0, axis=-1)
+    for start, end in hand_slices:
+        wrist_valid = xy_valid[:, :, start:start + 1]
+        hand_valid = xy_valid[:, :, start:end]
+        rel[:, :, start:end, :] *= (wrist_valid & hand_valid)[..., None]
+
+    return rel
+
+
+def build_normalized_hand_relative_xy(rel: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+    norm_rel = np.zeros_like(rel, dtype=np.float32)
+    hand_slices = ((23, 44), (44, 65))
+    for start, end in hand_slices:
+        hand_rel = rel[:, :, start:end, :]
+        valid = np.any(hand_rel != 0.0, axis=-1)
+        distances = np.linalg.norm(hand_rel, axis=-1)
+        valid_counts = valid.sum(axis=-1, keepdims=True)
+        scale = distances.sum(axis=-1, keepdims=True) / np.maximum(valid_counts, 1)
+        scale = np.maximum(scale, eps)
+        norm_rel[:, :, start:end, :] = hand_rel / scale[..., None]
+        norm_rel[:, :, start:end, :] *= valid[..., None]
+    return norm_rel
+
+
+def build_hand_bone_xy(keypoint: np.ndarray) -> np.ndarray:
+    if keypoint.shape[2] < 65:
+        raise ValueError(f"xyhandrel_bone input requires 65 joints, got {keypoint.shape[2]}.")
+
+    bone = np.zeros(keypoint.shape[:-1] + (2,), dtype=np.float32)
+    xy = keypoint[..., :2].astype(np.float32)
+    xy_valid = np.any(xy != 0.0, axis=-1)
+    local_parents = {
+        1: 0, 2: 1, 3: 2, 4: 3,
+        5: 0, 6: 5, 7: 6, 8: 7,
+        9: 0, 10: 9, 11: 10, 12: 11,
+        13: 0, 14: 13, 15: 14, 16: 15,
+        17: 0, 18: 17, 19: 18, 20: 19,
+    }
+
+    for hand_start in (23, 44):
+        for local_idx, local_parent in local_parents.items():
+            joint_idx = hand_start + local_idx
+            parent_idx = hand_start + local_parent
+            valid = xy_valid[:, :, joint_idx] & xy_valid[:, :, parent_idx]
+            bone[:, :, joint_idx, :] = xy[:, :, joint_idx, :] - xy[:, :, parent_idx, :]
+            bone[:, :, joint_idx, :] *= valid[..., None]
+
+    return bone
 
 
 def build_keypoint_features(
@@ -321,7 +391,27 @@ def build_keypoint_features(
             raise ValueError("xyzscore input requires keypoint_score in the sample.")
         score = np.asarray(keypoint_score, dtype=np.float32)[..., None]
         return np.concatenate([keypoint[..., :3].astype(np.float32), score], axis=-1)
-    raise ValueError("input_mode must be one of: xy, xyz, xyscore, xyzscore")
+    if input_mode == "xyhandrel":
+        if keypoint.shape[-1] < 2:
+            raise ValueError(f"xyhandrel input requires keypoint C>=2, got {keypoint.shape}.")
+        xy = keypoint[..., :2].astype(np.float32)
+        rel = build_hand_relative_xy(keypoint, keypoint_score)
+        return np.concatenate([xy, rel], axis=-1)
+    if input_mode == "xyhandrel_norm":
+        if keypoint.shape[-1] < 2:
+            raise ValueError(f"xyhandrel_norm input requires keypoint C>=2, got {keypoint.shape}.")
+        xy = keypoint[..., :2].astype(np.float32)
+        rel = build_hand_relative_xy(keypoint, keypoint_score)
+        norm_rel = build_normalized_hand_relative_xy(rel)
+        return np.concatenate([xy, rel, norm_rel], axis=-1)
+    if input_mode == "xyhandrel_bone":
+        if keypoint.shape[-1] < 2:
+            raise ValueError(f"xyhandrel_bone input requires keypoint C>=2, got {keypoint.shape}.")
+        xy = keypoint[..., :2].astype(np.float32)
+        rel = build_hand_relative_xy(keypoint, keypoint_score)
+        bone = build_hand_bone_xy(keypoint)
+        return np.concatenate([xy, rel, bone], axis=-1)
+    raise ValueError("input_mode must be one of: xy, xyz, xyscore, xyzscore, xyhandrel, xyhandrel_norm, xyhandrel_bone")
 
 
 def uniform_sample_frames(
