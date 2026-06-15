@@ -8,10 +8,10 @@ import ast
 import numpy as np
 
 ROOT_DIR_KSL1 = Path("../dataset/cropped_holistic_results_interpolated_remapped_direct")
-ROOT_DIR_KSL_2 = Path("../dataset/holistic_result_comp2_augmented_20_vari_3")
+ROOT_DIR_KSL_2 = Path("../dataset/holistic_result_comp2_aug_final")
 ROOT_DIRS = [ROOT_DIR_KSL1, ROOT_DIR_KSL_2]
 
-OUT_PKL = Path("../dataset/holistic_result_comp2_augmented_20_vari_3/mediapipe_sign_3d_without_face_pose_score_1.pkl")
+OUT_PKL = Path("../dataset/holistic_result_comp2_aug_final/mediapipe_sign_3d_without_face_pose_score_1.pkl")
 TEMPLATE_CSV =  Path("../dataset/gloss_sequences/gloss_sequence_templates.csv")
 
 RANDOM_SEED = 42
@@ -210,8 +210,6 @@ def build_annotations(sequence_level=False):
                 file_name = npz_path.stem      # 00_00
                 subject, class_name = parse_subject_and_class(file_name)
                 class_id = int(class_name)
-                if class_id > 136:
-                    continue
                 if sequence_level:
                     class_id = map_sequence_label(class_id, template_map)
 

@@ -15,8 +15,14 @@ def get_input_channels(cfg: ModuleType) -> int:
         return 3
     if input_mode == "xyzscore":
         return 4
+    if input_mode == "xyhandrel":
+        return 4
+    if input_mode == "xyhandrel_norm":
+        return 6
+    if input_mode == "xyhandrel_bone":
+        return 6
     if input_mode is not None:
-        raise ValueError("INPUT_MODE must be one of: xy, xyz, xyscore, xyzscore")
+        raise ValueError("INPUT_MODE must be one of: xy, xyz, xyscore, xyzscore, xyhandrel, xyhandrel_norm, xyhandrel_bone")
     return cfg.IN_CHANNELS
 
 

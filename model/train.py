@@ -8,7 +8,7 @@ import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -21,11 +21,13 @@ if str(PROJECT_ROOT) not in sys.path:
 DEFAULT_ANN_FILE = WORKSPACE_ROOT / "dataset/cropped_holistic_results_interpolated_split/mediapipe_sign_3d_without_face_pose_score_1.pkl"
 DEFAULT_CONFIG = PROJECT_ROOT / "model/configs/cnn1d_mediapipe_sign_without_face.py"
 DEFAULT_WORK_ROOT = PROJECT_ROOT / "work_dirs"
+DEFAULT_SAVED_VAL_NPZ_DIR = Path("/home/ubuntu/saved_inference_npz")
+DEFAULT_SAVED_VAL_CLASS_TEST_DIR = Path("/home/ubuntu/dataset/cropped_holistic_results_interpolated_remapped_direct/test_selected_from_attachment")
 
 from model.builder import build_model
 from model.config_utils import config_to_dict, load_config, resolve_config_path
 from model.model import load_checkpoint
-from model.data import MediapipeSignDataset
+from model.data import MediapipeSignDataset, build_npz_sample, preprocess_keypoint_sample
 
 
 def parse_args() -> argparse.Namespace:
@@ -42,6 +44,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--num-workers", type=int, default=1)
+    parser.add_argument(
+        "--val-mode",
+        default="saved-npz",
+        choices=["saved-npz", "ann"],
+        help="Validation source. saved-npz matches model/test_saved_inference_npz.py behavior.",
+    )
+    parser.add_argument("--saved-val-npz-dir", default=str(DEFAULT_SAVED_VAL_NPZ_DIR))
+    parser.add_argument("--saved-val-class-test-dir", default=str(DEFAULT_SAVED_VAL_CLASS_TEST_DIR))
+    parser.add_argument(
+        "--saved-val-label-source",
+        default="auto",
+        choices=["auto", "npz", "stem", "none"],
+        help="Where to read labels for saved-NPZ validation.",
+    )
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--weight-decay", type=float, default=None)
     parser.add_argument("--seed", type=int, default=42)
@@ -108,6 +124,226 @@ def run_eval(model: torch.nn.Module, loader: DataLoader, device: torch.device) -
     return {"loss": loss_sum / total, "top1": top1_sum / total, "top5": top5_sum / total}
 
 
+def to_int_label(value: Any) -> Optional[int]:
+    if value is None:
+        return None
+    arr = np.asarray(value)
+    if arr.size != 1:
+        return None
+    try:
+        return int(arr.reshape(-1)[0])
+    except (TypeError, ValueError):
+        return None
+
+
+def infer_saved_npz_label(npz_path: Path, data: np.lib.npyio.NpzFile, label_source: str) -> Optional[int]:
+    if label_source in {"auto", "npz"} and "label" in data:
+        label = to_int_label(data["label"])
+        if label is not None:
+            return label
+        if label_source == "npz":
+            return None
+
+    if label_source in {"auto", "stem"}:
+        try:
+            return int(npz_path.stem)
+        except ValueError:
+            return None
+    return None
+
+
+def infer_split_suffix_label(npz_path: Path) -> Optional[int]:
+    parts = npz_path.stem.split("_")
+    if not parts:
+        return None
+    try:
+        return int(parts[-1])
+    except ValueError:
+        return None
+
+
+def select_one_npz_per_class(npz_paths: Sequence[Path]) -> List[Path]:
+    by_label: Dict[int, Path] = {}
+    for npz_path in sorted(npz_paths):
+        label = infer_split_suffix_label(npz_path)
+        if label is None:
+            continue
+        by_label.setdefault(label, npz_path)
+    return [by_label[label] for label in sorted(by_label)]
+
+
+def ensure_m_t_v_c(keypoint: np.ndarray, npz_path: Path) -> np.ndarray:
+    keypoint = np.asarray(keypoint, dtype=np.float32)
+    if keypoint.ndim == 3:
+        keypoint = keypoint[None]
+    elif keypoint.ndim != 4:
+        raise ValueError(
+            f"{npz_path} keypoint must have shape [T,V,C] or [M,T,V,C], got {keypoint.shape}."
+        )
+
+    if keypoint.shape[2] != 65:
+        raise ValueError(f"{npz_path} expected 65 joints, got keypoint shape {keypoint.shape}.")
+    if keypoint.shape[-1] < 2:
+        raise ValueError(f"{npz_path} keypoint must have at least x/y channels, got {keypoint.shape}.")
+    if np.isnan(keypoint).any():
+        raise ValueError(f"{npz_path} keypoint contains NaN.")
+    return keypoint
+
+
+def load_saved_npz_sample(npz_path: str | Path, label_source: str = "auto") -> Dict[str, Any]:
+    npz_path = Path(npz_path).expanduser()
+    data = np.load(npz_path, allow_pickle=True)
+
+    if "keypoint" not in data:
+        sample = build_npz_sample(npz_path)
+        sample.pop("keypoint_score", None)
+        label = infer_saved_npz_label(npz_path, data, label_source)
+        if label is not None:
+            sample["label"] = label
+        return sample
+
+    keypoint = ensure_m_t_v_c(data["keypoint"], npz_path)
+    sample: Dict[str, Any] = {
+        "frame_dir": npz_path.stem,
+        "label": -1,
+        "total_frames": keypoint.shape[1],
+        "keypoint": keypoint,
+    }
+
+
+    label = infer_saved_npz_label(npz_path, data, label_source)
+    if label is not None:
+        sample["label"] = label
+    return sample
+
+
+def load_saved_val_samples(npz_dir: str | Path, label_source: str) -> List[Dict[str, Any]]:
+    npz_paths = sorted(Path(npz_dir).expanduser().glob("*.npz"))
+    if not npz_paths:
+        raise FileNotFoundError(f"No saved validation npz files found in {npz_dir}")
+
+    samples = [load_saved_npz_sample(path, label_source=label_source) for path in npz_paths]
+    labeled = sum(1 for sample in samples if int(sample.get("label", -1)) >= 0)
+    if labeled == 0:
+        raise ValueError(
+            f"Saved validation npz files in {npz_dir} have no labels. "
+            "Use --saved-val-label-source npz or stem with labeled files."
+        )
+    return samples
+
+
+def load_split_suffix_label_sample(npz_path: str | Path) -> Dict[str, Any]:
+    sample = load_saved_npz_sample(npz_path, label_source="none")
+    label = infer_split_suffix_label(Path(npz_path).expanduser())
+    if label is not None:
+        sample["label"] = label
+    return sample
+
+
+def load_class_test_val_samples(npz_dir: str | Path) -> List[Dict[str, Any]]:
+    npz_paths = sorted(Path(npz_dir).expanduser().glob("*.npz"))
+    if not npz_paths:
+        raise FileNotFoundError(f"No class-test npz files found in {npz_dir}")
+    return [load_split_suffix_label_sample(path) for path in npz_paths]
+
+
+def predict_scores_and_logits(
+    model: torch.nn.Module,
+    sample: Dict[str, Any],
+    cfg,
+    device: torch.device,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    keypoint = preprocess_keypoint_sample(
+        sample,
+        clip_len=cfg.CLIP_LEN,
+        num_clips=cfg.TEST_NUM_CLIPS,
+        test_mode=True,
+        zero_pad_short=getattr(cfg, "ZERO_PAD_SHORT", False),
+        input_mode=getattr(cfg, "INPUT_MODE", "xy"),
+        keypoint_normalize=getattr(cfg, "KEYPOINT_NORMALIZE", None),
+        random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
+        short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
+    )
+    inputs = torch.from_numpy(keypoint[None]).to(device)
+    scores = model.predict(inputs)
+    logits = model(inputs)
+    return scores, logits
+
+
+def run_saved_npz_eval_group(
+    model: torch.nn.Module,
+    samples: Sequence[Dict[str, Any]],
+    cfg,
+    device: torch.device,
+) -> dict:
+    model.eval()
+    total = 0
+    loss_sum = 0.0
+    top1_correct = 0
+    top5_correct = 0
+    criterion = torch.nn.CrossEntropyLoss()
+    with torch.no_grad():
+        for sample in samples:
+            label = int(sample.get("label", -1))
+            if label < 0:
+                continue
+
+            scores, logits = predict_scores_and_logits(model, sample, cfg, device)
+            labels = torch.tensor([label], dtype=torch.long, device=device)
+            loss = criterion(logits, labels)
+            pred_ids = scores[0].topk(min(5, scores.shape[1])).indices.tolist()
+            total += 1
+            loss_sum += loss.item()
+            top1_correct += int(pred_ids[0] == label)
+            top5_correct += int(label in pred_ids)
+
+    if total == 0:
+        raise ValueError("Saved validation samples have no usable labels.")
+    return {
+        "loss": loss_sum / total,
+        "top1": top1_correct / total,
+        "top5": top5_correct / total,
+        "num_labeled": total,
+        "num_samples": len(samples),
+    }
+
+
+def combine_saved_npz_metrics(metrics_list: Sequence[Dict[str, Any]]) -> dict:
+    usable_metrics = [metrics for metrics in metrics_list if int(metrics["num_labeled"]) > 0]
+    if not usable_metrics:
+        raise ValueError("Saved validation metrics have no labeled samples.")
+
+    total_labeled = sum(int(metrics["num_labeled"]) for metrics in usable_metrics)
+    total_samples = sum(int(metrics.get("num_samples", metrics["num_labeled"])) for metrics in usable_metrics)
+    num_groups = len(usable_metrics)
+
+    return {
+        "loss": sum(float(metrics["loss"]) for metrics in usable_metrics) / num_groups,
+        "top1": sum(float(metrics["top1"]) for metrics in usable_metrics) / num_groups,
+        "top5": sum(float(metrics["top5"]) for metrics in usable_metrics) / num_groups,
+        "num_labeled": total_labeled,
+        "num_samples": total_samples,
+        "combine_method": "unweighted_dataset_mean",
+    }
+
+
+def run_saved_npz_eval(
+    model: torch.nn.Module,
+    saved_samples: Sequence[Dict[str, Any]],
+    class_test_samples: Sequence[Dict[str, Any]],
+    cfg,
+    device: torch.device,
+) -> dict:
+    saved_metrics = run_saved_npz_eval_group(model, saved_samples, cfg, device)
+    class_test_metrics = run_saved_npz_eval_group(model, class_test_samples, cfg, device)
+    combined_metrics = combine_saved_npz_metrics([saved_metrics, class_test_metrics])
+    combined_metrics["metrics_by_dataset"] = {
+        "saved_inference_npz": saved_metrics,
+        "class_test_one_per_class": class_test_metrics,
+    }
+    return combined_metrics
+
+
 def save_checkpoint(
     path: Path,
     model: torch.nn.Module,
@@ -146,6 +382,10 @@ def save_run_config(cfg, cfg_dict: dict, args: argparse.Namespace, work_dir: Pat
             "LR": args.lr,
             "WEIGHT_DECAY": args.weight_decay,
             "ANN_FILE": args.ann_file,
+            "VAL_MODE": args.val_mode,
+            "SAVED_VAL_NPZ_DIR": args.saved_val_npz_dir,
+            "SAVED_VAL_CLASS_TEST_DIR": args.saved_val_class_test_dir,
+            "SAVED_VAL_LABEL_SOURCE": args.saved_val_label_source,
             "SOURCE_CONFIG": str(source),
         }
     )
@@ -192,6 +432,9 @@ def init_wandb(args: argparse.Namespace, run_dir: Path, run_name: str):
             "lr": args.lr,
             "weight_decay": args.weight_decay,
             "seed": args.seed,
+            "val_mode": args.val_mode,
+            "saved_val_npz_dir": args.saved_val_npz_dir,
+            "saved_val_class_test_dir": args.saved_val_class_test_dir,
             "config_file": args.config,
         },
     )
@@ -254,18 +497,6 @@ def main() -> None:
         random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
         short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
     )
-    val_set = MediapipeSignDataset(
-        args.ann_file,
-        split="val",
-        clip_len=cfg.CLIP_LEN,
-        num_clips=cfg.TEST_NUM_CLIPS,
-        test_mode=True,
-        zero_pad_short=getattr(cfg, "ZERO_PAD_SHORT", False),
-        input_mode=getattr(cfg, "INPUT_MODE", "xy"),
-        keypoint_normalize=getattr(cfg, "KEYPOINT_NORMALIZE", None),
-        random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
-        short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
-    )
     train_loader = DataLoader(
         train_set,
         batch_size=args.batch_size,
@@ -273,15 +504,42 @@ def main() -> None:
         num_workers=args.num_workers,
         pin_memory=device.type == "cuda",
     )
-    val_loader = DataLoader(
-        val_set,
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.num_workers,
-        pin_memory=device.type == "cuda",
-    )
 
-    logger.info("Train samples: %d | Val samples: %d", len(train_set), len(val_set))
+    val_loader = None
+    saved_val_samples = None
+    class_test_val_samples = None
+    if args.val_mode == "ann":
+        val_set = MediapipeSignDataset(
+            args.ann_file,
+            split="val",
+            clip_len=cfg.CLIP_LEN,
+            num_clips=cfg.TEST_NUM_CLIPS,
+            test_mode=True,
+            zero_pad_short=getattr(cfg, "ZERO_PAD_SHORT", False),
+            input_mode=getattr(cfg, "INPUT_MODE", "xy"),
+            keypoint_normalize=getattr(cfg, "KEYPOINT_NORMALIZE", None),
+            random_horizontal_flip=getattr(cfg, "RANDOM_HORIZONTAL_FLIP", None),
+            short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
+        )
+        val_loader = DataLoader(
+            val_set,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.num_workers,
+            pin_memory=device.type == "cuda",
+        )
+        logger.info("Train samples: %d | Annotation validation enabled", len(train_set))
+    else:
+        saved_val_samples = load_saved_val_samples(
+            args.saved_val_npz_dir,
+            label_source=args.saved_val_label_source,
+        )
+        class_test_val_samples = load_class_test_val_samples(args.saved_val_class_test_dir)
+        logger.info("Train samples: %d | Saved-NPZ val dir=%s", len(train_set), args.saved_val_npz_dir)
+        logger.info(
+            "Class-test val dir=%s selection=all_files_suffix_label",
+            args.saved_val_class_test_dir,
+        )
 
     model = build_model(cfg).to(device)
     if args.resume:
@@ -327,7 +585,16 @@ def main() -> None:
 
         should_val = epoch >= cfg.VAL_BEGIN and epoch % cfg.VAL_INTERVAL == 0
         if should_val:
-            val_metrics = run_eval(model, val_loader, device)
+            if args.val_mode == "ann":
+                val_metrics = run_eval(model, val_loader, device)
+            else:
+                val_metrics = run_saved_npz_eval(
+                    model,
+                    saved_val_samples,
+                    class_test_val_samples,
+                    cfg,
+                    device,
+                )
             if val_metrics["top1"] >= best_top1:
                 best_top1 = val_metrics["top1"]
                 best_epoch = epoch
@@ -352,6 +619,19 @@ def main() -> None:
             best_epoch,
             cfg_dict,
         )
+        periodic_checkpoint_path = None
+        if epoch % 50 == 0:
+            periodic_checkpoint_path = work_dir / f"epoch_{epoch:03d}.pth"
+            save_checkpoint(
+                periodic_checkpoint_path,
+                model,
+                optimizer,
+                scheduler,
+                epoch,
+                best_top1,
+                best_epoch,
+                cfg_dict,
+            )
 
         log_payload = {
             "epoch": epoch,
@@ -379,11 +659,33 @@ def main() -> None:
                 val_metrics["top1"],
                 val_metrics["top5"],
             )
+            if "metrics_by_dataset" in val_metrics:
+                for dataset_name, dataset_metrics in val_metrics["metrics_by_dataset"].items():
+                    log_prefix = f"val/{dataset_name}"
+                    log_payload.update(
+                        {
+                            f"{log_prefix}/loss": dataset_metrics["loss"],
+                            f"{log_prefix}/top1_acc": dataset_metrics["top1"],
+                            f"{log_prefix}/top5_acc": dataset_metrics["top5"],
+                        }
+                    )
+                    logger.info(
+                        "  val/%s | loss=%.4f | top1_acc=%.4f | top5_acc=%.4f",
+                        dataset_name,
+                        dataset_metrics["loss"],
+                        dataset_metrics["top1"],
+                        dataset_metrics["top5"],
+                    )
         if best_saved:
             logger.info(
                 "  checkpoint | best.pth saved at epoch %03d (val_top1_acc=%.4f)",
                 epoch,
                 best_top1,
+            )
+        if periodic_checkpoint_path is not None:
+            logger.info(
+                "  checkpoint | %s saved",
+                periodic_checkpoint_path.name,
             )
         if wandb_run is not None:
             wandb_run.log(log_payload, step=epoch)

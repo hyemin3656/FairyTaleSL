@@ -213,6 +213,70 @@ def append_eval_log(log_path: Path, lines: Sequence[str]) -> None:
             f.write(line + "\n")
 
 
+def run_regular_eval_with_class_range(
+    model: torch.nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+    class_range: Tuple[int, int] = (0, 66),
+) -> Dict[str, Any]:
+    model.eval()
+    total = 0
+    loss_sum = 0.0
+    top1_sum = 0.0
+    top5_sum = 0.0
+    range_total = 0
+    range_loss_sum = 0.0
+    range_top1_sum = 0.0
+    range_top5_sum = 0.0
+    criterion = torch.nn.CrossEntropyLoss(reduction="none")
+    start_class, end_class = class_range
+
+    with torch.no_grad():
+        for inputs, labels in loader:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            if inputs.ndim == 6:
+                clip_logits = model.forward_clip_logits(inputs)
+                logits = clip_logits.mean(dim=1)
+                scores = clip_logits.softmax(dim=-1).mean(dim=1)
+            else:
+                logits = model(inputs)
+                scores = logits
+
+            losses = criterion(logits, labels)
+            maxk = min(5, scores.shape[1])
+            pred = scores.topk(maxk, dim=1).indices
+            top1_correct = pred[:, 0].eq(labels).float()
+            top5_correct = pred.eq(labels[:, None]).any(dim=1).float()
+
+            batch = labels.numel()
+            total += batch
+            loss_sum += losses.sum().item()
+            top1_sum += top1_correct.sum().item()
+            top5_sum += top5_correct.sum().item()
+
+            range_mask = (labels >= start_class) & (labels <= end_class)
+            if range_mask.any():
+                range_count = int(range_mask.sum().item())
+                range_total += range_count
+                range_loss_sum += losses[range_mask].sum().item()
+                range_top1_sum += top1_correct[range_mask].sum().item()
+                range_top5_sum += top5_correct[range_mask].sum().item()
+
+    metrics: Dict[str, Any] = {
+        "loss": loss_sum / total,
+        "top1": top1_sum / total,
+        "top5": top5_sum / total,
+        "class_0_66": {
+            "num_samples": range_total,
+            "loss": (range_loss_sum / range_total) if range_total else None,
+            "top1": (range_top1_sum / range_total) if range_total else None,
+            "top5": (range_top5_sum / range_total) if range_total else None,
+        },
+    }
+    return metrics
+
+
 def normalize_label_sequence(label: Any) -> List[str]:
     if isinstance(label, np.ndarray):
         label = label.tolist()
@@ -498,6 +562,13 @@ def save_regular_eval(args, cfg, checkpoint_path: Path, log_dir: Path, device: t
         f"split={args.split} loss={metrics['loss']:.4f} "
         f"top1={metrics['top1']:.4f} top5={metrics['top5']:.4f}"
     )
+    class_0_66 = metrics.get("class_0_66", {})
+    if class_0_66.get("num_samples", 0):
+        metric_line += (
+            f" | class_0_66_samples={class_0_66['num_samples']} "
+            f"class_0_66_top1={class_0_66['top1']:.4f} "
+            f"class_0_66_top5={class_0_66['top5']:.4f}"
+        )
     lines = [
         f"{timestamp} | checkpoint={checkpoint_path}",
         f"{timestamp} | config={Path(args.config).expanduser().resolve()}",
@@ -680,7 +751,7 @@ def main() -> None:
         num_workers=args.num_workers,
         pin_memory=device.type == "cuda",
     )
-    metrics = run_eval(model, loader, device)
+    metrics = run_regular_eval_with_class_range(model, loader, device)
     save_regular_eval(args, cfg, checkpoint_path, log_dir, device, info, metrics, dataset)
 
     if not args.no_saliency:

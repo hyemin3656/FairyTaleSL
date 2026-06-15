@@ -7,8 +7,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-INPUT_NPZ_DIR = "/home/ubuntu/dataset/holistic_result_comp2"
-OUTPUT_AUG_DIR = "/home/ubuntu/dataset/holistic_result_comp2_augmented_20_vari_4"
+INPUT_NPZ_DIR = "/home/ubuntu/dataset/holistic_result_comp2_final"
+OUTPUT_AUG_DIR = "/home/ubuntu/dataset/holistic_result_comp2_aug_final"
 AUGMENTATIONS_PER_SAMPLE = 18
 AUGMENTATIONS_PER_SAMPLE_CHOICES = [17, 18, 19]
 SPLIT_RATIOS = {"train": 0.8, "val": 0.1, "test": 0.1}
@@ -20,49 +20,50 @@ CLASS_COLUMN = "source_video"
 # 아래 후보들로 가능한 조합을 만든 뒤 intensity가 낮은 것부터 높은 것까지
 # 골고루 뽑아 source마다 17/18/19개 중 하나의 augmentation을 만듭니다.
 GAU_NOISE = [0.0, 0.0005, 0.001, 0.002, 0.003]
-PERSON_SCALE = [0.75, 0.85, 1.0, 1.15, 1.3]
-DUMMY_THRESHOLD = [0.9, 0.8]
-SPEED = [0.65, 0.8, 1.2, 1.5]
+PERSON_SCALE = [1.0, 1.08, 1.15, 1.25, 1.35]
+DUMMY_THRESHOLD = [1.0, 0.9, 0.8]
 
 AUGMENTATION_ENABLE = {
     "front_offset": True,
     "dummy_threshold": True,
     "temporal_speed": True,
+    "local_temporal_warp": True,
     "person_scale": True,
     "xy_scale": True,
     "rotation": True,
-    "hand_motion_scale": True,
+    "hand_motion_scale": False, #
+    "hand_trajectory_warp": False,#
     "position_shift": True,
     "hand_dropout": True,
     "gaussian_noise": True,
 }
 
-AUGMENTATION_SPEEDS = [1.0, 0.65, 0.8, 1.2, 1.5]
+AUGMENTATION_SPEEDS = [0.9, 1.0, 1.15, 1.25, 1.35]
+AUGMENTATION_LOCAL_TEMPORAL_WARP_STRENGTHS = [0.0, 0.08, 0.15, 0.22]
 AUGMENTATION_SHIFTS = [
     (0.0, 0.0),
-    (-0.05, 0.0),
-    (0.05, 0.0),
-    (0.0, -0.08),
-    (0.0, 0.08),
-    (-0.08, -0.08),
-    (0.08, -0.08),
-    (-0.08, 0.12),
-    (0.08, 0.12),
-    (0.0, -0.16),
-    (0.0, 0.16),
+    (-0.04, 0.0),
+    (0.04, 0.0),
+    (0.0, -0.06),
+    (0.0, 0.06),
+    (-0.06, -0.06),
+    (0.06, -0.06),
+    (-0.06, 0.08),
+    (0.06, 0.08),
 ]
 AUGMENTATION_XY_SCALES = [
     (1.0, 1.0),
-    (0.9, 1.0),
-    (1.1, 1.0),
-    (1.0, 0.9),
-    (1.0, 1.1),
-    (0.9, 1.1),
-    (1.1, 0.9),
+    (1.08, 1.0),
+    (1.15, 1.0),
+    (1.0, 1.08),
+    (1.0, 1.15),
+    (1.08, 1.08),
+    (1.15, 1.08),
 ]
-AUGMENTATION_ROTATIONS = [0.0, -5.0, 5.0, -8.0, 8.0]
+AUGMENTATION_ROTATIONS = [0.0, -3.0, 3.0, -6.0, 6.0]
 AUGMENTATION_HAND_DROPOUT_RATIOS = [0.0, 0.03, 0.06, 0.1]
-AUGMENTATION_HAND_MOTION_SCALES = [0.8, 0.9, 1.0, 1.1, 1.25]
+AUGMENTATION_HAND_MOTION_SCALES = [1.0, 1.05, 1.1, 1.2, 1.3]
+AUGMENTATION_HAND_TRAJECTORY_WARP_AMPLITUDES = [0.0, 0.01, 0.02, 0.035]
 BALANCED_CANDIDATE_TRIALS = 5000
 
 
@@ -88,12 +89,20 @@ def hand_dropout_name_suffix(ratio):
 def hand_motion_name_suffix(scale):
     return f"hand_motion_{scale:.2f}".replace(".", "_")
 
+
+def local_temporal_warp_name_suffix(strength):
+    return f"local_time_warp_{strength:.2f}".replace(".", "_")
+
+
+def hand_trajectory_warp_name_suffix(amplitude):
+    return f"hand_traj_warp_{amplitude:.3f}".replace(".", "_")
+
 BASE_AUGMENTATION_SPEC = {
     "name": "base",
     "ratio": 1,
     "params": {
         "front": True,
-        "dummy_threshold": 0.9,
+        "dummy_threshold": 1.0,
         "window_ratio": 0.5,
         "start_ratio": 0.8,
         "end_ratio": 0.8,
@@ -105,6 +114,8 @@ BASE_AUGMENTATION_SPEC = {
         "rotation_degrees": 0.0,
         "hand_dropout_ratio": 0.0,
         "hand_motion_scale": 1.0,
+        "local_temporal_warp_strength": 0.0,
+        "hand_trajectory_warp_amplitude": 0.0,
         "position_shift_x": 0.0,
         "position_shift_y": 0.0,
         "clip_position_shift": False,
@@ -142,17 +153,20 @@ def _xy_scale_strength(xy_scale):
     return (abs(xy_scale[0] - 1.0) + abs(xy_scale[1] - 1.0)) / max_strength
 
 
+
 def _candidate_intensity(params):
     components = [
         _rank(params["gaussian_scale"], GAU_NOISE),
         abs(params["person_scale"] - 1.0) / _max_abs_delta(PERSON_SCALE, 1.0),
         _rank(params["dummy_threshold"], DUMMY_THRESHOLD),
         abs(params["speed"] - 1.0) / _max_abs_delta(AUGMENTATION_SPEEDS, 1.0),
+        params["local_temporal_warp_strength"] / max(AUGMENTATION_LOCAL_TEMPORAL_WARP_STRENGTHS),
         _shift_strength((params["position_shift_x"], params["position_shift_y"])),
         _xy_scale_strength((params["xy_scale_x"], params["xy_scale_y"])),
         abs(params["rotation_degrees"]) / max(abs(item) for item in AUGMENTATION_ROTATIONS),
         params["hand_dropout_ratio"] / max(AUGMENTATION_HAND_DROPOUT_RATIOS),
         abs(params["hand_motion_scale"] - 1.0) / _max_abs_delta(AUGMENTATION_HAND_MOTION_SCALES, 1.0),
+        params["hand_trajectory_warp_amplitude"] / max(AUGMENTATION_HAND_TRAJECTORY_WARP_AMPLITUDES),
     ]
     intensity = sum(components) / len(components)
     high_count = sum(component >= 0.85 for component in components)
@@ -172,7 +186,9 @@ def _balanced_spec_name(index, params, intensity):
         f"{xy_scale_name_suffix((params['xy_scale_x'], params['xy_scale_y']))}_"
         f"{rotation_name_suffix(params['rotation_degrees'])}_"
         f"{hand_dropout_name_suffix(params['hand_dropout_ratio'])}_"
-        f"{hand_motion_name_suffix(params['hand_motion_scale'])}"
+        f"{hand_motion_name_suffix(params['hand_motion_scale'])}_"
+        f"{local_temporal_warp_name_suffix(params['local_temporal_warp_strength'])}_"
+        f"{hand_trajectory_warp_name_suffix(params['hand_trajectory_warp_amplitude'])}"
     )
 
 
@@ -187,9 +203,19 @@ def _sample_candidate_params(rng):
     person_scale_values = _candidate_values("person_scale", PERSON_SCALE, 1.0)
     dummy_values = _candidate_values("dummy_threshold", DUMMY_THRESHOLD, 0.9)
     speed_values = _candidate_values("temporal_speed", AUGMENTATION_SPEEDS, 1.0)
+    local_temporal_warp_values = _candidate_values(
+        "local_temporal_warp",
+        AUGMENTATION_LOCAL_TEMPORAL_WARP_STRENGTHS,
+        0.0,
+    )
     rotation_values = _candidate_values("rotation", AUGMENTATION_ROTATIONS, 0.0)
     hand_dropout_values = _candidate_values("hand_dropout", AUGMENTATION_HAND_DROPOUT_RATIOS, 0.0)
     hand_motion_values = _candidate_values("hand_motion_scale", AUGMENTATION_HAND_MOTION_SCALES, 1.0)
+    hand_trajectory_warp_values = _candidate_values(
+        "hand_trajectory_warp",
+        AUGMENTATION_HAND_TRAJECTORY_WARP_AMPLITUDES,
+        0.0,
+    )
 
     return {
         "front": front_values[int(rng.integers(len(front_values)))],
@@ -197,6 +223,9 @@ def _sample_candidate_params(rng):
         "person_scale": person_scale_values[int(rng.integers(len(person_scale_values)))],
         "dummy_threshold": dummy_values[int(rng.integers(len(dummy_values)))],
         "speed": speed_values[int(rng.integers(len(speed_values)))],
+        "local_temporal_warp_strength": float(
+            local_temporal_warp_values[int(rng.integers(len(local_temporal_warp_values)))]
+        ),
         "position_shift_x": float(shift[0]),
         "position_shift_y": float(shift[1]),
         "xy_scale_x": float(xy_scale[0]),
@@ -204,6 +233,9 @@ def _sample_candidate_params(rng):
         "rotation_degrees": float(rotation_values[int(rng.integers(len(rotation_values)))]),
         "hand_dropout_ratio": float(hand_dropout_values[int(rng.integers(len(hand_dropout_values)))]),
         "hand_motion_scale": float(hand_motion_values[int(rng.integers(len(hand_motion_values)))]),
+        "hand_trajectory_warp_amplitude": float(
+            hand_trajectory_warp_values[int(rng.integers(len(hand_trajectory_warp_values)))]
+        ),
     }
 
 
@@ -411,9 +443,14 @@ def augment_one_video(data, video_df, params):
         df_cleaned,
         speed=params.get("speed", 1.0),
     )
-    npz_scaled, df_scaled = person_center_scale(
+    npz_time_warped, df_time_warped = local_temporal_warp(
         npz_speed,
         df_speed,
+        strength=params.get("local_temporal_warp_strength", 0.0),
+    )
+    npz_scaled, df_scaled = person_center_scale(
+        npz_time_warped,
+        df_time_warped,
         scale=params["person_scale"],
         clip=params.get("clip_scale", False),
     )
@@ -443,9 +480,14 @@ def augment_one_video(data, video_df, params):
         shift_y=params.get("position_shift_y", 0.0),
         clip=params.get("clip_position_shift", False),
     )
-    npz_hand_dropout, df_hand_dropout = random_zero_hand_frames(
+    npz_hand_warped, df_hand_warped = hand_trajectory_warp(
         npz_shifted,
         df_shifted,
+        amplitude=params.get("hand_trajectory_warp_amplitude", 0.0),
+    )
+    npz_hand_dropout, df_hand_dropout = random_zero_hand_frames(
+        npz_hand_warped,
+        df_hand_warped,
         ratio=params.get("hand_dropout_ratio", 0.0),
     )
     npz_gaussian, df_gaussian = gaussian_noise(
@@ -877,6 +919,68 @@ def temporal_speed(data_npz, video_df, speed=1.0):
 
     return processed_data, processed_video_df
 
+def _resample_array_at_positions(arr, positions):
+    old_t = arr.shape[0]
+    if old_t == len(positions) and np.allclose(positions, np.arange(old_t)):
+        return arr.copy()
+    if old_t == 1:
+        return np.repeat(arr, len(positions), axis=0).astype(arr.dtype, copy=False)
+
+    old_x = np.arange(old_t, dtype=np.float32)
+    positions = np.clip(np.asarray(positions, dtype=np.float32), 0.0, old_t - 1)
+    out = np.empty((len(positions),) + arr.shape[1:], dtype=np.float32)
+    flat = arr.reshape(old_t, -1).astype(np.float32)
+    out_flat = out.reshape(len(positions), -1)
+    for col in range(flat.shape[1]):
+        out_flat[:, col] = np.interp(positions, old_x, flat[:, col])
+    return out.astype(arr.dtype, copy=False)
+
+
+def local_temporal_warp(data_npz, video_df, strength=0.0):
+    """일부 시간 구간만 더 빠르거나 느리게 보이도록 비선형 시간축으로 resampling합니다."""
+    strength = float(strength)
+    if strength <= 0.0:
+        processed_data = {key: data_npz[key].copy() for key in ["pose", "face", "left_hand", "right_hand"]}
+        if "fps" in data_npz:
+            processed_data["fps"] = data_npz["fps"]
+        return processed_data, video_df.copy().reset_index(drop=True)
+
+    old_t = int(data_npz["pose"].shape[0])
+    if old_t < 4:
+        processed_data = {key: data_npz[key].copy() for key in ["pose", "face", "left_hand", "right_hand"]}
+        if "fps" in data_npz:
+            processed_data["fps"] = data_npz["fps"]
+        return processed_data, video_df.copy().reset_index(drop=True)
+
+    segment_len = max(3, int(round(old_t * np.random.uniform(0.25, 0.55))))
+    segment_len = min(segment_len, old_t)
+    start = int(np.random.randint(0, old_t - segment_len + 1))
+    end = start + segment_len
+    sign = -1.0 if np.random.random() < 0.5 else 1.0
+    displacement = sign * strength * segment_len * 0.20
+
+    positions = np.arange(old_t, dtype=np.float32)
+    phase = np.linspace(0.0, np.pi, segment_len, dtype=np.float32)
+    positions[start:end] += displacement * np.sin(phase)
+    positions = np.clip(positions, 0.0, old_t - 1)
+    positions = np.maximum.accumulate(positions)
+
+    processed_data = {}
+    for key in ["pose", "face", "left_hand", "right_hand"]:
+        arr = _resample_array_at_positions(data_npz[key], positions)
+        if arr.shape[-1] > 3:
+            arr[:, :, 3] = (arr[:, :, 3] > 0.5).astype(arr.dtype)
+            arr[:, :, :3] *= arr[:, :, 3:4]
+        processed_data[key] = arr
+
+    if "fps" in data_npz:
+        processed_data["fps"] = data_npz["fps"]
+
+    processed_video_df = _resample_video_df(video_df, positions, old_t)
+    processed_video_df = _sync_detection_columns_from_npz(processed_video_df, processed_data)
+    return processed_data, processed_video_df
+
+
 def person_center_scale(
     video_npz,
     video_df,
@@ -1027,6 +1131,7 @@ def rotate_keypoints(video_npz, video_df, degrees=0.0, clip=False):
     return augmented_data, video_df
 
 
+
 def hand_motion_scale(video_npz, video_df, scale=1.0, clip=False):
     scale = float(scale)
     centers = _pose_frame_centers(video_npz)
@@ -1046,6 +1151,48 @@ def hand_motion_scale(video_npz, video_df, scale=1.0, clip=False):
     if "fps" in video_npz:
         augmented_data["fps"] = video_npz["fps"]
     return augmented_data, video_df
+
+
+
+def hand_trajectory_warp(video_npz, video_df, amplitude=0.0):
+    """손 궤적의 일부 구간에 부드러운 곡선 offset을 더해 사람별 손 경로 차이를 흉내냅니다."""
+    amplitude = float(amplitude)
+    augmented_data = {key: video_npz[key].astype(np.float32).copy() for key in ["pose", "face", "left_hand", "right_hand"]}
+    if amplitude <= 0.0:
+        if "fps" in video_npz:
+            augmented_data["fps"] = video_npz["fps"]
+        return augmented_data, video_df
+
+    total_frames = int(video_npz["pose"].shape[0])
+    if total_frames < 4:
+        if "fps" in video_npz:
+            augmented_data["fps"] = video_npz["fps"]
+        return augmented_data, video_df
+
+    segment_len = max(3, int(round(total_frames * np.random.uniform(0.25, 0.55))))
+    segment_len = min(segment_len, total_frames)
+    start = int(np.random.randint(0, total_frames - segment_len + 1))
+    end = start + segment_len
+
+    angle = np.random.uniform(0.0, 2.0 * np.pi)
+    direction = np.array([np.cos(angle), np.sin(angle)], dtype=np.float32)
+    phase = np.linspace(0.0, np.pi, segment_len, dtype=np.float32)
+    offsets = amplitude * np.sin(phase)[:, None] * direction[None, :]
+
+    hand_choices = [("left_hand", "right_hand"), ("left_hand",), ("right_hand",)]
+    selected_hands = hand_choices[int(np.random.randint(len(hand_choices)))]
+    for key in selected_hands:
+        arr = augmented_data[key]
+        valid_mask = arr[start:end, :, 3] > 0
+        arr[start:end, :, :2] += offsets[:, None, :] * valid_mask[:, :, None]
+        arr[start:end, :, :2] *= valid_mask[:, :, None]
+        augmented_data[key] = arr
+
+    if "fps" in video_npz:
+        augmented_data["fps"] = video_npz["fps"]
+
+    return augmented_data, video_df
+
 
 
 def random_zero_hand_frames(video_npz, video_df, ratio=0.0, min_keep_frames=1):
