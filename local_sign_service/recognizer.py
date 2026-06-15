@@ -346,12 +346,12 @@ class CNN1DRealtimeRecognizer:
             short_sample_interpolation=getattr(cfg, "SHORT_SAMPLE_INTERPOLATION", None),
             zero_pad_short=getattr(cfg, "ZERO_PAD_SHORT", False),
         )
-        x = self._torch.tensor(x, dtype=self._torch.float32).to(self.device)
-        if x.dim() == 3:
-            x = x.unsqueeze(0)  # (1, T, N, C)
+        inputs = self._torch.from_numpy(x[None]).to(self.device)
         with self._torch.no_grad():
-            logits = self.model(x)
-        scores = self._torch.softmax(logits[0], dim=-1)
+            scores = self.model.predict(inputs)[0]
+        # with self._torch.no_grad():
+        #     logits = self.model(inputs)
+        # scores = self._torch.softmax(logits[0], dim=-1)
         return self._format(scores)
 
     def _format(self, scores) -> dict:
