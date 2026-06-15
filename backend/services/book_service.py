@@ -24,7 +24,6 @@ async def search_books(
             or_(Book.title.ilike(like), Book.description.ilike(like))
         )
 
-    stmt = stmt.order_by(Book.title)
     result = await db.execute(stmt)
     books = list(result.scalars().all())
 
@@ -32,6 +31,14 @@ async def search_books(
     if categories:
         cat_set = set(categories)
         books = [b for b in books if cat_set.intersection(b.categories or [])]
+
+    # PostgreSQL collation이 한국어 가나다순을 보장하지 않으므로 Python-side 정렬
+    import locale
+    try:
+        locale.setlocale(locale.LC_COLLATE, "ko_KR.UTF-8")
+        books.sort(key=lambda b: locale.strxfrm(b.title))
+    except locale.Error:
+        books.sort(key=lambda b: b.title)
 
     return books
 
