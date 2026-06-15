@@ -86,3 +86,4 @@ data_pipeline/sign_generation/logs/
 data_pipeline/sign_generation/*.task
 mmaction2/
 !data_pipeline/sign_generation/data/motion_db.sqlite
+data_pipeline/sign_generation/data/videos.zip
