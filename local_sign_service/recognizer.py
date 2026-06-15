@@ -41,7 +41,7 @@ NUM_HAND = 21
 NUM_NODE = NUM_POSE_USED + NUM_HAND + NUM_HAND   # 65
 COORD_DIM = 2
 MP_COORD_DIM = 4
-TOP1_SCORE_THRESHOLD = 0.5
+TOP1_SCORE_THRESHOLD = 0.2
 
 
 # ── helper 함수들 (원본 그대로) ────────────────────────────────────────
@@ -57,7 +57,7 @@ def landmarks_to_array(landmarks, num_points):
     return arr
 
 
-def interpolate_short_gaps(arr, frame_level_detection, max_gap=5):
+def interpolate_short_gaps(arr, frame_level_detection, max_gap=10):
     out = arr.copy()
     detected = np.asarray(frame_level_detection, dtype=bool)
     if out.shape[0] != detected.shape[0]:
@@ -92,7 +92,7 @@ def stack_segment_arrays(segment, key):
     return np.stack([frame_data[key] for frame_data in segment]).astype(np.float32)
 
 
-def build_mmaction_sample(segment, max_gap=5):
+def build_mmaction_sample(segment, max_gap=10):
     """segment list → MMAction2 모델 입력 dict."""
     pose = stack_segment_arrays(segment, "pose")[:, :NUM_POSE_USED]
     left = stack_segment_arrays(segment, "left_hand")
@@ -184,8 +184,8 @@ class RealtimeSegmenter:
         min_frames: int = 8,
         max_record_sec: float = 10.0,
         sequence_level: bool = False,
-        seq_window_frames: int = 90,
-        seq_stride_frames: int = 20,
+        seq_window_frames: int = 35,
+        seq_stride_frames: int = 35,
     ) -> None:
         self.fps = fps
         self.window_frames = max(1, int(window_sec * fps))
@@ -292,7 +292,7 @@ class CNN1DRealtimeRecognizer:
         label_map: Path,
         device: str = "cpu",
         topk: int = 5,
-        max_gap: int = 5,
+        max_gap: int = 10,
     ) -> None:
         import sys, torch
         # hyemin 모델 모듈 경로 추가

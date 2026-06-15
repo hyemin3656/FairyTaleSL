@@ -55,7 +55,7 @@ CHECKPOINT_PATH = Path(os.environ.get(
     PROJECT_ROOT / "checkpoints" / "best_acc_top1_epoch_36.pth",
 ))
 LABEL_MAP_PATH = Path(os.environ.get("SIGN_LABEL_MAP", PROJECT_ROOT / "src" / "class_labels.json"))
-TOP1_THRESHOLD = float(os.environ.get("SIGN_TOP1_THRESHOLD", "0.5"))
+TOP1_THRESHOLD = float(os.environ.get("SIGN_TOP1_THRESHOLD", "0.2"))
 
 log = logging.getLogger("sign-sidecar")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
