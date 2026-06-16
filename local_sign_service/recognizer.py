@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 import warnings
 from pathlib import Path
 
@@ -369,30 +370,43 @@ class RealtimeSegmenter:
         seq_stride_frames: int = 35,
     ) -> None:
         self.fps = fps
-        self.window_frames = max(1, int(window_sec * fps))
+        self.window_sec = window_sec
         self.start_ratio = start_ratio
         self.end_ratio = end_ratio
         self.min_frames = min_frames
-        self.max_record_frames = int(max_record_sec * fps)
+        self.max_record_sec = max_record_sec
         self.sequence_level = sequence_level
         self.seq_window_frames = seq_window_frames
         self.seq_stride_frames = seq_stride_frames
 
-        self.detect_history: list[bool] = []  # 최근 window_frames 만큼만 유지
+        self.pre_start: list[dict] = []
         self.segment_buffer: list[dict] = []
         self.recording = False
         self.last_emitted_seq_end = -1   # sequence-level: 마지막 추론한 window end index
 
     def reset(self) -> None:
-        self.detect_history.clear()
+        self.pre_start.clear()
         self.segment_buffer.clear()
         self.recording = False
         self.last_emitted_seq_end = -1
 
-    def _detection_ratio(self) -> float:
-        if not self.detect_history:
-            return 0.0
-        return sum(self.detect_history) / len(self.detect_history)
+    @staticmethod
+    def _timestamp(frame_data: dict) -> float:
+        return float(frame_data.get("captured_at", time.perf_counter()))
+
+    def _prune_before_window(self, frames: list[dict], now: float) -> None:
+        cutoff = now - self.window_sec
+        while len(frames) > 1 and self._timestamp(frames[1]) < cutoff:
+            frames.pop(0)
+
+    def _recent_time_window(self, frames: list[dict], now: float) -> list[dict]:
+        cutoff = now - self.window_sec
+        start = 0
+        for index, item in enumerate(frames):
+            if self._timestamp(item) >= cutoff:
+                start = max(0, index - 1)
+                break
+        return frames[start:]
 
     def update(self, frame_data: dict):
         """프레임 1개 추가 → 종료된 segment 또는 sequence window 리스트 반환.
@@ -401,17 +415,31 @@ class RealtimeSegmenter:
               (없으면 [])
         """
         hands_visible = bool(frame_data["left_hand_detected"] or frame_data["right_hand_detected"])
-        self.detect_history.append(hands_visible)
-        if len(self.detect_history) > self.window_frames:
-            self.detect_history.pop(0)
-
-        ratio = self._detection_ratio()
+        now = self._timestamp(frame_data)
         produced: list[dict] = []
 
         if not self.recording:
-            if hands_visible and ratio >= self.start_ratio:
+            self.pre_start.append(frame_data)
+            self._prune_before_window(self.pre_start, now)
+            if not self.pre_start:
+                return produced
+            window_ready = now - self._timestamp(self.pre_start[0]) >= self.window_sec
+            if not window_ready:
+                return produced
+
+            ratio = sum(
+                bool(item["left_hand_detected"] or item["right_hand_detected"])
+                for item in self.pre_start
+            ) / len(self.pre_start)
+            if ratio >= self.start_ratio:
                 self.recording = True
-                self.segment_buffer = [frame_data]
+                first_detected = next(
+                    i
+                    for i, item in enumerate(self.pre_start)
+                    if item["left_hand_detected"] or item["right_hand_detected"]
+                )
+                self.segment_buffer = self.pre_start[first_detected:]
+                self.pre_start = []
                 self.last_emitted_seq_end = -1
             return produced
 
@@ -419,7 +447,11 @@ class RealtimeSegmenter:
         self.segment_buffer.append(frame_data)
 
         # 너무 길어지면 강제 종료
-        if len(self.segment_buffer) >= self.max_record_frames:
+        record_duration = (
+            self._timestamp(self.segment_buffer[-1])
+            - self._timestamp(self.segment_buffer[0])
+        )
+        if record_duration >= self.max_record_sec:
             seg = self._finish()
             if seg is not None:
                 produced.append({"segment": seg, "type": "final"})
@@ -438,10 +470,16 @@ class RealtimeSegmenter:
                 self.last_emitted_seq_end = end_idx
 
         # 종료 판정 (손이 사라짐)
-        if not hands_visible and (1.0 - ratio) >= self.end_ratio:
-            seg = self._finish()
-            if seg is not None:
-                produced.append({"segment": seg, "type": "final"})
+        recent = self._recent_time_window(self.segment_buffer, now)
+        if recent and now - self._timestamp(recent[0]) >= self.window_sec:
+            undetected_ratio = sum(
+                not bool(item["left_hand_detected"] or item["right_hand_detected"])
+                for item in recent
+            ) / len(recent)
+            if undetected_ratio >= self.end_ratio:
+                seg = self._finish()
+                if seg is not None:
+                    produced.append({"segment": seg, "type": "final"})
 
         return produced
 

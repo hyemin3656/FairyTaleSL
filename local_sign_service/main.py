@@ -45,6 +45,7 @@ CAM_H = int(os.environ.get("SIGN_HEIGHT", "480"))
 PREVIEW_FPS = int(os.environ.get("SIGN_PREVIEW_FPS", "10"))
 JPEG_QUALITY = int(os.environ.get("SIGN_JPEG_QUALITY", "70"))
 DRAW_KEYPOINTS = os.environ.get("SIGN_DRAW_KEYPOINTS", "1").lower() not in {"0", "false", "no", "off"}
+MIRROR_FRAME = os.environ.get("SIGN_MIRROR", "0").lower() in {"1", "true", "yes", "on"}
 MODE_DEFAULT = os.environ.get("SIGN_MODE", "gloss")   # "gloss" | "sequence"
 
 CONFIG_PATH = Path(os.environ.get(
@@ -148,19 +149,22 @@ class SignWorker:
         try:
             while not self._stop.is_set():
                 ok, frame = cap.read()
+                captured_at = time.perf_counter()
                 if not ok:
                     time.sleep(0.01)
                     continue
-                frame = cv2.flip(frame, 1)  # 미러
+                if MIRROR_FRAME:
+                    frame = cv2.flip(frame, 1)  # 미러
+                item = (frame, captured_at)
                 # latest-only: 이전 프레임 버리고 최신만
                 try:
-                    self.raw_q.put_nowait(frame)
+                    self.raw_q.put_nowait(item)
                 except queue.Full:
                     try:
                         self.raw_q.get_nowait()
                     except queue.Empty:
                         pass
-                    self.raw_q.put_nowait(frame)
+                    self.raw_q.put_nowait(item)
         finally:
             cap.release()
 
@@ -176,10 +180,12 @@ class SignWorker:
         preview_interval = 1.0 / max(1, PREVIEW_FPS)
         while not self._stop.is_set():
             try:
-                frame = self.raw_q.get(timeout=0.1)
+                frame_item = self.raw_q.get(timeout=0.1)
             except queue.Empty:
                 continue
+            frame, captured_at = frame_item
             data = self.extractor.process(frame)
+            data["captured_at"] = captured_at
             if draw_keypoints is not None:
                 draw_keypoints(frame, data)
             data["_frame_bgr"] = frame  # preview용
