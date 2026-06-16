@@ -5,7 +5,7 @@ recognizer.py — hyemin 브랜치의 인식 클래스를 import-friendly하게 
 여기선 라이브러리로 쓸 수 있게 메인 루프(cv2.imshow 등)를 제거하고
 3개 클래스 + 핵심 helper만 노출.
 
-  - MediaPipeWebcamExtractor : 프레임 → MediaPipe Holistic 키포인트
+  - MediaPipeWebcamExtractor : 프레임 → MediaPipe Pose + Hands 키포인트
   - RealtimeSegmenter        : 손 검출 비율 기반 segment 시작/종료 판정
   - CNN1DRealtimeRecognizer  : MMAction2 CNN1D 모델 추론 wrapper
   - build_mmaction_sample()  : segment → 모델 입력 dict
@@ -41,6 +41,11 @@ NUM_HAND = 21
 NUM_NODE = NUM_POSE_USED + NUM_HAND + NUM_HAND   # 65
 COORD_DIM = 2
 MP_COORD_DIM = 4
+POSE_LEFT_WRIST = 15
+POSE_RIGHT_WRIST = 16
+HAND_WRIST = 0
+POSE_WRIST_MIN_VISIBILITY = 0.2
+DEFAULT_HAND_POSE_MAX_DISTANCE = 0.25
 TOP1_SCORE_THRESHOLD = 0.2
 POSE_DRAW_COLOR = (255, 0, 0)
 LEFT_HAND_DRAW_COLOR = (0, 255, 0)
@@ -202,35 +207,148 @@ class MediaPipeWebcamExtractor:
         smooth_landmarks: bool = True,
         min_detection_confidence: float = 0.5,
         min_tracking_confidence: float = 0.5,
+        hand_pose_max_distance: float = DEFAULT_HAND_POSE_MAX_DISTANCE,
     ) -> None:
         import mediapipe as mp
         self._mp = mp
-        self.holistic = mp.solutions.holistic.Holistic(
+        self.hand_pose_max_distance = hand_pose_max_distance
+        self.hand_pose_max_distance_sq = hand_pose_max_distance * hand_pose_max_distance
+        self.mp_pose = mp.solutions.pose
+        self.mp_hands = mp.solutions.hands
+        self.pose = self.mp_pose.Pose(
+            static_image_mode=False,
             model_complexity=model_complexity,
             smooth_landmarks=smooth_landmarks,
+            enable_segmentation=False,
             min_detection_confidence=min_detection_confidence,
             min_tracking_confidence=min_tracking_confidence,
-            refine_face_landmarks=False,
+        )
+        self.hands = self.mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=2,
+            model_complexity=model_complexity,
+            min_detection_confidence=min_detection_confidence,
+            min_tracking_confidence=min_tracking_confidence,
         )
 
     def close(self) -> None:
-        self.holistic.close()
+        self.pose.close()
+        self.hands.close()
+
+    @staticmethod
+    def _split_hands(hand_results):
+        left_hand = None
+        right_hand = None
+        left_score = -1.0
+        right_score = -1.0
+
+        landmarks = hand_results.multi_hand_landmarks or []
+        handedness = hand_results.multi_handedness or []
+        for hand_landmarks, hand_info in zip(landmarks, handedness):
+            if not hand_info.classification:
+                continue
+
+            classification = hand_info.classification[0]
+            label = classification.label.lower()
+            score = classification.score
+            # MediaPipe Hands handedness is opposite to the Holistic labels used for training.
+            if label == "left" and score > right_score:
+                right_hand = hand_landmarks
+                right_score = score
+            elif label == "right" and score > left_score:
+                left_hand = hand_landmarks
+                left_score = score
+
+        return left_hand, right_hand
+
+    @staticmethod
+    def _landmark_xy(landmark):
+        return float(landmark.x), float(landmark.y)
+
+    @staticmethod
+    def _squared_distance_xy(point_a, point_b):
+        dx = point_a[0] - point_b[0]
+        dy = point_a[1] - point_b[1]
+        return dx * dx + dy * dy
+
+    def _pose_wrist_points(self, pose_landmarks):
+        if pose_landmarks is None:
+            return None, None
+
+        landmarks = pose_landmarks.landmark
+        left = landmarks[POSE_LEFT_WRIST]
+        right = landmarks[POSE_RIGHT_WRIST]
+        left_point = (
+            self._landmark_xy(left)
+            if left.visibility >= POSE_WRIST_MIN_VISIBILITY
+            else None
+        )
+        right_point = (
+            self._landmark_xy(right)
+            if right.visibility >= POSE_WRIST_MIN_VISIBILITY
+            else None
+        )
+        return left_point, right_point
+
+    def _remap_hands_by_pose_wrists(self, left_hand, right_hand, pose_landmarks):
+        left_wrist, right_wrist = self._pose_wrist_points(pose_landmarks)
+        if left_wrist is None and right_wrist is None:
+            return left_hand, right_hand
+
+        remapped = {"left": (None, float("inf")), "right": (None, float("inf"))}
+        for hand_landmarks in (left_hand, right_hand):
+            if hand_landmarks is None:
+                continue
+
+            hand_wrist = self._landmark_xy(hand_landmarks.landmark[HAND_WRIST])
+            distances = []
+            if left_wrist is not None:
+                distances.append(
+                    ("left", self._squared_distance_xy(hand_wrist, left_wrist))
+                )
+            if right_wrist is not None:
+                distances.append(
+                    ("right", self._squared_distance_xy(hand_wrist, right_wrist))
+                )
+            if not distances:
+                continue
+
+            side, distance_sq = min(distances, key=lambda item: item[1])
+            if distance_sq > self.hand_pose_max_distance_sq:
+                continue
+            if distance_sq < remapped[side][1]:
+                remapped[side] = (hand_landmarks, distance_sq)
+
+        return remapped["left"][0], remapped["right"][0]
 
     def process(self, frame_bgr):
         """BGR 프레임 → 키포인트 dict (pose / left_hand / right_hand)."""
         import cv2
-        results = self.holistic.process(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
-        pose = landmarks_to_array(results.pose_landmarks, NUM_POSE_FULL)
-        left = landmarks_to_array(results.left_hand_landmarks, NUM_HAND)
-        right = landmarks_to_array(results.right_hand_landmarks, NUM_HAND)
+        rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        rgb.flags.writeable = False
+        pose_results = self.pose.process(rgb)
+        hand_results = self.hands.process(rgb)
+
+        left_hand_landmarks, right_hand_landmarks = self._split_hands(hand_results)
+        left_hand_landmarks, right_hand_landmarks = self._remap_hands_by_pose_wrists(
+            left_hand_landmarks,
+            right_hand_landmarks,
+            pose_results.pose_landmarks,
+        )
+        pose_detected = pose_results.pose_landmarks is not None
+        left_detected = left_hand_landmarks is not None
+        right_detected = right_hand_landmarks is not None
+
+        pose = landmarks_to_array(pose_results.pose_landmarks, NUM_POSE_FULL)
+        left = landmarks_to_array(left_hand_landmarks, NUM_HAND)
+        right = landmarks_to_array(right_hand_landmarks, NUM_HAND)
         return {
             "pose": pose,
             "left_hand": left,
             "right_hand": right,
-            "pose_detected": results.pose_landmarks is not None,
-            "left_hand_detected": results.left_hand_landmarks is not None,
-            "right_hand_detected": results.right_hand_landmarks is not None,
-            "raw_results": results,
+            "pose_detected": pose_detected,
+            "left_hand_detected": left_detected,
+            "right_hand_detected": right_detected,
         }
 
 
