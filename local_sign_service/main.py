@@ -57,7 +57,8 @@ CHECKPOINT_PATH = Path(os.environ.get(
     PROJECT_ROOT / "checkpoints" / "best.pth",
 ))
 LABEL_MAP_PATH = Path(os.environ.get("SIGN_LABEL_MAP", PROJECT_ROOT / "src" / "class_labels.json"))
-TOP1_THRESHOLD = float(os.environ.get("SIGN_TOP1_THRESHOLD", "0.2"))
+TOP1_THRESHOLD = float(os.environ.get("SIGN_TOP1_THRESHOLD", "0.4"))
+SEQUENCE_TOP1_THRESHOLD = float(os.environ.get("SIGN_SEQUENCE_TOP1_THRESHOLD", str(TOP1_THRESHOLD)))
 
 log = logging.getLogger("sign-sidecar")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -236,7 +237,8 @@ class SignWorker:
                 continue
             elapsed_ms = (time.perf_counter() - t0) * 1000
             top1 = out["top1"]
-            if not top1 or top1["score"] < TOP1_THRESHOLD:
+            threshold = SEQUENCE_TOP1_THRESHOLD if seg_type == "window" else TOP1_THRESHOLD
+            if not top1 or top1["score"] < threshold:
                 continue
             try:
                 self.result_q.put_nowait({
