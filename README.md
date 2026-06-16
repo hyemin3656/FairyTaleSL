@@ -29,7 +29,8 @@
 | Nginx | 80 | 리버스 프록시 (진입점) |
 | Frontend | 5173 | Vite + React + React Three Fiber (3D 아바타) |
 | Backend | 8000 | FastAPI + WebSocket (글로스 스트리밍, 세션 관리) |
-| AI Engine | 8001 | ST-GCN 수어 인식 (67 한국어 클래스) |
+| AI Engine | 8001 | ST-GCN 수어 인식 (질문 생성·평가) |
+| Local Sign Service | 8002 | CNN1D 수어 인식 사이드카 (카메라 점유 + 실시간 추론) |
 | PostgreSQL | — | 내부 전용 |
 
 ---
@@ -84,13 +85,14 @@ fairy_tales_structured.json (사전 큐레이팅된 ksl_glosses)
 ## 수어 인식 파이프라인 (따라해보기)
 
 ```
-브라우저 웹캠
-  → MediaPipe HandLandmarker (손 랜드마크 21점 × 최대 2손)
-  → WebSocket /ws/recognition (100ms 주기 전송)
-  → Backend 프레임 버퍼 (최대 105프레임 누적)
-  → AI Engine POST /predict
-  → ST-GCN (67 한국어 클래스 분류)
-  → 인식 결과 반환
+Local Sign Service(:8002) — 사이드카 프로세스
+  → 카메라 단독 점유 (브라우저 getUserMedia 충돌 회피)
+  → MediaPipe Holistic: pose 33점 + 손 21점×2
+  → 손 검출 비율 기반 세그먼트 자동 분리
+  → CNN1D 실시간 추론 (hyemin 모델, 로컬 CPU)
+  → WebSocket /ws/sign 으로 브라우저에 push
+      preview  : JPEG 미리보기 (~10fps)
+      prediction: {gloss, confidence}
 ```
 
 ---
@@ -171,15 +173,21 @@ cd ai_engine && python -m venv .venv && ./.venv/bin/pip install -r requirements.
 cd local_sign_service && python3.11 -m venv venv && ./venv/bin/pip install -r requirements.txt && cd ..
 cd frontend && npm install && cd ..
 
-# 2. DB 마이그레이션 + 시드
-cd backend && DATABASE_URL="sqlite+aiosqlite:///./dev.db" ./.venv/bin/alembic upgrade head
-DATABASE_URL="sqlite+aiosqlite:///./dev.db" ./.venv/bin/python scripts/seed.py
+# 2. backend 로컬 .env 생성 (Docker 호스트명 → localhost 오버라이드)
+cat > backend/.env << 'EOF'
+DATABASE_URL=postgresql+asyncpg://psycho:changeme@localhost:5432/psycho_db
+AI_ENGINE_URL=http://localhost:8001
+EOF
 
-# 3. motion_db.sqlite 받기 (Git LFS)
+# 3. DB 마이그레이션 + 시드 (로컬 PostgreSQL 필요)
+cd backend && ./.venv/bin/alembic upgrade head
+./.venv/bin/python scripts/seed.py
+
+# 4. motion_db.sqlite 받기 (Git LFS)
 brew install git-lfs && git lfs install
 git lfs pull
 
-# 4. .env 작성 (LLM_API_KEY, GEMINI_API_KEY 등 입력)
+# 5. 루트 .env 작성 (LLM_API_KEY, GEMINI_API_KEY 등 입력)
 cp .env.example .env
 ```
 
