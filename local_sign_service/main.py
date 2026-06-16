@@ -52,7 +52,7 @@ CONFIG_PATH = Path(os.environ.get(
 ))
 CHECKPOINT_PATH = Path(os.environ.get(
     "SIGN_CHECKPOINT",
-    PROJECT_ROOT / "checkpoints" / "best_acc_top1_epoch_36.pth",
+    PROJECT_ROOT / "checkpoints" / "best.pth",
 ))
 LABEL_MAP_PATH = Path(os.environ.get("SIGN_LABEL_MAP", PROJECT_ROOT / "src" / "class_labels.json"))
 TOP1_THRESHOLD = float(os.environ.get("SIGN_TOP1_THRESHOLD", "0.2"))
