@@ -44,6 +44,7 @@ CAM_W = int(os.environ.get("SIGN_WIDTH", "640"))
 CAM_H = int(os.environ.get("SIGN_HEIGHT", "480"))
 PREVIEW_FPS = int(os.environ.get("SIGN_PREVIEW_FPS", "10"))
 JPEG_QUALITY = int(os.environ.get("SIGN_JPEG_QUALITY", "70"))
+DRAW_KEYPOINTS = os.environ.get("SIGN_DRAW_KEYPOINTS", "1").lower() not in {"0", "false", "no", "off"}
 MODE_DEFAULT = os.environ.get("SIGN_MODE", "gloss")   # "gloss" | "sequence"
 
 CONFIG_PATH = Path(os.environ.get(
@@ -166,6 +167,11 @@ class SignWorker:
     # ── Thread B : MediaPipe + Segmenter + JPEG 인코딩 ─────────────────
     def _extract_loop(self) -> None:
         import cv2
+        if DRAW_KEYPOINTS:
+            from recognizer import draw_keypoints
+        else:
+            draw_keypoints = None
+
         last_preview_ts = 0.0
         preview_interval = 1.0 / max(1, PREVIEW_FPS)
         while not self._stop.is_set():
@@ -174,6 +180,8 @@ class SignWorker:
             except queue.Empty:
                 continue
             data = self.extractor.process(frame)
+            if draw_keypoints is not None:
+                draw_keypoints(frame, data)
             data["_frame_bgr"] = frame  # preview용
 
             # segment 결과 → infer_q

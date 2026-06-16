@@ -42,6 +42,9 @@ NUM_NODE = NUM_POSE_USED + NUM_HAND + NUM_HAND   # 65
 COORD_DIM = 2
 MP_COORD_DIM = 4
 TOP1_SCORE_THRESHOLD = 0.2
+POSE_DRAW_COLOR = (255, 0, 0)
+LEFT_HAND_DRAW_COLOR = (0, 255, 0)
+RIGHT_HAND_DRAW_COLOR = (0, 0, 255)
 
 
 # ── helper 함수들 (원본 그대로) ────────────────────────────────────────
@@ -55,6 +58,66 @@ def landmarks_to_array(landmarks, num_points):
         arr[i, 2] = lm.z
         arr[i, 3] = lm.visibility if hasattr(lm, "visibility") else 1.0
     return arr
+
+
+def _landmark_to_pixel(landmark, width, height, min_score=0.0):
+    x, y = float(landmark[0]), float(landmark[1])
+    score = float(landmark[3]) if landmark.shape[0] > 3 else 1.0
+    if min_score is not None and score <= min_score:
+        return None
+    if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
+        return None
+    return int(round(x * (width - 1))), int(round(y * (height - 1)))
+
+
+def draw_landmark_group(frame, landmarks, connections, color, min_score=0.0):
+    import cv2
+
+    height, width = frame.shape[:2]
+    points = [
+        _landmark_to_pixel(landmark, width, height, min_score=min_score)
+        for landmark in landmarks
+    ]
+
+    for start, end in connections:
+        if start >= len(points) or end >= len(points):
+            continue
+        if points[start] is not None and points[end] is not None:
+            cv2.line(frame, points[start], points[end], color, 2, cv2.LINE_AA)
+
+    for point in points:
+        if point is not None:
+            cv2.circle(frame, point, 3, color, -1, cv2.LINE_AA)
+
+
+def draw_keypoints(frame, frame_data):
+    import mediapipe as mp
+
+    if frame_data["pose_detected"]:
+        draw_landmark_group(
+            frame,
+            frame_data["pose"][:NUM_POSE_USED],
+            mp.solutions.pose.POSE_CONNECTIONS,
+            POSE_DRAW_COLOR,
+            min_score=0.0,
+        )
+    if frame_data["left_hand_detected"]:
+        draw_landmark_group(
+            frame,
+            frame_data["left_hand"],
+            mp.solutions.hands.HAND_CONNECTIONS,
+            LEFT_HAND_DRAW_COLOR,
+            min_score=None,
+        )
+    if frame_data["right_hand_detected"]:
+        draw_landmark_group(
+            frame,
+            frame_data["right_hand"],
+            mp.solutions.hands.HAND_CONNECTIONS,
+            RIGHT_HAND_DRAW_COLOR,
+            min_score=None,
+        )
+    return frame
 
 
 def interpolate_short_gaps(arr, frame_level_detection, max_gap=10):
