@@ -15,7 +15,7 @@
 | 자막 ON/OFF | 글로스 토큰 바 표시 여부를 헤더에서 토글 |
 | 아바타 선택 | 3종 VRM 아바타(성준·동순·혜미) 중 선택, 모델별 스케일 독립 적용 |
 | 질문하기 | 수어 또는 키보드로 질문 입력 → Gemini 2.5 Flash 답변 → 아바타가 수어로 답변 재생 |
-| 따라해보기 | 아바타가 보여준 수어 단어를 웹캠으로 직접 따라하면 ST-GCN이 인식·피드백 |
+| 따라해보기 | 아바타가 보여준 수어 단어를 웹캠으로 직접 따라하면 1D-CNN이 인식·피드백 |
 | 퀴즈 | 섹션별 OX·객관식 퀴즈로 이해도 확인 |
 | 섹션 삽화 | 각 섹션 장면에 맞는 삽화 자동 전환 |
 | 학습 이력 | 세션별 따라하기 통과 여부, 퀴즈 정답률 저장 |
@@ -29,7 +29,7 @@
 | Nginx | 80 | 리버스 프록시 (진입점) |
 | Frontend | 5173 | Vite + React + React Three Fiber (3D 아바타) |
 | Backend | 8000 | FastAPI + WebSocket (글로스 스트리밍, 세션 관리) |
-| AI Engine | 8001 | ST-GCN 수어 인식 (질문 생성·평가) |
+| AI Engine | 8001 | 질문 생성·평가 |
 | Local Sign Service | 8002 | CNN1D 수어 인식 사이드카 (카메라 점유 + 실시간 추론) |
 | PostgreSQL | — | 내부 전용 |
 
@@ -220,8 +220,8 @@ FairyTaleSL/
 │           ├── scenarioStore.ts              # Zustand 학습 상태 머신
 │           └── avatarStore.ts               # 아바타 선택 + 모델별 스케일
 ├── ai_engine/
-│   ├── models/stgcn.py              # ST-GCN 모델 정의
-│   └── routers/predict.py           # POST /predict (수어 추론)
+│   ├── models/t5_qa.py              # 질문 생성·평가
+│   └── models/gemini_child.py       # 아이 질문 답변 + 수어용 문장 변환
 └── data_pipeline/
     └── sign_generation/             # 글로스 추출 → 키포인트 → Motion DB 파이프라인
         ├── step1_extract_gloss.py      # kiwipiepy 형태소 분석 + KSL 어순 변환
@@ -239,6 +239,6 @@ FairyTaleSL/
 |------|------|
 | Frontend | React, TypeScript, Vite, React Three Fiber, @pixiv/three-vrm, Zustand |
 | Backend | FastAPI, SQLAlchemy, asyncpg, WebSocket, kiwipiepy |
-| AI | MediaPipe Holistic, ST-GCN, Claude (감정 분류), Gemini 2.5 Flash (QA) |
+| AI | MediaPipe Holistic, 1D-CNN, Claude (감정 분류), Gemini 2.5 Flash (QA) |
 | DB | PostgreSQL (서비스 데이터), SQLite (Motion DB) |
 | Infra | Docker Compose, Nginx |
