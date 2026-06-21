@@ -110,6 +110,9 @@ Local Sign Service(:8002) — 사이드카 프로세스
 
 ## 실행 방법
 
+**모델 가중치**  
+CNN1D 모델 가중치는 (https://drive.google.com/drive/folders/1iD4Vjl6XlKkDXEnr03dzMstAQyKQeKx3?usp=sharing)에서 best.pth를 받아 `local_sign_service/checkpoints/best.pth`에 놓기
+
 ### Docker (권장)
 
 ```bash
@@ -118,8 +121,6 @@ cd FairyTaleSL
 
 cp .env.example .env
 # .env: SECRET_KEY, LLM_API_KEY (RunYourAI) 값 입력
-
-CNN1D 모델 가중치는 (https://drive.google.com/drive/folders/1iD4Vjl6XlKkDXEnr03dzMstAQyKQeKx3?usp=sharing)에서 best.pth를 받아 `local_sign_service/checkpoints/best.pth`에 두세요.
 
 docker compose up --build
 ```
