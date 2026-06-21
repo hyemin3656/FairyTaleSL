@@ -44,6 +44,23 @@ services:
     networks:
       - public
 
+  local_sign_service:
+    build: ./local_sign_service
+    env_file: .env
+    environment:
+      SIGN_DEVICE: ${SIGN_DEVICE:-cpu}
+      SIGN_CAMERA: ${SIGN_CAMERA:-0}
+      SIGN_FPS: ${SIGN_FPS:-30}
+      SIGN_WIDTH: ${SIGN_WIDTH:-640}
+      SIGN_HEIGHT: ${SIGN_HEIGHT:-480}
+      SIGN_PREVIEW_FPS: ${SIGN_PREVIEW_FPS:-10}
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./local_sign_service:/app
+    networks:
+      - public
+
   frontend:
     build: ./frontend
     environment:
